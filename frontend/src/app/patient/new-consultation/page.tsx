@@ -1,378 +1,336 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
+interface QuizData {
+  condition: string;
+  symptoms: string[];
+  duration: string;
+  severity: string;
+  previousTreatments: string[];
+  allergies: string[];
+  medications: string[];
+  medicalHistory: string[];
+}
+
 export default function NewConsultation() {
   const router = useRouter();
-  const [currentStep, setCurrentStep] = useState(1);
-  const [formData, setFormData] = useState({
-    consultationType: '',
-    chiefComplaint: '',
-    symptoms: [] as string[],
-    symptomDuration: '',
-    painLevel: 0,
-    medications: '',
-    allergies: '',
-    additionalInfo: '',
-    files: [] as File[],
-  });
+  const [quizData, setQuizData] = useState<QuizData | null>(null);
+  const [additionalInfo, setAdditionalInfo] = useState('');
+  const [photos, setPhotos] = useState<File[]>([]);
+  const [urgency, setUrgency] = useState('regular');
+  const [preferredTime, setPreferredTime] = useState('');
 
-  const consultationTypes = [
-    'General Medicine',
-    'Dermatology',
-    'Mental Health',
-    'Pediatrics',
-    'Women\'s Health',
-    'Men\'s Health',
-    'Chronic Care',
-    'Urgent Care',
-  ];
+  useEffect(() => {
+    // Load quiz data from localStorage
+    const savedQuizData = localStorage.getItem('healthQuizData');
+    if (savedQuizData) {
+      setQuizData(JSON.parse(savedQuizData));
+    } else {
+      // Redirect to quiz if no data exists
+      router.push('/patient/health-quiz');
+    }
+  }, [router]);
 
-  const commonSymptoms = [
-    'Fever', 'Headache', 'Fatigue', 'Cough', 'Sore Throat',
-    'Nausea', 'Abdominal Pain', 'Back Pain', 'Chest Pain',
-    'Shortness of Breath', 'Dizziness', 'Rash', 'Joint Pain',
-  ];
-
-  const handleSymptomToggle = (symptom: string) => {
-    setFormData(prev => ({
-      ...prev,
-      symptoms: prev.symptoms.includes(symptom)
-        ? prev.symptoms.filter(s => s !== symptom)
-        : [...prev.symptoms, symptom]
-    }));
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      setFormData(prev => ({
-        ...prev,
-        files: [...prev.files, ...Array.from(e.target.files!)]
-      }));
+      setPhotos(prev => [...prev, ...Array.from(e.target.files!)]);
     }
   };
 
-  const removeFile = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      files: prev.files.filter((_, i) => i !== index)
-    }));
+  const removePhoto = (index: number) => {
+    setPhotos(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = () => {
-    // Store consultation in localStorage (mock)
-    const consultations = JSON.parse(localStorage.getItem('consultations') || '[]');
-    const newConsultation = {
+    const consultation = {
       id: Date.now().toString(),
-      ...formData,
+      quizData,
+      additionalInfo,
+      photos: photos.map(p => p.name),
+      urgency,
+      preferredTime,
       status: 'pending',
       createdAt: new Date().toISOString(),
-      patientId: JSON.parse(localStorage.getItem('user') || '{}').id,
+      providerId: null,
+      messages: []
     };
-    consultations.push(newConsultation);
+
+    // Save consultation
+    const consultations = JSON.parse(localStorage.getItem('consultations') || '[]');
+    consultations.push(consultation);
     localStorage.setItem('consultations', JSON.stringify(consultations));
-    
-    router.push('/patient/dashboard?tab=consultations');
+
+    // Clear quiz data
+    localStorage.removeItem('healthQuizData');
+
+    // Redirect to dashboard
+    router.push('/patient/dashboard?tab=consultations&status=submitted');
   };
 
+  const conditionNames: Record<string, string> = {
+    'hair-loss': 'Hair Loss',
+    'ed': 'Erectile Dysfunction',
+    'weight-loss': 'Weight Management',
+    'skin': 'Skin Conditions',
+    'mental-health': 'Mental Health'
+  };
+
+  if (!quizData) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading consultation data...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <Link href="/patient/dashboard" className="text-medical-600 hover:text-medical-700 text-sm">
-            ← Back to Dashboard
-          </Link>
-          <h1 className="text-3xl font-bold text-gray-900 mt-4">New Consultation Request</h1>
-          <p className="text-gray-600 mt-2">Tell us about your health concern</p>
-        </div>
-
-        {/* Progress Steps */}
-        <div className="mb-8">
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white border-b">
+        <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            {[1, 2, 3, 4].map(step => (
-              <div key={step} className="flex items-center">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                  currentStep >= step ? 'bg-medical-600 text-white' : 'bg-gray-200 text-gray-600'
-                }`}>
-                  {step}
-                </div>
-                {step < 4 && (
-                  <div className={`w-full h-1 mx-2 ${
-                    currentStep > step ? 'bg-medical-600' : 'bg-gray-200'
-                  }`} style={{ width: '100px' }} />
-                )}
-              </div>
-            ))}
-          </div>
-          <div className="flex justify-between mt-2">
-            <span className="text-xs text-gray-600">Type</span>
-            <span className="text-xs text-gray-600">Symptoms</span>
-            <span className="text-xs text-gray-600">Details</span>
-            <span className="text-xs text-gray-600">Review</span>
+            <Link href="/" className="text-2xl font-bold text-purple-600">
+              TeleHealth
+            </Link>
+            <Link href="/patient/dashboard" className="text-gray-600 hover:text-gray-900">
+              Back to Dashboard
+            </Link>
           </div>
         </div>
+      </header>
 
-        <div className="bg-white shadow rounded-lg p-6">
-          {/* Step 1: Consultation Type */}
-          {currentStep === 1 && (
-            <div className="space-y-6">
-              <h2 className="text-xl font-semibold text-gray-900">What type of consultation do you need?</h2>
-              <div className="grid grid-cols-2 gap-4">
-                {consultationTypes.map(type => (
-                  <button
-                    key={type}
-                    onClick={() => setFormData(prev => ({ ...prev, consultationType: type }))}
-                    className={`p-4 border rounded-lg text-left hover:border-medical-600 transition ${
-                      formData.consultationType === type
-                        ? 'border-medical-600 bg-medical-50'
-                        : 'border-gray-300'
-                    }`}
-                  >
-                    <span className="font-medium">{type}</span>
-                  </button>
+      <main className="container mx-auto px-4 py-8 max-w-4xl">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Complete Your Consultation Request</h1>
+          <p className="text-lg text-gray-600 mt-2">
+            We've received your health assessment. Just a few more details needed.
+          </p>
+        </div>
+
+        {/* Quiz Summary */}
+        <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Your Health Assessment Summary</h2>
+          
+          <div className="grid md:grid-cols-2 gap-6">
+            <div>
+              <h3 className="font-medium text-gray-700 mb-2">Condition</h3>
+              <p className="text-gray-900 bg-purple-50 px-3 py-2 rounded-lg inline-block">
+                {conditionNames[quizData.condition] || quizData.condition}
+              </p>
+            </div>
+
+            <div>
+              <h3 className="font-medium text-gray-700 mb-2">Duration</h3>
+              <p className="text-gray-900">{quizData.duration}</p>
+            </div>
+
+            <div className="md:col-span-2">
+              <h3 className="font-medium text-gray-700 mb-2">Symptoms</h3>
+              <div className="flex flex-wrap gap-2">
+                {quizData.symptoms.map((symptom, index) => (
+                  <span key={index} className="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm">
+                    {symptom}
+                  </span>
                 ))}
               </div>
             </div>
-          )}
 
-          {/* Step 2: Symptoms */}
-          {currentStep === 2 && (
-            <div className="space-y-6">
-              <h2 className="text-xl font-semibold text-gray-900">What symptoms are you experiencing?</h2>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Main Concern *
-                </label>
-                <textarea
-                  value={formData.chiefComplaint}
-                  onChange={(e) => setFormData(prev => ({ ...prev, chiefComplaint: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-medical-500 focus:border-medical-500"
-                  rows={3}
-                  placeholder="Describe your main health concern..."
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Select all symptoms that apply:
-                </label>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {commonSymptoms.map(symptom => (
-                    <label key={symptom} className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        checked={formData.symptoms.includes(symptom)}
-                        onChange={() => handleSymptomToggle(symptom)}
-                        className="rounded border-gray-300 text-medical-600 focus:ring-medical-500"
-                      />
-                      <span className="text-sm">{symptom}</span>
-                    </label>
+            {quizData.medications.length > 0 && (
+              <div className="md:col-span-2">
+                <h3 className="font-medium text-gray-700 mb-2">Current Medications</h3>
+                <div className="flex flex-wrap gap-2">
+                  {quizData.medications.map((med, index) => (
+                    <span key={index} className="bg-blue-50 text-blue-800 px-3 py-1 rounded-full text-sm">
+                      {med}
+                    </span>
                   ))}
                 </div>
               </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    How long have you had these symptoms?
-                  </label>
-                  <select
-                    value={formData.symptomDuration}
-                    onChange={(e) => setFormData(prev => ({ ...prev, symptomDuration: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-medical-500 focus:border-medical-500"
-                  >
-                    <option value="">Select duration</option>
-                    <option value="less-than-24h">Less than 24 hours</option>
-                    <option value="1-3-days">1-3 days</option>
-                    <option value="1-week">About a week</option>
-                    <option value="2-weeks">1-2 weeks</option>
-                    <option value="1-month">About a month</option>
-                    <option value="longer">More than a month</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Pain Level (0-10)
-                  </label>
-                  <input
-                    type="range"
-                    min="0"
-                    max="10"
-                    value={formData.painLevel}
-                    onChange={(e) => setFormData(prev => ({ ...prev, painLevel: parseInt(e.target.value) }))}
-                    className="w-full"
-                  />
-                  <div className="flex justify-between text-xs text-gray-500">
-                    <span>No pain</span>
-                    <span className="font-bold text-medical-600">{formData.painLevel}</span>
-                    <span>Severe</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Step 3: Additional Details */}
-          {currentStep === 3 && (
-            <div className="space-y-6">
-              <h2 className="text-xl font-semibold text-gray-900">Additional Information</h2>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Current Medications
-                </label>
-                <textarea
-                  value={formData.medications}
-                  onChange={(e) => setFormData(prev => ({ ...prev, medications: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-medical-500 focus:border-medical-500"
-                  rows={2}
-                  placeholder="List any medications you're currently taking..."
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Known Allergies
-                </label>
-                <textarea
-                  value={formData.allergies}
-                  onChange={(e) => setFormData(prev => ({ ...prev, allergies: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-medical-500 focus:border-medical-500"
-                  rows={2}
-                  placeholder="List any known allergies..."
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Upload Medical Documents or Photos
-                </label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
-                  <input
-                    type="file"
-                    multiple
-                    accept="image/*,.pdf,.doc,.docx"
-                    onChange={handleFileChange}
-                    className="hidden"
-                    id="file-upload"
-                  />
-                  <label htmlFor="file-upload" className="cursor-pointer">
-                    <div className="text-center">
-                      <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                      </svg>
-                      <p className="mt-2 text-sm text-gray-600">Click to upload files</p>
-                      <p className="text-xs text-gray-500">PNG, JPG, PDF up to 10MB</p>
-                    </div>
-                  </label>
-                </div>
-                {formData.files.length > 0 && (
-                  <div className="mt-4 space-y-2">
-                    {formData.files.map((file, index) => (
-                      <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
-                        <span className="text-sm truncate">{file.name}</span>
-                        <button
-                          onClick={() => removeFile(index)}
-                          className="text-red-600 hover:text-red-700 text-sm"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Any additional information
-                </label>
-                <textarea
-                  value={formData.additionalInfo}
-                  onChange={(e) => setFormData(prev => ({ ...prev, additionalInfo: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-medical-500 focus:border-medical-500"
-                  rows={3}
-                  placeholder="Any other details you'd like to share..."
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Step 4: Review */}
-          {currentStep === 4 && (
-            <div className="space-y-6">
-              <h2 className="text-xl font-semibold text-gray-900">Review Your Consultation Request</h2>
-              
-              <div className="bg-gray-50 rounded-lg p-4 space-y-4">
-                <div>
-                  <h3 className="font-medium text-gray-700">Consultation Type</h3>
-                  <p className="text-gray-900">{formData.consultationType}</p>
-                </div>
-                
-                <div>
-                  <h3 className="font-medium text-gray-700">Chief Complaint</h3>
-                  <p className="text-gray-900">{formData.chiefComplaint}</p>
-                </div>
-                
-                <div>
-                  <h3 className="font-medium text-gray-700">Symptoms</h3>
-                  <p className="text-gray-900">{formData.symptoms.join(', ') || 'None selected'}</p>
-                </div>
-                
-                <div>
-                  <h3 className="font-medium text-gray-700">Duration</h3>
-                  <p className="text-gray-900">{formData.symptomDuration || 'Not specified'}</p>
-                </div>
-                
-                <div>
-                  <h3 className="font-medium text-gray-700">Pain Level</h3>
-                  <p className="text-gray-900">{formData.painLevel}/10</p>
-                </div>
-                
-                {formData.files.length > 0 && (
-                  <div>
-                    <h3 className="font-medium text-gray-700">Uploaded Files</h3>
-                    <p className="text-gray-900">{formData.files.length} file(s) attached</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Navigation Buttons */}
-          <div className="mt-8 flex justify-between">
-            {currentStep > 1 && (
-              <button
-                onClick={() => setCurrentStep(prev => prev - 1)}
-                className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-              >
-                Previous
-              </button>
             )}
-            
-            {currentStep < 4 ? (
-              <button
-                onClick={() => setCurrentStep(prev => prev + 1)}
-                disabled={currentStep === 1 && !formData.consultationType}
-                className="ml-auto px-6 py-2 bg-medical-600 text-white rounded-md hover:bg-medical-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Next
-              </button>
-            ) : (
-              <button
-                onClick={handleSubmit}
-                className="ml-auto px-6 py-2 bg-medical-600 text-white rounded-md hover:bg-medical-700"
-              >
-                Submit Consultation
-              </button>
+
+            {quizData.allergies.length > 0 && (
+              <div className="md:col-span-2">
+                <h3 className="font-medium text-gray-700 mb-2">Allergies</h3>
+                <div className="flex flex-wrap gap-2">
+                  {quizData.allergies.map((allergy, index) => (
+                    <span key={index} className="bg-red-50 text-red-800 px-3 py-1 rounded-full text-sm">
+                      {allergy}
+                    </span>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
+
+          <Link href="/patient/health-quiz" className="text-purple-600 hover:text-purple-700 text-sm mt-4 inline-block">
+            Edit Assessment →
+          </Link>
         </div>
-      </div>
+
+        {/* Additional Information */}
+        <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Additional Information</h2>
+          
+          {/* Photo Upload */}
+          <div className="mb-6">
+            <label className="block text-gray-700 font-medium mb-2">
+              Upload Photos (Optional)
+            </label>
+            <p className="text-sm text-gray-600 mb-4">
+              If applicable, upload photos to help providers better understand your condition
+            </p>
+            
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-purple-400 transition-colors">
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={handlePhotoUpload}
+                className="hidden"
+                id="photo-upload"
+              />
+              <label htmlFor="photo-upload" className="cursor-pointer">
+                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <p className="mt-2 text-purple-600 font-medium">Click to upload photos</p>
+                <p className="text-xs text-gray-500 mt-1">PNG, JPG up to 10MB each</p>
+              </label>
+            </div>
+
+            {photos.length > 0 && (
+              <div className="mt-4 grid grid-cols-3 gap-4">
+                {photos.map((photo, index) => (
+                  <div key={index} className="relative group">
+                    <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+                      <img 
+                        src={URL.createObjectURL(photo)} 
+                        alt={`Upload ${index + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <button
+                      onClick={() => removePhoto(index)}
+                      className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Additional Notes */}
+          <div className="mb-6">
+            <label className="block text-gray-700 font-medium mb-2">
+              Additional Notes (Optional)
+            </label>
+            <textarea
+              value={additionalInfo}
+              onChange={(e) => setAdditionalInfo(e.target.value)}
+              placeholder="Any other information you'd like to share with the provider..."
+              className="w-full p-4 border-2 border-gray-200 rounded-lg focus:border-purple-600 focus:outline-none"
+              rows={4}
+            />
+          </div>
+
+          {/* Urgency Level */}
+          <div className="mb-6">
+            <label className="block text-gray-700 font-medium mb-2">
+              How urgent is your condition?
+            </label>
+            <div className="grid grid-cols-3 gap-4">
+              {[
+                { value: 'regular', label: 'Regular', description: 'Response within 24 hours' },
+                { value: 'urgent', label: 'Urgent', description: 'Response within 4 hours' },
+                { value: 'emergency', label: 'Emergency', description: 'Immediate response needed' }
+              ].map(option => (
+                <button
+                  key={option.value}
+                  onClick={() => setUrgency(option.value)}
+                  className={`p-4 rounded-lg border-2 text-center transition-all ${
+                    urgency === option.value
+                      ? 'border-purple-600 bg-purple-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="font-medium text-gray-900">{option.label}</div>
+                  <div className="text-xs text-gray-600 mt-1">{option.description}</div>
+                </button>
+              ))}
+            </div>
+            {urgency === 'emergency' && (
+              <div className="mt-2 p-3 bg-yellow-50 rounded-lg">
+                <p className="text-sm text-yellow-800">
+                  ⚠️ For life-threatening emergencies, please call 911 or visit your nearest emergency room.
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Preferred Contact Time */}
+          <div>
+            <label className="block text-gray-700 font-medium mb-2">
+              Preferred Contact Time
+            </label>
+            <select
+              value={preferredTime}
+              onChange={(e) => setPreferredTime(e.target.value)}
+              className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-purple-600 focus:outline-none"
+            >
+              <option value="">Any time</option>
+              <option value="morning">Morning (8 AM - 12 PM)</option>
+              <option value="afternoon">Afternoon (12 PM - 5 PM)</option>
+              <option value="evening">Evening (5 PM - 9 PM)</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Terms and Submit */}
+        <div className="bg-white rounded-xl shadow-sm p-6">
+          <div className="mb-6">
+            <label className="flex items-start">
+              <input type="checkbox" className="mt-1 mr-3" required />
+              <span className="text-sm text-gray-600">
+                I understand that this consultation is not for emergency medical conditions. 
+                I consent to share my health information with licensed healthcare providers 
+                for the purpose of receiving medical advice and treatment.
+              </span>
+            </label>
+          </div>
+
+          <div className="flex gap-4">
+            <Link 
+              href="/patient/health-quiz"
+              className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-full font-semibold hover:border-gray-400 transition-all"
+            >
+              ← Back to Assessment
+            </Link>
+            <button
+              onClick={handleSubmit}
+              className="flex-1 bg-purple-600 text-white px-8 py-3 rounded-full font-semibold hover:bg-purple-700 transition-all"
+            >
+              Submit Consultation Request
+            </button>
+          </div>
+        </div>
+
+        {/* Security Notice */}
+        <div className="mt-6 text-center">
+          <p className="text-sm text-gray-500">
+            🔒 Your information is encrypted and HIPAA compliant
+          </p>
+        </div>
+      </main>
     </div>
   );
 }

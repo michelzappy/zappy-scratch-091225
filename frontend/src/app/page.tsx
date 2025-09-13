@@ -57,7 +57,7 @@ export default function Home() {
               100% online, prescribed by real doctors.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-              <Link href="/patient/new-consultation" 
+              <Link href="/patient/health-quiz" 
                 className="inline-block bg-white text-purple-600 px-8 py-4 rounded-full text-lg font-bold hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-200">
                 Start Free Consultation
               </Link>
@@ -169,7 +169,7 @@ export default function Home() {
                     <span className="text-3xl font-bold text-purple-600">{condition.price}</span>
                     <span className="text-gray-600">Free shipping</span>
                   </div>
-                  <Link href="/patient/new-consultation"
+                  <Link href="/patient/health-quiz"
                     className="inline-block bg-purple-600 text-white px-8 py-4 rounded-full text-lg font-bold hover:bg-purple-700 transform hover:scale-105 transition-all shadow-lg">
                     Get Started →
                   </Link>
@@ -228,7 +228,7 @@ export default function Home() {
           </div>
 
           <div className="text-center mt-12">
-            <Link href="/patient/new-consultation"
+            <Link href="/patient/health-quiz"
               className="inline-block bg-purple-600 text-white px-8 py-4 rounded-full text-lg font-bold hover:bg-purple-700 transform hover:scale-105 transition-all shadow-lg">
               Start Your Free Consultation
             </Link>
@@ -303,7 +303,7 @@ export default function Home() {
           <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
             Join 500,000+ customers who have taken control of their health
           </p>
-          <Link href="/patient/new-consultation"
+          <Link href="/patient/health-quiz"
             className="inline-block bg-white text-purple-600 px-8 py-4 rounded-full text-lg font-bold hover:shadow-2xl transform hover:scale-105 transition-all">
             Get Started - It's Free
           </Link>
