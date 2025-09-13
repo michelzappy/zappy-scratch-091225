@@ -1,30 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
 export default function Home() {
-  const [selectedCondition, setSelectedCondition] = useState('hair-loss');
+  const [selectedCondition, setSelectedCondition] = useState<string>('weightLoss');
 
   const conditions = [
     {
-      id: 'hair-loss',
-      name: 'Hair Loss',
-      icon: '💊',
-      description: 'FDA-approved treatments that actually work',
-      price: 'From $22/month',
-      image: '/hair-loss.jpg'
-    },
-    {
-      id: 'ed',
-      name: 'Erectile Dysfunction',
-      icon: '🔵',
-      description: 'Effective ED treatments delivered discreetly',
-      price: 'From $2/dose',
-      image: '/ed.jpg'
-    },
-    {
-      id: 'weight-loss',
+      id: 'weightLoss',
       name: 'Weight Loss',
       icon: '⚖️',
       description: 'Medical weight loss that works',
@@ -32,90 +16,114 @@ export default function Home() {
       image: '/weight.jpg'
     },
     {
-      id: 'mental-health',
-      name: 'Mental Health',
-      icon: '🧠',
-      description: 'Anxiety & depression treatment online',
-      price: 'From $25/month',
-      image: '/mental.jpg'
+      id: 'hairLoss',
+      name: 'Hair Loss',
+      icon: '💇',
+      description: 'FDA-approved treatments that actually work',
+      price: 'From $22/month',
+      image: '/hair-loss.jpg'
+    },
+    {
+      id: 'mensHealth',
+      name: "Men's Health",
+      icon: '👨‍⚕️',
+      description: 'Effective treatments delivered discreetly',
+      price: 'From $2/dose',
+      image: '/ed.jpg'
+    },
+    {
+      id: 'womensHealth',
+      name: "Women's Health",
+      icon: '👩‍⚕️',
+      description: 'Comprehensive women\'s health care',
+      price: 'From $30/month',
+      image: '/womens.jpg'
+    },
+    {
+      id: 'longevity',
+      name: 'Longevity',
+      icon: '🧬',
+      description: 'Optimize your healthspan',
+      price: 'From $150/month',
+      image: '/longevity.jpg'
+    },
+    {
+      id: 'trt',
+      name: 'Testosterone',
+      icon: '💪',
+      description: 'Expert TRT treatment',
+      price: 'From $99/month',
+      image: '/trt.jpg'
     }
   ];
 
   return (
     <main className="min-h-screen bg-white">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-600">
-        <div className="absolute inset-0 bg-black opacity-10"></div>
+      {/* Hero Section - Using Zappy colors */}
+      <section className="relative overflow-hidden bg-white">
         <div className="relative container mx-auto px-4 py-16 lg:py-24">
           <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight">
+            <h1 className="text-4xl md:text-6xl font-bold text-gray-800 mb-6 leading-tight">
               Your health,<br />
-              <span className="text-yellow-300">delivered</span>
+              <span className="text-zappy-pink">delivered</span>
             </h1>
-            <p className="text-xl md:text-2xl text-white/90 mb-8 max-w-2xl mx-auto">
-              Get personalized treatment for hair loss, ED, weight loss & more. 
+            <p className="text-xl md:text-2xl text-gray-600 mb-8 max-w-2xl mx-auto">
+              Get personalized treatment for weight loss, hair loss, men's health & more. 
               100% online, prescribed by real doctors.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-              <Link href="/patient/health-quiz" 
-                className="inline-block bg-white text-purple-600 px-8 py-4 rounded-full text-lg font-bold hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-200">
-                Start Free Consultation
-              </Link>
               <a href="#conditions" 
-                className="inline-block bg-transparent border-2 border-white text-white px-8 py-4 rounded-full text-lg font-bold hover:bg-white hover:text-purple-600 transition-all duration-200">
-                Browse Treatments
+                className="inline-block bg-zappy-pink text-white px-8 py-4 rounded-full text-lg font-bold hover:shadow-2xl transform hover:scale-105 transition-all duration-200">
+                Start Free Consultation
+              </a>
+              <a href="#how-it-works" 
+                className="inline-block bg-transparent border-2 border-zappy-pink text-zappy-pink px-8 py-4 rounded-full text-lg font-bold hover:bg-zappy-light-yellow transition-all duration-200">
+                How It Works
               </a>
             </div>
-            <p className="text-white/80 text-sm mb-8">
+            <p className="text-gray-500 text-sm mb-8">
               ✓ Free online consultation &nbsp;&nbsp; ✓ Free 2-day shipping &nbsp;&nbsp; ✓ Cancel anytime
             </p>
             
             {/* Quick Access Portal Buttons */}
-            <div className="border-t border-white/20 pt-6 mt-6">
-              <p className="text-white/70 text-sm mb-4">Healthcare Professional Access</p>
+            <div className="border-t border-gray-200 pt-6 mt-6">
+              <p className="text-gray-500 text-sm mb-4">Healthcare Professional Access</p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Link href="/portal/login" 
-                  className="inline-block bg-white/10 backdrop-blur-sm text-white border border-white/30 px-6 py-2 rounded-lg text-sm font-medium hover:bg-white/20 transition-all">
+                  className="inline-block bg-gray-50 text-gray-700 border border-gray-300 px-6 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 transition-all">
                   🏥 Staff Portal Login
                 </Link>
                 <Link href="/patient/login" 
-                  className="inline-block bg-white/10 backdrop-blur-sm text-white border border-white/30 px-6 py-2 rounded-lg text-sm font-medium hover:bg-white/20 transition-all">
+                  className="inline-block bg-gray-50 text-gray-700 border border-gray-300 px-6 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 transition-all">
                   👤 Patient Portal Login
                 </Link>
               </div>
-              <p className="text-white/60 text-xs mt-3">
+              <p className="text-gray-400 text-xs mt-3">
                 Healthcare providers and administrators use the unified Staff Portal
               </p>
             </div>
           </div>
         </div>
-        
-        {/* Wave decoration */}
-        <div className="absolute bottom-0 left-0 right-0">
-          <svg viewBox="0 0 1440 120" className="w-full h-16 sm:h-20">
-            <path fill="#ffffff" d="M0,64L80,69.3C160,75,320,85,480,80C640,75,800,53,960,48C1120,43,1280,53,1360,58.7L1440,64L1440,120L1360,120C1280,120,1120,120,960,120C800,120,640,120,480,120C320,120,160,120,80,120L0,120Z"></path>
-          </svg>
-        </div>
       </section>
 
       {/* Trust Signals */}
-      <section className="py-12 bg-gray-50 border-b">
+      <section className="py-12 bg-zappy-light-yellow/30 border-y border-gray-200">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             <div>
-              <h3 className="text-3xl font-bold text-purple-600 mb-2">500K+</h3>
+              <h3 className="text-3xl font-bold text-zappy-pink mb-2">500K+</h3>
               <p className="text-gray-700 font-medium">Happy Customers</p>
             </div>
             <div>
-              <h3 className="text-3xl font-bold text-purple-600 mb-2">50</h3>
+              <h3 className="text-3xl font-bold text-zappy-pink mb-2">50</h3>
               <p className="text-gray-700 font-medium">States Covered</p>
             </div>
             <div>
-              <h3 className="text-3xl font-bold text-purple-600 mb-2">4.8★</h3>
+              <h3 className="text-3xl font-bold text-zappy-pink mb-2">4.8★</h3>
               <p className="text-gray-700 font-medium">Average Rating</p>
             </div>
             <div>
-              <h3 className="text-3xl font-bold text-purple-600 mb-2">24/7</h3>
+              <h3 className="text-3xl font-bold text-zappy-pink mb-2">24/7</h3>
               <p className="text-gray-700 font-medium">Support Available</p>
             </div>
           </div>
@@ -126,7 +134,7 @@ export default function Home() {
       <section id="conditions" className="py-16 lg:py-24 bg-white">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">
               Treatments that work, delivered to you
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
@@ -142,7 +150,7 @@ export default function Home() {
                 onClick={() => setSelectedCondition(condition.id)}
                 className={`px-6 py-3 rounded-full font-semibold text-lg transition-all ${
                   selectedCondition === condition.id
-                    ? 'bg-purple-600 text-white shadow-lg transform scale-105'
+                    ? 'bg-zappy-pink text-white shadow-lg transform scale-105'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
@@ -153,11 +161,11 @@ export default function Home() {
           </div>
 
           {/* Selected Condition Details */}
-          {conditions.filter(c => c.id === selectedCondition).map((condition) => (
-            <div key={condition.id} className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-3xl p-8 lg:p-12">
+          {selectedCondition && conditions.filter(c => c.id === selectedCondition).map((condition) => (
+            <div key={condition.id} className="bg-zappy-light-yellow/30 rounded-3xl p-8 lg:p-12 border border-zappy-pink/20">
               <div className="grid md:grid-cols-2 gap-12 items-center">
                 <div>
-                  <h3 className="text-3xl font-bold text-gray-900 mb-4">
+                  <h3 className="text-3xl font-bold text-gray-800 mb-4">
                     {condition.name} Treatment
                   </h3>
                   <p className="text-xl text-gray-700 mb-6">
@@ -184,16 +192,16 @@ export default function Home() {
                     </div>
                   </div>
                   <div className="flex items-baseline gap-4 mb-8">
-                    <span className="text-3xl font-bold text-purple-600">{condition.price}</span>
+                    <span className="text-3xl font-bold text-zappy-pink">{condition.price}</span>
                     <span className="text-gray-600">Free shipping</span>
                   </div>
-                  <Link href="/patient/health-quiz"
-                    className="inline-block bg-purple-600 text-white px-8 py-4 rounded-full text-lg font-bold hover:bg-purple-700 transform hover:scale-105 transition-all shadow-lg">
+                  <Link href={`/patient/health-quiz?condition=${condition.id}`}
+                    className="inline-block bg-zappy-pink text-white px-8 py-4 rounded-full text-lg font-bold hover:scale-105 transition-all shadow-lg">
                     Get Started →
                   </Link>
                 </div>
                 <div className="relative">
-                  <div className="aspect-square bg-gradient-to-br from-purple-200 to-indigo-200 rounded-3xl flex items-center justify-center">
+                  <div className="aspect-square bg-zappy-light-yellow rounded-3xl flex items-center justify-center border-2 border-zappy-pink/20">
                     <span className="text-6xl">{condition.icon}</span>
                   </div>
                 </div>
@@ -204,10 +212,10 @@ export default function Home() {
       </section>
 
       {/* How It Works */}
-      <section className="py-16 lg:py-24 bg-gray-50">
+      <section id="how-it-works" className="py-16 lg:py-24 bg-gray-50">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">
               How it works
             </h2>
             <p className="text-xl text-gray-600">
@@ -217,28 +225,28 @@ export default function Home() {
 
           <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
             <div className="text-center">
-              <div className="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-3xl font-bold text-purple-600">1</span>
+              <div className="w-20 h-20 bg-zappy-light-yellow rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-zappy-pink/30">
+                <span className="text-3xl font-bold text-zappy-pink">1</span>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Online Consultation</h3>
+              <h3 className="text-xl font-bold text-gray-800 mb-2">Online Consultation</h3>
               <p className="text-gray-600">
                 Complete a quick health questionnaire and consult with a licensed physician online
               </p>
             </div>
             <div className="text-center">
-              <div className="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-3xl font-bold text-purple-600">2</span>
+              <div className="w-20 h-20 bg-zappy-light-yellow rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-zappy-pink/30">
+                <span className="text-3xl font-bold text-zappy-pink">2</span>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Get Prescribed</h3>
+              <h3 className="text-xl font-bold text-gray-800 mb-2">Get Prescribed</h3>
               <p className="text-gray-600">
                 If appropriate, receive a personalized treatment plan from a licensed physician
               </p>
             </div>
             <div className="text-center">
-              <div className="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-3xl font-bold text-purple-600">3</span>
+              <div className="w-20 h-20 bg-zappy-light-yellow rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-zappy-pink/30">
+                <span className="text-3xl font-bold text-zappy-pink">3</span>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Delivered to You</h3>
+              <h3 className="text-xl font-bold text-gray-800 mb-2">Delivered to You</h3>
               <p className="text-gray-600">
                 Medications shipped directly to your door in discreet packaging
               </p>
@@ -246,10 +254,10 @@ export default function Home() {
           </div>
 
           <div className="text-center mt-12">
-            <Link href="/patient/health-quiz"
-              className="inline-block bg-purple-600 text-white px-8 py-4 rounded-full text-lg font-bold hover:bg-purple-700 transform hover:scale-105 transition-all shadow-lg">
-              Start Your Free Consultation
-            </Link>
+            <a href="#conditions"
+              className="inline-block bg-zappy-pink text-white px-8 py-4 rounded-full text-lg font-bold hover:scale-105 transition-all shadow-lg">
+              Choose Your Consultation
+            </a>
           </div>
         </div>
       </section>
@@ -258,13 +266,13 @@ export default function Home() {
       <section className="py-16 lg:py-24 bg-white">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">
               What our customers say
             </h2>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            <div className="bg-gray-50 rounded-2xl p-6">
+            <div className="bg-gray-50 rounded-2xl p-6 border border-gray-200">
               <div className="flex mb-4">
                 {[...Array(5)].map((_, i) => (
                   <svg key={i} className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
@@ -279,7 +287,7 @@ export default function Home() {
               <p className="text-sm text-gray-600">Hair Loss Treatment</p>
             </div>
 
-            <div className="bg-gray-50 rounded-2xl p-6">
+            <div className="bg-gray-50 rounded-2xl p-6 border border-gray-200">
               <div className="flex mb-4">
                 {[...Array(5)].map((_, i) => (
                   <svg key={i} className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
@@ -291,10 +299,10 @@ export default function Home() {
                 "Discreet, professional, and effective. Exactly what I was looking for."
               </p>
               <p className="font-semibold text-gray-900">- Michael R.</p>
-              <p className="text-sm text-gray-600">ED Treatment</p>
+              <p className="text-sm text-gray-600">Men's Health Treatment</p>
             </div>
 
-            <div className="bg-gray-50 rounded-2xl p-6">
+            <div className="bg-gray-50 rounded-2xl p-6 border border-gray-200">
               <div className="flex mb-4">
                 {[...Array(5)].map((_, i) => (
                   <svg key={i} className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
@@ -313,19 +321,19 @@ export default function Home() {
       </section>
 
       {/* Final CTA */}
-      <section className="py-16 lg:py-24 bg-gradient-to-r from-purple-600 to-indigo-600">
+      <section className="py-16 lg:py-24 bg-zappy-light-yellow/30 border-t border-zappy-pink/20">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">
             Start your journey to better health
           </h2>
-          <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
+          <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
             Join 500,000+ customers who have taken control of their health
           </p>
-          <Link href="/patient/health-quiz"
-            className="inline-block bg-white text-purple-600 px-8 py-4 rounded-full text-lg font-bold hover:shadow-2xl transform hover:scale-105 transition-all">
+          <a href="#conditions"
+            className="inline-block bg-zappy-pink text-white px-8 py-4 rounded-full text-lg font-bold hover:scale-105 transition-all shadow-lg">
             Get Started - It's Free
-          </Link>
-          <p className="text-white/80 text-sm mt-4">
+          </a>
+          <p className="text-gray-500 text-sm mt-4">
             No commitment required • Cancel anytime
           </p>
         </div>
@@ -336,7 +344,7 @@ export default function Home() {
         <div className="container mx-auto px-4">
           <div className="grid md:grid-cols-4 gap-8">
             <div>
-              <h3 className="font-bold text-lg mb-4">Company</h3>
+              <h3 className="font-bold text-lg mb-4 text-zappy-pink">Zappy</h3>
               <ul className="space-y-2 text-gray-400">
                 <li><a href="#" className="hover:text-white">About Us</a></li>
                 <li><a href="#" className="hover:text-white">How It Works</a></li>
@@ -346,9 +354,9 @@ export default function Home() {
             <div>
               <h3 className="font-bold text-lg mb-4">Treatments</h3>
               <ul className="space-y-2 text-gray-400">
-                <li><a href="#" className="hover:text-white">Hair Loss</a></li>
-                <li><a href="#" className="hover:text-white">ED Treatment</a></li>
                 <li><a href="#" className="hover:text-white">Weight Loss</a></li>
+                <li><a href="#" className="hover:text-white">Hair Loss</a></li>
+                <li><a href="#" className="hover:text-white">Men's Health</a></li>
                 <li><a href="#" className="hover:text-white">Mental Health</a></li>
               </ul>
             </div>
@@ -370,7 +378,7 @@ export default function Home() {
             </div>
           </div>
           <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-            <p>&copy; 2025 TeleHealth Platform. All rights reserved.</p>
+            <p>&copy; 2025 Zappy Health. All rights reserved.</p>
           </div>
         </div>
       </footer>

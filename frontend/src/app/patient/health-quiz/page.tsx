@@ -1,206 +1,8 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-
-// Types
-interface FormData {
-  // Step 1-2: Symptom Engagement
-  primaryGoal: string;
-  biggestChallenge: string;
-  
-  // Step 3: Core Medical Safety
-  currentMedications: string;
-  
-  // Step 4: Email Capture
-  email: string;
-  
-  // Step 5-8: Medical History
-  currentWeight: string;
-  height: string;
-  medicalConditions: string[];
-  previousAttempts: string;
-  
-  // Step 9-11: Personal Details
-  fullName: string;
-  phone: string;
-  address: string;
-}
-
-interface FormStep {
-  step: number;
-  title: string;
-  subtitle?: string;
-  field: {
-    name: keyof FormData;
-    type: 'radio' | 'checkbox' | 'text' | 'email' | 'tel' | 'textarea' | 'number';
-    label?: string;
-    placeholder?: string;
-    options?: { value: string; label: string }[];
-  };
-}
-
-// Form Steps Configuration
-const FORM_STEPS: FormStep[] = [
-  {
-    step: 1,
-    title: "",
-    subtitle: "",
-    field: {
-      name: 'primaryGoal',
-      type: 'radio',
-      label: 'What is your primary health goal?',
-      options: [
-        { value: 'lose_weight', label: 'Lose weight' },
-        { value: 'manage_diabetes', label: 'Manage diabetes' },
-        { value: 'improve_energy', label: 'Improve energy levels' },
-        { value: 'overall_health', label: 'Overall health improvement' }
-      ]
-    }
-  },
-  {
-    step: 2,
-    title: "",
-    field: {
-      name: 'biggestChallenge',
-      type: 'radio',
-      label: "What's been your biggest challenge?",
-      options: [
-        { value: 'diet', label: 'Sticking to a healthy diet' },
-        { value: 'exercise', label: 'Finding time to exercise' },
-        { value: 'motivation', label: 'Staying motivated' },
-        { value: 'medical', label: 'Medical conditions' }
-      ]
-    }
-  },
-  {
-    step: 3,
-    title: "",
-    subtitle: "",
-    field: {
-      name: 'currentMedications',
-      type: 'radio',
-      label: 'Are you currently taking any medications?',
-      options: [
-        { value: 'yes', label: 'Yes, I take medications' },
-        { value: 'no', label: 'No medications' },
-        { value: 'unsure', label: "I'm not sure" }
-      ]
-    }
-  },
-  {
-    step: 4,
-    title: "",
-    subtitle: "",
-    field: {
-      name: 'email',
-      type: 'email',
-      label: "Enter your email to save your progress",
-      placeholder: 'your@email.com'
-    }
-  },
-  {
-    step: 5,
-    title: "",
-    field: {
-      name: 'currentWeight',
-      type: 'number',
-      label: 'What is your current weight?',
-      placeholder: '180 lbs'
-    }
-  },
-  {
-    step: 6,
-    title: "",
-    field: {
-      name: 'height',
-      type: 'text',
-      label: 'What is your height?',
-      placeholder: "e.g., 5'8\" or 173cm"
-    }
-  },
-  {
-    step: 7,
-    title: "",
-    subtitle: "",
-    field: {
-      name: 'medicalConditions',
-      type: 'checkbox',
-      label: 'Do you have any of these conditions? (Select all that apply)',
-      options: [
-        { value: 'diabetes', label: 'Diabetes' },
-        { value: 'high_bp', label: 'High blood pressure' },
-        { value: 'heart_disease', label: 'Heart disease' },
-        { value: 'thyroid', label: 'Thyroid condition' },
-        { value: 'none', label: 'None of the above' }
-      ]
-    }
-  },
-  {
-    step: 8,
-    title: "",
-    field: {
-      name: 'previousAttempts',
-      type: 'radio',
-      label: 'Have you tried weight loss programs before?',
-      options: [
-        { value: 'never', label: 'This is my first time' },
-        { value: 'once', label: 'Once or twice' },
-        { value: 'several', label: 'Several times' },
-        { value: 'many', label: 'Many times' }
-      ]
-    }
-  },
-  {
-    step: 9,
-    title: "",
-    subtitle: "",
-    field: {
-      name: 'fullName',
-      type: 'text',
-      label: "What's your full name?",
-      placeholder: 'John Doe'
-    }
-  },
-  {
-    step: 10,
-    title: "",
-    field: {
-      name: 'phone',
-      type: 'tel',
-      label: "What's your phone number?",
-      placeholder: '(555) 123-4567'
-    }
-  },
-  {
-    step: 11,
-    title: "",
-    subtitle: "",
-    field: {
-      name: 'address',
-      type: 'textarea',
-      label: 'Where should we send your medication?',
-      placeholder: '123 Main St\nApt 4B\nNew York, NY 10001'
-    }
-  }
-];
-
-const TOTAL_STEPS = FORM_STEPS.length;
-
-// Initial form data
-const initialFormData: FormData = {
-  primaryGoal: '',
-  biggestChallenge: '',
-  currentMedications: '',
-  email: '',
-  currentWeight: '',
-  height: '',
-  medicalConditions: [],
-  previousAttempts: '',
-  fullName: '',
-  phone: '',
-  address: ''
-};
+import React, { useState, useCallback, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { getIntakeForm, IntakeForm, IntakeStep, treatmentPlans } from '@/lib/intake-forms';
 
 // Progress Bar Component
 const ProgressBar: React.FC<{ currentStep: number; totalSteps: number }> = ({ currentStep, totalSteps }) => {
@@ -208,7 +10,6 @@ const ProgressBar: React.FC<{ currentStep: number; totalSteps: number }> = ({ cu
   
   return (
     <div className="w-full">
-      {/* Progress Bar - simplified, just the bar */}
       <div className="w-full bg-gray-200 rounded-full h-1.5">
         <div
           className="bg-zappy-pink h-1.5 rounded-full transition-all duration-500 ease-out"
@@ -221,35 +22,36 @@ const ProgressBar: React.FC<{ currentStep: number; totalSteps: number }> = ({ cu
 
 // Radio Group Component
 const RadioGroup: React.FC<{
-  field: FormStep['field'];
+  question: any;
   value: string;
   onChange: (name: string, value: string) => void;
-}> = ({ field, value, onChange }) => (
+}> = ({ question, value, onChange }) => (
   <div className="space-y-6">
-    {field.label && (
-      <h2 className="text-2xl font-bold text-gray-800 text-center mb-8">
-        {field.label}
-      </h2>
+    <h2 className="text-2xl font-bold text-gray-800 text-center mb-8">
+      {question.question}
+    </h2>
+    {question.helpText && (
+      <p className="text-gray-600 text-center mb-4">{question.helpText}</p>
     )}
     <div className="space-y-3 max-w-lg mx-auto">
-      {field.options?.map((option) => (
+      {question.options?.map((option: string) => (
         <label
-          key={option.value}
+          key={option}
           className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
-            value === option.value 
+            value === option 
               ? 'bg-zappy-light-yellow border-zappy-pink' 
               : 'border-gray-200 hover:border-zappy-pink bg-white'
           }`}
         >
           <input
             type="radio"
-            name={field.name}
-            value={option.value}
-            checked={value === option.value}
-            onChange={(e) => onChange(field.name, e.target.value)}
+            name={question.id}
+            value={option}
+            checked={value === option}
+            onChange={(e) => onChange(question.id, e.target.value)}
             className="sr-only"
           />
-          <span className="font-medium text-gray-700">{option.label}</span>
+          <span className="font-medium text-gray-700">{option}</span>
         </label>
       ))}
     </div>
@@ -258,22 +60,23 @@ const RadioGroup: React.FC<{
 
 // Checkbox Group Component
 const CheckboxGroup: React.FC<{
-  field: FormStep['field'];
+  question: any;
   value: string[];
   onChange: (name: string, value: string) => void;
-}> = ({ field, value, onChange }) => (
+}> = ({ question, value, onChange }) => (
   <div className="space-y-6">
-    {field.label && (
-      <h2 className="text-2xl font-bold text-gray-800 text-center mb-8">
-        {field.label}
-      </h2>
+    <h2 className="text-2xl font-bold text-gray-800 text-center mb-8">
+      {question.question}
+    </h2>
+    {question.helpText && (
+      <p className="text-gray-600 text-center mb-4">{question.helpText}</p>
     )}
     <div className="space-y-3 max-w-lg mx-auto">
-      {field.options?.map((option) => {
-        const isChecked = value.includes(option.value);
+      {question.options?.map((option: string) => {
+        const isChecked = value.includes(option);
         return (
           <label
-            key={option.value}
+            key={option}
             className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
               isChecked 
                 ? 'bg-zappy-light-yellow border-zappy-pink' 
@@ -282,13 +85,13 @@ const CheckboxGroup: React.FC<{
           >
             <input
               type="checkbox"
-              name={field.name}
-              value={option.value}
+              name={question.id}
+              value={option}
               checked={isChecked}
-              onChange={(e) => onChange(field.name, e.target.value)}
+              onChange={(e) => onChange(question.id, e.target.value)}
               className="w-5 h-5 text-zappy-pink bg-gray-100 border-gray-300 rounded focus:ring-zappy-pink focus:ring-2"
             />
-            <span className="ml-3 font-medium text-gray-700">{option.label}</span>
+            <span className="ml-3 font-medium text-gray-700">{option}</span>
           </label>
         );
       })}
@@ -298,35 +101,40 @@ const CheckboxGroup: React.FC<{
 
 // Input Field Component
 const InputField: React.FC<{
-  field: FormStep['field'];
+  question: any;
   value: string;
   onChange: (name: string, value: string) => void;
-}> = ({ field, value, onChange }) => (
+}> = ({ question, value, onChange }) => (
   <div>
-    {field.label && (
-      <h2 className="text-2xl font-bold text-gray-800 text-center mb-8">
-        {field.label}
-      </h2>
+    <h2 className="text-2xl font-bold text-gray-800 text-center mb-8">
+      {question.question}
+    </h2>
+    {question.helpText && (
+      <p className="text-gray-600 text-center mb-4">{question.helpText}</p>
     )}
     <div className="max-w-lg mx-auto">
-      {field.type === 'textarea' ? (
+      {question.type === 'textarea' ? (
         <textarea
-          id={field.name}
-          name={field.name}
+          id={question.id}
+          name={question.id}
           value={value}
-          onChange={(e) => onChange(field.name, e.target.value)}
-          placeholder={field.placeholder}
+          onChange={(e) => onChange(question.id, e.target.value)}
+          placeholder={question.placeholder}
           rows={4}
           className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-zappy-pink focus:border-zappy-pink transition-all"
         />
       ) : (
         <input
-          type={field.type}
-          id={field.name}
-          name={field.name}
+          type={question.type === 'email' ? 'email' : 
+                question.type === 'phone' ? 'tel' :
+                question.type === 'number' ? 'number' :
+                question.type === 'date' ? 'date' :
+                'text'}
+          id={question.id}
+          name={question.id}
           value={value}
-          onChange={(e) => onChange(field.name, e.target.value)}
-          placeholder={field.placeholder}
+          onChange={(e) => onChange(question.id, e.target.value)}
+          placeholder={question.placeholder}
           className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-zappy-pink focus:border-zappy-pink transition-all"
         />
       )}
@@ -334,24 +142,163 @@ const InputField: React.FC<{
   </div>
 );
 
+// Scale Component
+const ScaleGroup: React.FC<{
+  question: any;
+  value: string;
+  onChange: (name: string, value: string) => void;
+}> = ({ question, value, onChange }) => (
+  <div className="space-y-6">
+    <h2 className="text-2xl font-bold text-gray-800 text-center mb-8">
+      {question.question}
+    </h2>
+    {question.helpText && (
+      <p className="text-gray-600 text-center mb-4">{question.helpText}</p>
+    )}
+    <div className="flex justify-center gap-2 max-w-lg mx-auto">
+      {question.options?.map((option: string) => (
+        <button
+          key={option}
+          onClick={() => onChange(question.id, option)}
+          className={`w-12 h-12 rounded-lg font-semibold transition-all ${
+            value === option 
+              ? 'bg-zappy-pink text-white transform scale-110' 
+              : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+          }`}
+        >
+          {option}
+        </button>
+      ))}
+    </div>
+  </div>
+);
+
+// Plan Selection Component
+const PlanSelection: React.FC<{
+  condition: string;
+  selectedPlan: string;
+  onChange: (planId: string) => void;
+}> = ({ condition, selectedPlan, onChange }) => {
+  const plans = treatmentPlans[condition] || [];
+  
+  return (
+    <div className="space-y-6">
+      <h2 className="text-2xl font-bold text-gray-800 text-center mb-2">
+        Choose Your Treatment Plan
+      </h2>
+      <p className="text-gray-600 text-center mb-8">
+        Select the plan that best fits your needs and budget
+      </p>
+      
+      <div className="flex gap-6 overflow-x-auto pb-4 px-4 max-w-full">
+        {plans.map((plan) => (
+          <div
+            key={plan.id}
+            onClick={() => onChange(plan.id)}
+            className={`relative rounded-2xl p-6 cursor-pointer transition-all min-w-[280px] max-w-[320px] flex-1 ${
+              selectedPlan === plan.id
+                ? 'bg-zappy-light-yellow border-2 border-zappy-pink shadow-xl transform scale-105'
+                : 'bg-white border-2 border-gray-200 hover:border-zappy-pink hover:shadow-lg'
+            }`}
+          >
+            {plan.popular && (
+              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                <span className="bg-zappy-pink text-white px-4 py-1 rounded-full text-sm font-bold">
+                  Most Popular
+                </span>
+              </div>
+            )}
+            
+            <div className="text-center mb-4">
+              <h3 className="text-xl font-bold text-gray-800 mb-2">{plan.name}</h3>
+              <div className="flex items-baseline justify-center">
+                <span className="text-3xl font-bold text-zappy-pink">{plan.price}</span>
+                <span className="text-gray-600 ml-1">{plan.duration}</span>
+              </div>
+              <p className="text-gray-600 text-sm mt-2">{plan.description}</p>
+            </div>
+            
+            <ul className="space-y-2">
+              {plan.features.map((feature, index) => (
+                <li key={index} className="flex items-start">
+                  <svg className="w-5 h-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-gray-700 text-sm">{feature}</span>
+                </li>
+              ))}
+            </ul>
+            
+            <div className="mt-6">
+              <button
+                className={`w-full py-3 rounded-full font-bold transition-all ${
+                  selectedPlan === plan.id
+                    ? 'bg-zappy-pink text-white shadow-lg'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {selectedPlan === plan.id ? 'Selected ✓' : 'Select Plan'}
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 // Main Component
 export default function HealthQuizPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  // Get condition from query string
+  const condition = searchParams?.get('condition') || 'weightLoss';
+  
   const [currentStep, setCurrentStep] = useState(1);
-  const [formData, setFormData] = useState<FormData>(initialFormData);
+  const [formData, setFormData] = useState<Record<string, any>>({});
+  const [intakeForm, setIntakeForm] = useState<IntakeForm | null>(null);
+
+  useEffect(() => {
+    const form = getIntakeForm(condition);
+    if (!form) {
+      // Redirect to home if invalid condition
+      router.push('/');
+      return;
+    }
+    setIntakeForm(form);
+  }, [condition, router]);
 
   const handleNext = useCallback(() => {
-    if (currentStep < TOTAL_STEPS) {
+    if (!intakeForm) return;
+    
+    if (currentStep < intakeForm.totalSteps) {
       setCurrentStep((prev) => prev + 1);
     } else {
       // Form complete - save and redirect
-      localStorage.setItem('intakeFormResponses', JSON.stringify({
-        ...formData,
+      const selectedPlanId = formData.selected_plan;
+      const selectedPlan = treatmentPlans[condition]?.find(p => p.id === selectedPlanId);
+      
+      const consultationData = {
+        condition,
+        responses: formData,
+        selectedPlan: selectedPlan ? {
+          id: selectedPlan.id,
+          name: selectedPlan.name,
+          price: selectedPlan.price,
+          tier: selectedPlanId
+        } : null,
         timestamp: new Date().toISOString()
-      }));
-      setCurrentStep(TOTAL_STEPS + 1); // Show completion screen
+      };
+      
+      localStorage.setItem(`${condition}_intake_responses`, JSON.stringify(consultationData));
+      
+      // TODO: Submit to backend API
+      // await api.post('/consultations', consultationData);
+      
+      setCurrentStep(intakeForm.totalSteps + 1); // Show completion screen
     }
-  }, [currentStep, formData]);
+  }, [currentStep, formData, intakeForm, condition]);
 
   const handleBack = useCallback(() => {
     setCurrentStep((prev) => Math.max(1, prev - 1));
@@ -363,7 +310,7 @@ export default function HealthQuizPage() {
 
   const handleCheckboxChange = useCallback((name: string, value: string) => {
     setFormData((prev) => {
-      const currentValues = prev[name as keyof FormData] as string[];
+      const currentValues = (prev[name] as string[]) || [];
       const newValues = currentValues.includes(value)
         ? currentValues.filter((v) => v !== value)
         : [...currentValues, value];
@@ -372,8 +319,10 @@ export default function HealthQuizPage() {
   }, []);
 
   const renderStep = () => {
+    if (!intakeForm) return null;
+
     // Completion screen
-    if (currentStep > TOTAL_STEPS) {
+    if (currentStep > intakeForm.totalSteps) {
       return (
         <div className="w-full text-center animate-fade-in pt-8">
           <div className="mb-8">
@@ -383,11 +332,11 @@ export default function HealthQuizPage() {
               </svg>
             </div>
             <h2 className="text-3xl font-bold text-gray-800 mb-2">Thank You!</h2>
-            <p className="text-gray-600">Your information has been submitted.</p>
+            <p className="text-gray-600">Your {intakeForm.name} has been submitted.</p>
           </div>
           
           <p className="text-lg text-gray-600 mb-8">
-            A Zappy specialist will review your intake form and create your personalized treatment plan.
+            A Zappy specialist will review your information and create your personalized treatment plan.
           </p>
           
           <button
@@ -400,55 +349,97 @@ export default function HealthQuizPage() {
       );
     }
 
-    const stepConfig = FORM_STEPS.find(s => s.step === currentStep);
-    if (!stepConfig) return null;
+    const currentStepConfig = intakeForm.steps.find(s => s.stepNumber === currentStep);
+    if (!currentStepConfig) return null;
 
-    const { field } = stepConfig;
-    const fieldValue = formData[field.name];
+    // Check if this is the plan selection step
+    const isPlanSelectionStep = currentStepConfig.questions.some(q => q.id === 'selected_plan');
+    
+    if (isPlanSelectionStep) {
+      return (
+        <div className="w-full animate-fade-in">
+          <PlanSelection
+            condition={condition}
+            selectedPlan={formData.selected_plan || ''}
+            onChange={(planId) => handleInputChange('selected_plan', planId)}
+          />
+        </div>
+      );
+    }
 
     return (
       <div className="w-full animate-fade-in">
         <div className="space-y-6">
-          {field.type === 'radio' && (
-            <RadioGroup 
-              field={field} 
-              value={fieldValue as string} 
-              onChange={handleInputChange} 
-            />
-          )}
-          {field.type === 'checkbox' && (
-            <CheckboxGroup 
-              field={field} 
-              value={fieldValue as string[]} 
-              onChange={handleCheckboxChange} 
-            />
-          )}
-          {(field.type === 'text' || field.type === 'email' || field.type === 'tel' || 
-            field.type === 'textarea' || field.type === 'number') && (
-            <InputField 
-              field={field} 
-              value={fieldValue as string} 
-              onChange={handleInputChange} 
-            />
-          )}
+          {currentStepConfig.questions.map((question) => {
+            const fieldValue = formData[question.id] || (question.type === 'multiselect' ? [] : '');
+            
+            if (question.type === 'select' || question.type === 'yesno') {
+              return (
+                <RadioGroup
+                  key={question.id}
+                  question={question}
+                  value={fieldValue as string}
+                  onChange={handleInputChange}
+                />
+              );
+            } else if (question.type === 'multiselect') {
+              return (
+                <CheckboxGroup
+                  key={question.id}
+                  question={question}
+                  value={fieldValue as string[]}
+                  onChange={handleCheckboxChange}
+                />
+              );
+            } else if (question.type === 'scale') {
+              return (
+                <ScaleGroup
+                  key={question.id}
+                  question={question}
+                  value={fieldValue as string}
+                  onChange={handleInputChange}
+                />
+              );
+            } else {
+              return (
+                <InputField
+                  key={question.id}
+                  question={question}
+                  value={fieldValue as string}
+                  onChange={handleInputChange}
+                />
+              );
+            }
+          })}
         </div>
       </div>
     );
   };
 
+  if (!intakeForm) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-zappy-pink mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading consultation form...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-white font-sans flex flex-col">
-      {/* Progress Bar - positioned with proper spacing */}
-      {currentStep <= TOTAL_STEPS && (
+      {/* Progress Bar */}
+      {currentStep <= intakeForm.totalSteps && (
         <div className="w-full max-w-2xl mx-auto px-4 pt-16 pb-8">
-          <ProgressBar currentStep={currentStep} totalSteps={TOTAL_STEPS} />
+          <ProgressBar currentStep={currentStep} totalSteps={intakeForm.totalSteps} />
         </div>
       )}
       
       <main className="flex-1 w-full max-w-2xl mx-auto px-4 pb-12">
         {renderStep()}
         
-        {currentStep <= TOTAL_STEPS && (
+        {currentStep <= intakeForm.totalSteps && (
           <div className="mt-16 flex justify-between items-center">
             <button
               onClick={handleBack}
@@ -462,7 +453,7 @@ export default function HealthQuizPage() {
               onClick={handleNext}
               className="bg-zappy-pink text-white font-bold py-3 px-8 rounded-full hover:scale-105 transition-transform shadow-lg"
             >
-              {currentStep === TOTAL_STEPS ? 'Complete →' : 'Continue →'}
+              {currentStep === intakeForm.totalSteps ? 'Complete →' : 'Continue →'}
             </button>
           </div>
         )}

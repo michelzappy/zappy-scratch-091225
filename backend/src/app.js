@@ -27,6 +27,7 @@ import orderRoutes from './routes/orders.js';
 import fileRoutes from './routes/files.js';
 import adminRoutes from './routes/admin.js';
 import webhookRoutes from './routes/webhooks.js';
+import treatmentPlanRoutes from './routes/treatment-plans.js';
 
 // Import socket handlers
 import { setupSocketHandlers } from './sockets/index.js';
@@ -108,6 +109,7 @@ app.use('/api/provider/consultations', providerConsultationRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/files', fileRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/treatment-plans', treatmentPlanRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {

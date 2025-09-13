@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Card from '@/components/Card';
 
 type UserRole = 'provider' | 'admin' | 'provider-admin' | 'super-admin';
 
@@ -35,6 +34,8 @@ interface Medication {
   shippingOptions: ShippingOption[];
 }
 
+type FilterType = 'all' | 'acne' | 'hairLoss' | 'ed' | 'weightLoss';
+
 export default function MedicationsPage() {
   const router = useRouter();
   const [userRole, setUserRole] = useState<UserRole>('admin');
@@ -42,8 +43,10 @@ export default function MedicationsPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showPlanModal, setShowPlanModal] = useState(false);
   const [selectedMedication, setSelectedMedication] = useState<Medication | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedMedications, setSelectedMedications] = useState<Set<string>>(new Set());
+  const [stockFilter, setStockFilter] = useState('');
   
   const [medications, setMedications] = useState<Medication[]>([
     {
@@ -190,16 +193,42 @@ export default function MedicationsPage() {
         { frequency: 'On demand', default: true },
         { frequency: '30 days', default: false }
       ]
+    },
+    {
+      id: '5',
+      sku: 'PHEN-375-TAB',
+      name: 'Phentermine',
+      genericName: 'Phentermine HCl',
+      category: 'weightLoss',
+      dosages: ['37.5mg'],
+      basePrice: 3,
+      cost: 0.50,
+      stock: 45,
+      status: 'active',
+      plans: [
+        {
+          id: 'p11',
+          name: 'Monthly Supply',
+          price: 89,
+          frequency: 'monthly',
+          discount: 0,
+          description: '30 tablets per month'
+        }
+      ],
+      shippingOptions: [
+        { frequency: '30 days', default: true }
+      ]
     }
   ]);
 
-  const categories = [
-    { id: 'all', name: 'All Medications', count: medications.length },
-    { id: 'acne', name: 'Acne', count: medications.filter(m => m.category === 'acne').length },
-    { id: 'hairLoss', name: 'Hair Loss', count: medications.filter(m => m.category === 'hairLoss').length },
-    { id: 'ed', name: 'ED', count: medications.filter(m => m.category === 'ed').length },
-    { id: 'weightLoss', name: 'Weight Loss', count: 0 }
-  ];
+  // Filter counts
+  const filterCounts = {
+    all: medications.length,
+    acne: medications.filter(m => m.category === 'acne').length,
+    hairLoss: medications.filter(m => m.category === 'hairLoss').length,
+    ed: medications.filter(m => m.category === 'ed').length,
+    weightLoss: medications.filter(m => m.category === 'weightLoss').length
+  };
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -221,13 +250,42 @@ export default function MedicationsPage() {
     setLoading(false);
   }, [router]);
 
-  const filteredMedications = medications.filter(med => {
-    const matchesCategory = selectedCategory === 'all' || med.category === selectedCategory;
+  // Apply filters
+  let filteredMedications = medications.filter(med => {
+    const matchesCategory = activeFilter === 'all' || med.category === activeFilter;
     const matchesSearch = med.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           med.genericName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           med.sku.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesCategory && matchesSearch;
+    
+    let matchesStock = true;
+    if (stockFilter === 'low') {
+      matchesStock = med.stock < 100 && med.stock > 0;
+    } else if (stockFilter === 'out') {
+      matchesStock = med.stock === 0;
+    } else if (stockFilter === 'normal') {
+      matchesStock = med.stock >= 100;
+    }
+    
+    return matchesCategory && matchesSearch && matchesStock;
   });
+
+  const toggleMedicationSelection = (medicationId: string) => {
+    const newSelection = new Set(selectedMedications);
+    if (newSelection.has(medicationId)) {
+      newSelection.delete(medicationId);
+    } else {
+      newSelection.add(medicationId);
+    }
+    setSelectedMedications(newSelection);
+  };
+
+  const toggleAllSelection = () => {
+    if (selectedMedications.size === filteredMedications.length) {
+      setSelectedMedications(new Set());
+    } else {
+      setSelectedMedications(new Set(filteredMedications.map(m => m.id)));
+    }
+  };
 
   const handleManagePlans = (medication: Medication) => {
     setSelectedMedication(medication);
@@ -238,191 +296,299 @@ export default function MedicationsPage() {
     return medications.reduce((sum, med) => sum + (med.stock * med.cost), 0);
   };
 
+  const lowStockCount = medications.filter(m => m.stock < 100 && m.stock > 0).length;
+  const outOfStockCount = medications.filter(m => m.stock === 0).length;
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
       </div>
     );
   }
 
+  const filters = [
+    { id: 'all', label: 'All Medications', count: filterCounts.all },
+    { id: 'acne', label: 'Acne', count: filterCounts.acne },
+    { id: 'hairLoss', label: 'Hair Loss', count: filterCounts.hairLoss },
+    { id: 'ed', label: 'ED', count: filterCounts.ed },
+    { id: 'weightLoss', label: 'Weight Loss', count: filterCounts.weightLoss }
+  ];
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="space-y-3">
+      {/* Compact Header */}
       <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Medication Database</h1>
-          <p className="text-gray-600 mt-1">Manage medications, pricing plans, and shipping frequencies</p>
+        <h1 className="text-xl font-semibold text-gray-900">Medication Database</h1>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-gray-600">
+            Inventory Value: <span className="font-semibold text-gray-900">${calculateInventoryValue().toLocaleString()}</span>
+            {lowStockCount > 0 && (
+              <>
+                {' '}• <span className="font-semibold text-orange-600">{lowStockCount} low stock</span>
+              </>
+            )}
+            {outOfStockCount > 0 && (
+              <>
+                {' '}• <span className="font-semibold text-red-600">{outOfStockCount} out</span>
+              </>
+            )}
+          </span>
         </div>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition"
+      </div>
+
+      {/* Stripe-style Filter Pills */}
+      <div className="flex items-center gap-2 flex-wrap">
+        {filters.map((filter) => (
+          <button
+            key={filter.id}
+            onClick={() => setActiveFilter(filter.id as FilterType)}
+            className={`
+              px-3 py-1.5 rounded-lg text-sm font-medium transition-all
+              ${activeFilter === filter.id
+                ? 'bg-gray-900 text-white'
+                : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+              }
+            `}
+          >
+            {filter.label}
+            <span className={`ml-1.5 ${activeFilter === filter.id ? 'text-gray-300' : 'text-gray-500'}`}>
+              {filter.count}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {/* Integrated Search and Actions Bar */}
+      <div className="flex items-center gap-3">
+        <div className="flex-1 max-w-md">
+          <div className="relative">
+            <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Search medications..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500"
+            />
+          </div>
+        </div>
+
+        {/* Stock Filter */}
+        <select 
+          value={stockFilter}
+          onChange={(e) => setStockFilter(e.target.value)}
+          className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500"
         >
-          + Add Medication
+          <option value="">All Stock Levels</option>
+          <option value="normal">Normal Stock</option>
+          <option value="low">Low Stock (&lt;100)</option>
+          <option value="out">Out of Stock</option>
+        </select>
+
+        {/* Status Filter */}
+        <select className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500">
+          <option value="">All Status</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select>
+
+        {/* More Filters */}
+        <button className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 font-medium text-gray-700">
+          <svg className="w-4 h-4 inline mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+          </svg>
+          More filters
+        </button>
+
+        <div className="flex-1"></div>
+
+        {/* Action Buttons */}
+        <button className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 font-medium text-gray-700">
+          <svg className="w-4 h-4 inline mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+          </svg>
+          Import CSV
+        </button>
+        
+        <button className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 font-medium text-gray-700">
+          <svg className="w-4 h-4 inline mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+          </svg>
+          Export
+        </button>
+        
+        <button 
+          onClick={() => setShowAddModal(true)}
+          className="px-3 py-1.5 bg-gray-900 text-white text-sm rounded-lg hover:bg-gray-800 font-medium"
+        >
+          Add Medication
         </button>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        <Card className="p-4">
-          <p className="text-sm text-gray-600">Total SKUs</p>
-          <p className="text-2xl font-bold text-gray-900">{medications.length}</p>
-          <p className="text-xs text-green-600 mt-1">Active medications</p>
-        </Card>
-        <Card className="p-4">
-          <p className="text-sm text-gray-600">Avg Plans/Med</p>
-          <p className="text-2xl font-bold text-green-600">3</p>
-          <p className="text-xs text-gray-500 mt-1">Subscription options</p>
-        </Card>
-        <Card className="p-4">
-          <p className="text-sm text-gray-600">Low Stock</p>
-          <p className="text-2xl font-bold text-orange-600">
-            {medications.filter(m => m.stock < 100).length}
-          </p>
-          <p className="text-xs text-gray-500 mt-1">Need reorder</p>
-        </Card>
-        <Card className="p-4">
-          <p className="text-sm text-gray-600">Out of Stock</p>
-          <p className="text-2xl font-bold text-red-600">0</p>
-          <p className="text-xs text-gray-500 mt-1">Unavailable</p>
-        </Card>
-        <Card className="p-4">
-          <p className="text-sm text-gray-600">Inventory Value</p>
-          <p className="text-2xl font-bold text-gray-900">
-            ${calculateInventoryValue().toLocaleString()}
-          </p>
-          <p className="text-xs text-gray-500 mt-1">Total value</p>
-        </Card>
-      </div>
+      {/* Bulk Actions Bar (show when items selected) */}
+      {selectedMedications.size > 0 && (
+        <div className="flex items-center gap-3 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg">
+          <span className="text-sm text-gray-700 font-medium">
+            {selectedMedications.size} selected
+          </span>
+          <button className="text-sm text-gray-600 hover:text-gray-900">Update Stock</button>
+          <button className="text-sm text-gray-600 hover:text-gray-900">Change Category</button>
+          <button className="text-sm text-gray-600 hover:text-gray-900">Export</button>
+          <button className="text-sm text-red-600 hover:text-red-700">Deactivate</button>
+          <div className="flex-1"></div>
+          <button 
+            onClick={() => setSelectedMedications(new Set())}
+            className="text-sm text-gray-500 hover:text-gray-700"
+          >
+            Clear selection
+          </button>
+        </div>
+      )}
 
-      <div className="flex gap-6">
-        {/* Categories Sidebar */}
-        <div className="w-64">
-          <Card className="p-4">
-            <h3 className="font-semibold text-gray-900 mb-4">Categories</h3>
-            <div className="space-y-2">
-              {categories.map(cat => (
-                <button
-                  key={cat.id}
-                  onClick={() => setSelectedCategory(cat.id)}
-                  className={`w-full text-left px-3 py-2 rounded-lg flex justify-between items-center transition ${
-                    selectedCategory === cat.id
-                      ? 'bg-gray-900 text-white'
-                      : 'hover:bg-gray-100 text-gray-700'
-                  }`}
-                >
-                  <span className="text-sm">{cat.name}</span>
-                  <span className={`text-xs px-2 py-1 rounded ${
-                    selectedCategory === cat.id ? 'bg-gray-700' : 'bg-gray-100'
-                  }`}>
-                    {cat.count}
-                  </span>
-                </button>
+      {/* Compact Table */}
+      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b border-gray-200">
+              <tr>
+                <th className="w-8 px-3 py-2">
+                  <input
+                    type="checkbox"
+                    checked={selectedMedications.size === filteredMedications.length && filteredMedications.length > 0}
+                    onChange={toggleAllSelection}
+                    className="rounded border-gray-300"
+                  />
+                </th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  SKU
+                </th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Name
+                </th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Dosages
+                </th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Plans
+                </th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Pricing
+                </th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Stock
+                </th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredMedications.map((med) => (
+                <tr key={med.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-3 py-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedMedications.has(med.id)}
+                      onChange={() => toggleMedicationSelection(med.id)}
+                      className="rounded border-gray-300"
+                    />
+                  </td>
+                  <td className="px-3 py-2 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900">{med.sku}</div>
+                  </td>
+                  <td className="px-3 py-2 whitespace-nowrap">
+                    <button
+                      onClick={() => handleManagePlans(med)}
+                      className="text-left hover:text-blue-600"
+                    >
+                      <div className="text-sm font-medium text-gray-900">{med.name}</div>
+                      <div className="text-xs text-gray-500">{med.genericName}</div>
+                    </button>
+                  </td>
+                  <td className="px-3 py-2">
+                    <div className="text-sm text-gray-900">
+                      {med.dosages.slice(0, 2).join(', ')}
+                      {med.dosages.length > 2 && (
+                        <span className="text-gray-500"> +{med.dosages.length - 2}</span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-3 py-2 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">{med.plans.length} plans</div>
+                    <div className="text-xs text-gray-500">
+                      {med.shippingOptions.length} ship options
+                    </div>
+                  </td>
+                  <td className="px-3 py-2 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900">
+                      ${Math.min(...med.plans.map(p => p.price))}-${Math.max(...med.plans.map(p => p.price))}
+                    </div>
+                    <div className="text-xs text-gray-500">Cost: ${med.cost}</div>
+                  </td>
+                  <td className="px-3 py-2 whitespace-nowrap">
+                    <div className={`text-sm font-medium ${
+                      med.stock === 0 ? 'text-red-600' :
+                      med.stock < 100 ? 'text-orange-600' : 
+                      'text-gray-900'
+                    }`}>
+                      {med.stock.toLocaleString()}
+                    </div>
+                    {med.stock === 0 && (
+                      <div className="text-xs text-red-600">Out of stock</div>
+                    )}
+                    {med.stock > 0 && med.stock < 100 && (
+                      <div className="text-xs text-orange-600">Low stock</div>
+                    )}
+                  </td>
+                  <td className="px-3 py-2 whitespace-nowrap">
+                    <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${
+                      med.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {med.status}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2 whitespace-nowrap text-right text-sm">
+                    <button 
+                      onClick={() => handleManagePlans(med)}
+                      className="text-gray-600 hover:text-gray-900 mr-2"
+                    >
+                      Plans
+                    </button>
+                    <button 
+                      onClick={() => router.push(`/portal/medication/${med.id}/edit`)}
+                      className="text-blue-600 hover:text-blue-900"
+                    >
+                      Edit
+                    </button>
+                  </td>
+                </tr>
               ))}
-            </div>
-          </Card>
+            </tbody>
+          </table>
         </div>
-
-        {/* Medications Table */}
-        <div className="flex-1">
-          <Card className="overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <input
-                  type="text"
-                  placeholder="Search medications..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg w-64 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                />
-                <div className="flex space-x-2">
-                  <button 
-                    onClick={() => alert('Import CSV functionality')}
-                    className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50"
-                  >
-                    Import CSV
-                  </button>
-                  <button 
-                    onClick={() => alert('Export functionality')}
-                    className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50"
-                  >
-                    Export
-                  </button>
-                </div>
-              </div>
+        
+        {/* Table Footer */}
+        <div className="px-4 py-2 border-t border-gray-200 bg-gray-50">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-gray-700">
+              Showing {filteredMedications.length} of {medications.length} medications
+            </span>
+            <div className="flex items-center gap-2">
+              <button className="px-2 py-1 text-sm text-gray-600 hover:text-gray-900">Previous</button>
+              <span className="px-2 py-1 text-sm text-gray-700">Page 1 of 1</span>
+              <button className="px-2 py-1 text-sm text-gray-600 hover:text-gray-900">Next</button>
             </div>
-            
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">SKU</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Plans</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Pricing</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stock</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 bg-white">
-                  {filteredMedications.map(med => (
-                    <tr key={med.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 text-sm font-medium text-gray-900">{med.sku}</td>
-                      <td className="px-6 py-4 text-sm">
-                        <div>
-                          <p className="font-medium text-gray-900">{med.name}</p>
-                          <p className="text-xs text-gray-500">{med.genericName}</p>
-                          <p className="text-xs text-gray-500">{med.dosages.join(', ')}</p>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm">
-                        <div>
-                          <p className="font-medium text-gray-900">{med.plans.length} plans</p>
-                          <p className="text-xs text-gray-500">
-                            {med.shippingOptions.map(s => s.frequency).join(', ')}
-                          </p>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm">
-                        <div>
-                          <p className="font-medium text-gray-900">
-                            ${Math.min(...med.plans.map(p => p.price))} - ${Math.max(...med.plans.map(p => p.price))}
-                          </p>
-                          <p className="text-xs text-gray-500">Cost: ${med.cost}</p>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm">
-                        <span className={`font-medium ${med.stock < 100 ? 'text-orange-600' : 'text-gray-900'}`}>
-                          {med.stock.toLocaleString()}
-                        </span>
-                        {med.stock < 100 && (
-                          <p className="text-xs text-orange-600">Low stock</p>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 text-sm">
-                        <button 
-                          onClick={() => handleManagePlans(med)}
-                          className="text-gray-600 hover:text-gray-900 mr-3"
-                        >
-                          Manage Plans
-                        </button>
-                        <button 
-                          onClick={() => alert(`Edit ${med.name}`)}
-                          className="text-gray-600 hover:text-gray-900"
-                        >
-                          Edit
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Card>
+          </div>
         </div>
       </div>
 
-      {/* Manage Plans Modal */}
+      {/* Manage Plans Modal - keeping this as is since it's a modal */}
       {showPlanModal && selectedMedication && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
@@ -436,7 +602,7 @@ export default function MedicationsPage() {
                 <h4 className="font-medium text-gray-900 mb-3">Current Subscription Plans</h4>
                 <div className="space-y-3">
                   {selectedMedication.plans.map((plan) => (
-                    <Card key={plan.id} className="p-4">
+                    <div key={plan.id} className="p-4 border border-gray-200 rounded-lg">
                       <div className="flex justify-between items-start">
                         <div>
                           <p className="font-medium">{plan.name}</p>
@@ -456,7 +622,7 @@ export default function MedicationsPage() {
                           <button className="text-sm text-red-600 hover:text-red-700">Remove</button>
                         </div>
                       </div>
-                    </Card>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -491,44 +657,6 @@ export default function MedicationsPage() {
                   </button>
                 </div>
               </div>
-
-              {/* Add New Plan */}
-              <div>
-                <h4 className="font-medium text-gray-900 mb-3">Add New Plan</h4>
-                <Card className="p-4 bg-gray-50">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Plan Name</label>
-                      <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Frequency</label>
-                      <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500">
-                        <option>Once</option>
-                        <option>Monthly</option>
-                        <option>Bi-monthly</option>
-                        <option>Quarterly</option>
-                        <option>Biannual</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Price ($)</label>
-                      <input type="number" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Discount (%)</label>
-                      <input type="number" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500" />
-                    </div>
-                  </div>
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                    <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500" />
-                  </div>
-                  <button className="mt-4 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800">
-                    Add Plan
-                  </button>
-                </Card>
-              </div>
             </div>
             
             <div className="flex justify-end space-x-3 mt-6">
@@ -541,96 +669,10 @@ export default function MedicationsPage() {
               <button
                 onClick={() => {
                   setShowPlanModal(false);
-                  alert('Plans updated!');
                 }}
                 className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
               >
                 Save Changes
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Add Medication Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-semibold mb-4">Add New Medication</h3>
-            
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">SKU</label>
-                  <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500" placeholder="e.g., TRE-025-CR" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                  <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500">
-                    <option>Acne</option>
-                    <option>Hair Loss</option>
-                    <option>ED</option>
-                    <option>Weight Loss</option>
-                  </select>
-                </div>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Brand Name</label>
-                <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500" />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Generic Name</label>
-                <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500" />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Available Dosages</label>
-                <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500" placeholder="Comma separated (e.g., 25mg, 50mg, 100mg)" />
-              </div>
-              
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Base Price ($)</label>
-                  <input type="number" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Cost ($)</label>
-                  <input type="number" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Initial Stock</label>
-                  <input type="number" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500" />
-                </div>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Instructions</label>
-                <textarea className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500" rows={3} />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Warnings</label>
-                <textarea className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500" rows={2} />
-              </div>
-            </div>
-            
-            <div className="flex justify-end space-x-3 mt-6">
-              <button
-                onClick={() => setShowAddModal(false)}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  setShowAddModal(false);
-                  alert('Medication added!');
-                }}
-                className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800"
-              >
-                Add Medication
               </button>
             </div>
           </div>

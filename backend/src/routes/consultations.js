@@ -105,7 +105,10 @@ router.post('/',
     body('symptoms').isArray({ min: 1 }).withMessage('At least one symptom is required'),
     body('urgency').isIn(['regular', 'urgent', 'emergency']).withMessage('Invalid urgency level'),
     body('additionalInfo').optional().isString(),
-    body('preferredTime').optional().isString()
+    body('preferredTime').optional().isString(),
+    body('intakeData').optional().isObject(), // Full intake form responses
+    body('selectedPlan').optional().isObject(), // Selected treatment plan
+    body('condition').optional().isString() // Condition type (weightLoss, hairLoss, etc.)
   ],
   handleValidationErrors,
   asyncHandler(async (req, res) => {
@@ -120,6 +123,36 @@ router.post('/',
       path: file.path
     })) : [];
 
+    // If selectedPlan is provided, look up the plan details
+    let selectedPlanId = null;
+    let selectedPlanName = null;
+    let selectedPlanPrice = null;
+    
+    if (req.body.selectedPlan) {
+      const planTier = req.body.selectedPlan.tier;
+      const condition = req.body.condition;
+      
+      if (planTier && condition) {
+        try {
+          const planResult = await db.query(
+            `SELECT id, name, price FROM treatment_plans 
+             WHERE condition = $1 AND plan_tier = $2 
+             LIMIT 1`,
+            [condition, planTier]
+          );
+          
+          if (planResult.rows.length > 0) {
+            const plan = planResult.rows[0];
+            selectedPlanId = plan.id;
+            selectedPlanName = plan.name;
+            selectedPlanPrice = plan.price;
+          }
+        } catch (error) {
+          console.error('Error fetching treatment plan:', error);
+        }
+      }
+    }
+
     const consultationData = {
       patientId: req.body.patientId || req.user?.id,
       consultationType: req.body.consultationType,
@@ -129,6 +162,10 @@ router.post('/',
       additionalInfo: req.body.additionalInfo,
       preferredTime: req.body.preferredTime,
       attachments: JSON.stringify(attachments),
+      intakeData: req.body.intakeData ? JSON.stringify(req.body.intakeData) : null,
+      selectedPlanId: selectedPlanId,
+      selectedPlanName: selectedPlanName,
+      selectedPlanPrice: selectedPlanPrice,
       status: 'pending',
       createdAt: new Date()
     };

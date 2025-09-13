@@ -77,6 +77,273 @@ const createEmailCaptureStep = (stepNumber: number, title: string, subtitle: str
   }]
 });
 
+// Treatment plan options for each condition
+export const treatmentPlans: Record<string, Array<{
+  id: string;
+  name: string;
+  price: string;
+  duration: string;
+  description: string;
+  features: string[];
+  popular?: boolean;
+}>> = {
+  weightLoss: [
+    {
+      id: 'basic',
+      name: 'Starter Plan',
+      price: '$99',
+      duration: '/month',
+      description: 'Great for beginning your weight loss journey',
+      features: [
+        'Semaglutide or Tirzepatide',
+        'Monthly provider consultations',
+        'Basic nutritional guidance',
+        'Email support'
+      ]
+    },
+    {
+      id: 'standard',
+      name: 'Accelerated Plan',
+      price: '$149',
+      duration: '/month',
+      description: 'Our most popular weight loss program',
+      features: [
+        'Premium GLP-1 medications',
+        'Bi-weekly check-ins',
+        'Personalized meal plans',
+        'Priority support',
+        'Progress tracking app'
+      ],
+      popular: true
+    },
+    {
+      id: 'premium',
+      name: 'Comprehensive Plan',
+      price: '$249',
+      duration: '/month',
+      description: 'Complete transformation program',
+      features: [
+        'All medications included',
+        'Weekly 1-on-1 coaching',
+        'Custom exercise plans',
+        'Nutritionist consultations',
+        '24/7 support',
+        'Lab work monitoring'
+      ]
+    }
+  ],
+  hairLoss: [
+    {
+      id: 'basic',
+      name: 'Essential',
+      price: '$22',
+      duration: '/month',
+      description: 'FDA-approved treatment',
+      features: [
+        'Finasteride (generic)',
+        'Quarterly consultations',
+        'Basic progress tracking'
+      ]
+    },
+    {
+      id: 'standard',
+      name: 'Advanced',
+      price: '$45',
+      duration: '/month',
+      description: 'Enhanced hair restoration',
+      features: [
+        'Finasteride + Minoxidil',
+        'Monthly consultations',
+        'Biotin supplements',
+        'Progress photos analysis'
+      ],
+      popular: true
+    },
+    {
+      id: 'premium',
+      name: 'Complete Care',
+      price: '$79',
+      duration: '/month',
+      description: 'Maximum hair regrowth program',
+      features: [
+        'All medications',
+        'DHT blocking shampoo',
+        'Micro-needling kit',
+        'Weekly check-ins',
+        'Dermatologist consultations'
+      ]
+    }
+  ],
+  mensHealth: [
+    {
+      id: 'basic',
+      name: 'Essential ED',
+      price: '$2',
+      duration: '/dose',
+      description: 'Generic ED medication',
+      features: [
+        'Sildenafil (generic Viagra)',
+        '10 doses per month',
+        'Online consultations'
+      ]
+    },
+    {
+      id: 'standard',
+      name: 'Performance Plus',
+      price: '$5',
+      duration: '/dose',
+      description: 'Premium ED treatment',
+      features: [
+        'Cialis or Viagra brand',
+        '20 doses per month',
+        'Monthly consultations',
+        'Discreet packaging'
+      ],
+      popular: true
+    },
+    {
+      id: 'premium',
+      name: 'Total Vitality',
+      price: '$199',
+      duration: '/month',
+      description: 'Complete men\'s wellness',
+      features: [
+        'All ED medications',
+        'Testosterone support',
+        'Libido enhancers',
+        'Weekly consultations',
+        'Lab work included'
+      ]
+    }
+  ],
+  womensHealth: [
+    {
+      id: 'basic',
+      name: 'Essential Care',
+      price: '$30',
+      duration: '/month',
+      description: 'Birth control & basics',
+      features: [
+        'Birth control prescription',
+        'UTI treatment',
+        'Online consultations'
+      ]
+    },
+    {
+      id: 'standard',
+      name: 'Wellness Plus',
+      price: '$59',
+      duration: '/month',
+      description: 'Comprehensive women\'s care',
+      features: [
+        'All prescriptions covered',
+        'Hormone balancing',
+        'Monthly consultations',
+        'Priority support'
+      ],
+      popular: true
+    },
+    {
+      id: 'premium',
+      name: 'Complete Care',
+      price: '$99',
+      duration: '/month',
+      description: 'Full spectrum health',
+      features: [
+        'All medications',
+        'Fertility support',
+        'PCOS management',
+        'Weekly consultations',
+        'Lab work monitoring'
+      ]
+    }
+  ],
+  longevity: [
+    {
+      id: 'basic',
+      name: 'Foundation',
+      price: '$150',
+      duration: '/month',
+      description: 'Core longevity protocol',
+      features: [
+        'NAD+ supplements',
+        'Basic vitamin stack',
+        'Quarterly consultations'
+      ]
+    },
+    {
+      id: 'standard',
+      name: 'Optimization',
+      price: '$299',
+      duration: '/month',
+      description: 'Advanced anti-aging',
+      features: [
+        'Complete supplement stack',
+        'Metformin prescription',
+        'Monthly consultations',
+        'Biomarker tracking'
+      ],
+      popular: true
+    },
+    {
+      id: 'premium',
+      name: 'Biohacker Elite',
+      price: '$599',
+      duration: '/month',
+      description: 'Cutting-edge longevity',
+      features: [
+        'All medications & peptides',
+        'Rapamycin protocol',
+        'Weekly consultations',
+        'Genetic testing',
+        'Full lab panel quarterly'
+      ]
+    }
+  ],
+  trt: [
+    {
+      id: 'basic',
+      name: 'TRT Essential',
+      price: '$99',
+      duration: '/month',
+      description: 'Testosterone replacement',
+      features: [
+        'Testosterone cypionate',
+        'Monthly consultations',
+        'Basic lab work'
+      ]
+    },
+    {
+      id: 'standard',
+      name: 'Optimized TRT',
+      price: '$159',
+      duration: '/month',
+      description: 'Complete hormone optimization',
+      features: [
+        'Testosterone + HCG',
+        'AI if needed',
+        'Bi-weekly consultations',
+        'Comprehensive labs'
+      ],
+      popular: true
+    },
+    {
+      id: 'premium',
+      name: 'Performance Protocol',
+      price: '$299',
+      duration: '/month',
+      description: 'Elite hormone management',
+      features: [
+        'All hormone medications',
+        'Peptide therapy',
+        'Weekly consultations',
+        'Monthly lab work',
+        'Growth hormone support'
+      ]
+    }
+  ]
+};
+
 // Personal details steps template
 const createPersonalDetailsSteps = (startStep: number): IntakeStep[] => [
   {
@@ -119,13 +386,26 @@ const createPersonalDetailsSteps = (startStep: number): IntakeStep[] => [
   },
   {
     stepNumber: startStep + 2,
-    title: "Payment & Insurance",
+    title: "Choose Your Plan",
+    subtitle: "Select the treatment plan that's right for you",
+    stepType: 'payment',
+    questions: [{
+      id: 'selected_plan',
+      question: 'Which plan would you like?',
+      type: 'select',
+      options: ['basic', 'standard', 'premium'],
+      required: true
+    }]
+  },
+  {
+    stepNumber: startStep + 3,
+    title: "Payment Method",
     stepType: 'payment',
     questions: [{
       id: 'insurance_type',
       question: 'How would you like to pay?',
       type: 'select',
-      options: ['Insurance', 'Self-pay', 'HSA/FSA'],
+      options: ['Credit Card', 'Insurance', 'HSA/FSA'],
       required: true
     }]
   }
@@ -137,7 +417,7 @@ export const intakeForms: Record<string, IntakeForm> = {
     icon: '⚖️',
     estimatedTime: '5-7 minutes',
     description: 'Personalized weight management plan with medical support',
-    totalSteps: 11,
+    totalSteps: 12,
     steps: [
       // Step 1-2: Symptom Engagement
       {
@@ -289,7 +569,7 @@ export const intakeForms: Record<string, IntakeForm> = {
     icon: '💇',
     estimatedTime: '5-7 minutes',
     description: 'Expert hair loss treatment with proven medications',
-    totalSteps: 11,
+    totalSteps: 12,
     steps: [
       // Step 1-2: Symptom Engagement
       {
@@ -426,7 +706,7 @@ export const intakeForms: Record<string, IntakeForm> = {
     icon: '👨‍⚕️',
     estimatedTime: '5-7 minutes',
     description: 'Confidential treatment for ED and men\'s wellness',
-    totalSteps: 11,
+    totalSteps: 12,
     steps: [
       // Step 1-2: Symptom Engagement
       {
@@ -559,7 +839,7 @@ export const intakeForms: Record<string, IntakeForm> = {
     icon: '👩‍⚕️',
     estimatedTime: '5-7 minutes',
     description: 'Comprehensive women\'s health and wellness care',
-    totalSteps: 11,
+    totalSteps: 12,
     steps: [
       // Step 1-2: Symptom Engagement
       {
@@ -688,7 +968,7 @@ export const intakeForms: Record<string, IntakeForm> = {
     icon: '🧬',
     estimatedTime: '5-7 minutes',
     description: 'Optimize your healthspan with personalized protocols',
-    totalSteps: 11,
+    totalSteps: 12,
     steps: [
       // Step 1-2: Symptom Engagement
       {
@@ -818,7 +1098,7 @@ export const intakeForms: Record<string, IntakeForm> = {
     icon: '💪',
     estimatedTime: '5-7 minutes',
     description: 'Expert TRT assessment and treatment',
-    totalSteps: 11,
+    totalSteps: 12,
     steps: [
       // Step 1-2: Symptom Engagement
       {

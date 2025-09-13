@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Card from '@/components/Card';
-import { intakeForms, getIntakeForm, IntakeForm, IntakeQuestion, IntakeSection } from '@/lib/intake-forms';
+import { intakeForms, getIntakeForm, IntakeForm, IntakeQuestion, IntakeStep } from '@/lib/intake-forms';
 
 export default function FormsPage() {
   const router = useRouter();
@@ -13,7 +13,7 @@ export default function FormsPage() {
   const [previewForm, setPreviewForm] = useState<any>(null);
   const [editingForm, setEditingForm] = useState<any>(null);
   const [selectedIntakeForm, setSelectedIntakeForm] = useState<IntakeForm | null>(null);
-  const [currentPreviewSection, setCurrentPreviewSection] = useState(0);
+  const [currentPreviewStep, setCurrentPreviewStep] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const customForms = [
@@ -56,7 +56,7 @@ export default function FormsPage() {
     const form = getIntakeForm(formKey);
     if (form) {
       setSelectedIntakeForm(form);
-      setCurrentPreviewSection(0);
+      setCurrentPreviewStep(0);
       setShowPreview(true);
     }
   };
@@ -267,13 +267,13 @@ export default function FormsPage() {
 
                 <div className="space-y-2 mb-4">
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Sections:</span>
-                    <span className="font-medium">{form.sections.length}</span>
+                    <span className="text-gray-500">Steps:</span>
+                    <span className="font-medium">{form.steps.length}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500">Total Questions:</span>
                     <span className="font-medium">
-                      {form.sections.reduce((sum, section) => sum + section.questions.length, 0)}
+                      {form.steps.reduce((sum, step) => sum + step.questions.length, 0)}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
@@ -312,7 +312,7 @@ export default function FormsPage() {
                 <p className="text-sm text-gray-500">Total Questions</p>
                 <p className="text-2xl font-bold text-blue-600">
                   {Object.values(intakeForms).reduce((total, form) => 
-                    total + form.sections.reduce((sum, section) => sum + section.questions.length, 0), 0
+                    total + form.steps.reduce((sum, step) => sum + step.questions.length, 0), 0
                   )}
                 </p>
               </div>
@@ -386,38 +386,38 @@ export default function FormsPage() {
               <p className="text-gray-600">{selectedIntakeForm.description}</p>
             </div>
 
-            {/* Section Navigation */}
+            {/* Step Navigation */}
             <div className="mb-6">
               <div className="flex space-x-2 overflow-x-auto pb-2">
-                {selectedIntakeForm.sections.map((section, index) => (
+                {selectedIntakeForm.steps.map((step, index) => (
                   <button
                     key={index}
-                    onClick={() => setCurrentPreviewSection(index)}
+                    onClick={() => setCurrentPreviewStep(index)}
                     className={`px-4 py-2 text-sm rounded-lg whitespace-nowrap ${
-                      currentPreviewSection === index
+                      currentPreviewStep === index
                         ? 'bg-gray-900 text-white'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
-                    {section.title}
+                    {step.title}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Current Section */}
+            {/* Current Step */}
             <div className="mb-6">
               <h4 className="text-lg font-semibold mb-4">
-                {selectedIntakeForm.sections[currentPreviewSection].title}
+                {selectedIntakeForm.steps[currentPreviewStep].title}
               </h4>
-              {selectedIntakeForm.sections[currentPreviewSection].subtitle && (
+              {selectedIntakeForm.steps[currentPreviewStep].subtitle && (
                 <p className="text-sm text-gray-600 mb-4">
-                  {selectedIntakeForm.sections[currentPreviewSection].subtitle}
+                  {selectedIntakeForm.steps[currentPreviewStep].subtitle}
                 </p>
               )}
               
               <form className="space-y-6">
-                {selectedIntakeForm.sections[currentPreviewSection].questions.map((question, index) => (
+                {selectedIntakeForm.steps[currentPreviewStep].questions.map((question, index) => (
                   <div key={question.id} className="space-y-2">
                     <label className="block text-sm font-medium text-gray-700">
                       {index + 1}. {question.question}
@@ -436,13 +436,13 @@ export default function FormsPage() {
             <div className="flex justify-between mt-8 pt-6 border-t">
               <button
                 onClick={() => {
-                  if (currentPreviewSection > 0) {
-                    setCurrentPreviewSection(currentPreviewSection - 1);
+                  if (currentPreviewStep > 0) {
+                    setCurrentPreviewStep(currentPreviewStep - 1);
                   }
                 }}
-                disabled={currentPreviewSection === 0}
+                disabled={currentPreviewStep === 0}
                 className={`px-4 py-2 rounded-lg ${
-                  currentPreviewSection === 0
+                  currentPreviewStep === 0
                     ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
                     : 'bg-gray-600 text-white hover:bg-gray-700'
                 }`}
@@ -454,7 +454,7 @@ export default function FormsPage() {
                 onClick={() => {
                   setShowPreview(false);
                   setSelectedIntakeForm(null);
-                  setCurrentPreviewSection(0);
+                  setCurrentPreviewStep(0);
                 }}
                 className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800"
               >
@@ -463,13 +463,13 @@ export default function FormsPage() {
               
               <button
                 onClick={() => {
-                  if (currentPreviewSection < selectedIntakeForm.sections.length - 1) {
-                    setCurrentPreviewSection(currentPreviewSection + 1);
+                  if (currentPreviewStep < selectedIntakeForm.steps.length - 1) {
+                    setCurrentPreviewStep(currentPreviewStep + 1);
                   }
                 }}
-                disabled={currentPreviewSection === selectedIntakeForm.sections.length - 1}
+                disabled={currentPreviewStep === selectedIntakeForm.steps.length - 1}
                 className={`px-4 py-2 rounded-lg ${
-                  currentPreviewSection === selectedIntakeForm.sections.length - 1
+                  currentPreviewStep === selectedIntakeForm.steps.length - 1
                     ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
                     : 'bg-green-600 text-white hover:bg-green-700'
                 }`}
