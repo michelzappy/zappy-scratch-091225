@@ -103,7 +103,6 @@ router.post('/',
     body('consultationType').isString().isLength({ min: 1 }).withMessage('Consultation type is required'),
     body('chiefComplaint').isString().isLength({ min: 10 }).withMessage('Chief complaint must be at least 10 characters'),
     body('symptoms').isArray({ min: 1 }).withMessage('At least one symptom is required'),
-    body('urgency').isIn(['regular', 'urgent', 'emergency']).withMessage('Invalid urgency level'),
     body('additionalInfo').optional().isString(),
     body('preferredTime').optional().isString(),
     body('intakeData').optional().isObject(), // Full intake form responses
@@ -158,7 +157,6 @@ router.post('/',
       consultationType: req.body.consultationType,
       chiefComplaint: req.body.chiefComplaint,
       symptoms: req.body.symptoms,
-      urgency: req.body.urgency || 'regular',
       additionalInfo: req.body.additionalInfo,
       preferredTime: req.body.preferredTime,
       attachments: JSON.stringify(attachments),
@@ -219,7 +217,6 @@ router.get('/',
     query('status').optional().isIn(['pending', 'assigned', 'completed', 'cancelled']),
     query('patientId').optional().isUUID(),
     query('providerId').optional().isUUID(),
-    query('urgency').optional().isIn(['regular', 'urgent', 'emergency'])
   ],
   handleValidationErrors,
   asyncHandler(async (req, res) => {
@@ -235,9 +232,6 @@ router.get('/',
     }
     if (req.query.providerId) {
       query = query.where(eq(consultations.providerId, req.query.providerId));
-    }
-    if (req.query.urgency) {
-      query = query.where(eq(consultations.urgency, req.query.urgency));
     }
 
     const consultationsList = await query.limit(20);

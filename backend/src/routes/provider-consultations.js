@@ -176,29 +176,31 @@ router.post('/:id/treatment-plan',
       
       // Add prescriptions if any
       for (const rx of prescriptions) {
-        const inventoryResult = await db.query(`
-          SELECT id, retail_price, subscription_price
-          FROM inventory
-          WHERE sku = $1
-        `, [rx.sku]);
+        // Look up medication pricing from medications table
+        const medicationResult = await db.query(`
+          SELECT id, base_price
+          FROM medications
+          WHERE name = $1 OR generic_name = $1
+          LIMIT 1
+        `, [rx.medicationName]);
         
-        if (inventoryResult.rows.length > 0) {
-          const inventory = inventoryResult.rows[0];
-          
-          await db.query(`
-            INSERT INTO prescriptions (
-              consultation_id, provider_id, patient_id,
-              medication_name, generic_name, dosage,
-              quantity, frequency, duration, instructions,
-              price, subscription_price
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-          `, [
-            id, providerId, patientId,
-            rx.medicationName, rx.genericName, rx.dosage,
-            rx.quantity, rx.frequency, rx.duration, rx.instructions,
-            inventory.retail_price, inventory.subscription_price
-          ]);
-        }
+        const basePrice = medicationResult.rows.length > 0 
+          ? medicationResult.rows[0].base_price 
+          : rx.price || 0;
+        
+        await db.query(`
+          INSERT INTO prescriptions (
+            consultation_id, provider_id, patient_id,
+            medication_name, generic_name, dosage,
+            quantity, frequency, duration, instructions,
+            price, subscription_price
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        `, [
+          id, providerId, patientId,
+          rx.medicationName, rx.genericName, rx.dosage,
+          rx.quantity, rx.frequency, rx.duration, rx.instructions,
+          basePrice, basePrice * 0.85 // 15% discount for subscription
+        ]);
       }
       
       // Create message for patient

@@ -81,14 +81,13 @@ router.get('/consultations',
   requireRole('provider'),
   [
     query('status').optional().isIn(['pending', 'assigned', 'completed', 'cancelled']),
-    query('urgency').optional().isIn(['regular', 'urgent', 'emergency']),
     query('limit').optional().isInt({ min: 1, max: 100 }),
     query('offset').optional().isInt({ min: 0 })
   ],
   handleValidationErrors,
   asyncHandler(async (req, res) => {
     const db = getDatabase();
-    const { status, urgency, limit = 20, offset = 0 } = req.query;
+    const { status, limit = 20, offset = 0 } = req.query;
 
     let whereConditions = [];
     let params = [];
@@ -111,11 +110,6 @@ router.get('/consultations',
       }
     }
 
-    if (urgency) {
-      whereConditions.push(`c.urgency = $${paramIndex}`);
-      params.push(urgency);
-      paramIndex++;
-    }
 
     const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
 
@@ -138,11 +132,7 @@ router.get('/consultations',
       JOIN patients p ON c.patient_id = p.id
       LEFT JOIN prescriptions pr ON pr.consultation_id = c.id
       ${whereClause}
-      ORDER BY 
-        CASE WHEN c.urgency = 'emergency' THEN 0
-             WHEN c.urgency = 'urgent' THEN 1
-             ELSE 2 END,
-        c.submitted_at ASC
+      ORDER BY c.submitted_at ASC
       LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
     `, [...params, limit, offset]);
 
@@ -176,12 +166,7 @@ router.get('/queue',
           ELSE 59
         END as estimated_value,
         CASE WHEN c.photos_urls IS NOT NULL AND array_length(c.photos_urls, 1) > 0 THEN true ELSE false END as has_photos,
-        ROW_NUMBER() OVER (ORDER BY 
-          CASE WHEN c.urgency = 'emergency' THEN 0
-               WHEN c.urgency = 'urgent' THEN 1
-               ELSE 2 END,
-          c.submitted_at ASC
-        ) as queue_position
+        ROW_NUMBER() OVER (ORDER BY c.submitted_at ASC) as queue_position
       FROM consultations c
       JOIN patients p ON c.patient_id = p.id
       WHERE c.status = 'pending'

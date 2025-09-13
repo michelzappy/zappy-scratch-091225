@@ -51,12 +51,8 @@ router.get('/consultation/:consultationId/treatment', asyncHandler(async (req, r
   
   // Get prescriptions
   const prescriptionsResult = await db.query(`
-    SELECT 
-      p.*,
-      i.sku,
-      i.quantity_on_hand
+    SELECT p.*
     FROM prescriptions p
-    LEFT JOIN inventory i ON i.medication_name = p.medication_name
     WHERE p.consultation_id = $1
   `, [consultationId]);
   
@@ -110,11 +106,8 @@ router.post('/create',
       
       // Calculate totals
       const prescriptionsResult = await db.query(`
-        SELECT 
-          p.*,
-          i.quantity_on_hand
+        SELECT p.*
         FROM prescriptions p
-        LEFT JOIN inventory i ON i.medication_name = p.medication_name
         WHERE p.id = ANY($1)
       `, [prescriptionIds]);
       
@@ -277,21 +270,7 @@ router.post('/confirm-payment',
           WHERE id = $2
         `, [paymentIntent.amount / 100, order.patient_id]);
         
-        // Update inventory (reserve items)
-        const itemsResult = await db.query(
-          'SELECT * FROM order_items WHERE order_id = $1',
-          [order.id]
-        );
-        
-        for (const item of itemsResult.rows) {
-          await db.query(`
-            UPDATE inventory
-            SET 
-              quantity_reserved = quantity_reserved + $1,
-              quantity_on_hand = quantity_on_hand - $1
-            WHERE medication_name = $2
-          `, [item.quantity, item.medication_name]);
-        }
+        // Note: Inventory tracking removed - handle fulfillment externally
         
         res.json({
           success: true,
