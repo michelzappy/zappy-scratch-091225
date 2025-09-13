@@ -124,3 +124,53 @@ INSERT INTO treatment_protocols (condition, protocol_key, name, description, dur
 ('weightLoss', 'standard', 'Weight Loss Standard', 'Appetite suppressant therapy', '3 months max', '2 weeks', 89),
 ('weightLoss', 'glp1', 'GLP-1 Weight Loss', 'Latest injectable weight loss medication', 'Ongoing', 'Monthly', 299),
 ('weightLoss', 'combination', 'Weight Loss Combination', 'Multi-modal approach for significant weight loss', '3-6 months', '2 weeks', 169),
+('weightLoss', 'maintenance', 'Weight Maintenance', 'Long-term weight management', 'Ongoing', '3 months', 95);
+
+-- Create indexes for new fields
+CREATE INDEX idx_patients_subscription_plan ON patients(subscription_plan);
+CREATE INDEX idx_patients_intake_completed ON patients(intake_completed);
+CREATE INDEX idx_consultations_protocols ON consultations USING GIN(selected_protocols);
+CREATE INDEX idx_protocols_condition ON treatment_protocols(condition);
+CREATE INDEX idx_protocol_medications_protocol ON protocol_medications(protocol_id);
+CREATE INDEX idx_subscriptions_patient ON subscriptions(patient_id);
+CREATE INDEX idx_subscriptions_status ON subscriptions(status);
+CREATE INDEX idx_subscriptions_next_billing ON subscriptions(next_billing_date);
+
+-- Update the inventory table to include more protocol medications if needed
+INSERT INTO inventory (sku, medication_name, generic_name, strength, form, quantity_on_hand, cost_per_unit, retail_price, subscription_price, category) VALUES
+-- Additional acne medications
+('BPO-25-GEL', 'Benzoyl Peroxide Gel', 'Benzoyl Peroxide', '2.5%', 'gel', 200, 3.00, 25.00, 20.00, 'Dermatology'),
+('BPO-5-GEL', 'Benzoyl Peroxide Gel', 'Benzoyl Peroxide', '5%', 'gel', 200, 3.50, 29.00, 24.00, 'Dermatology'),
+('CLN-1-SOL', 'Clindamycin Solution', 'Clindamycin', '1%', 'solution', 150, 4.00, 35.00, 30.00, 'Dermatology'),
+('SPR-100-TAB', 'Spironolactone', 'Spironolactone', '100mg', 'tablet', 300, 0.60, 35.00, 30.00, 'Hormonal'),
+('AZA-15-CR', 'Azelaic Acid Cream', 'Azelaic Acid', '15%', 'cream', 100, 5.00, 45.00, 40.00, 'Dermatology'),
+
+-- Additional ED medications
+('TAD-5-TAB', 'Tadalafil', 'Tadalafil', '5mg', 'tablet', 400, 3.00, 25.00, 20.00, 'Mens Health'),
+('TAD-10-TAB', 'Tadalafil', 'Tadalafil', '10mg', 'tablet', 400, 4.00, 15.00, 12.00, 'Mens Health'),
+
+-- Additional hair loss medications
+('MIN-5-FOA', 'Minoxidil Foam', 'Minoxidil', '5%', 'foam', 150, 6.00, 35.00, 30.00, 'Hair Loss'),
+('KET-2-SH', 'Ketoconazole Shampoo', 'Ketoconazole', '2%', 'shampoo', 100, 4.00, 35.00, 30.00, 'Hair Loss'),
+('BIO-10K', 'Biotin', 'Biotin', '10000mcg', 'tablet', 500, 0.20, 15.00, 12.00, 'Supplements'),
+
+-- Additional weight loss medications
+('PHE-375-TAB', 'Phentermine', 'Phentermine', '37.5mg', 'tablet', 200, 2.00, 89.00, 79.00, 'Weight Loss'),
+('ORL-60-CAP', 'Orlistat', 'Orlistat', '60mg', 'capsule', 300, 1.00, 45.00, 40.00, 'Weight Loss'),
+('TOP-25-TAB', 'Topiramate', 'Topiramate', '25mg', 'tablet', 400, 0.80, 45.00, 40.00, 'Weight Loss'),
+('NAL-50-TAB', 'Naltrexone', 'Naltrexone', '50mg', 'tablet', 200, 1.50, 55.00, 50.00, 'Weight Loss'),
+
+-- Additional medications for other conditions
+('MET-1000-TAB', 'Metformin', 'Metformin', '1000mg', 'tablet', 600, 0.40, 40.00, 35.00, 'Diabetes'),
+('HYD-25-TAB', 'Hydroxyzine', 'Hydroxyzine', '25mg', 'tablet', 400, 0.50, 35.00, 30.00, 'Anxiety'),
+('PRO-20-TAB', 'Propranolol', 'Propranolol', '20mg', 'tablet', 500, 0.30, 25.00, 20.00, 'Anxiety'),
+('PRO-40-TAB', 'Propranolol', 'Propranolol', '40mg', 'tablet', 500, 0.40, 30.00, 25.00, 'Anxiety'),
+('SER-50-TAB', 'Sertraline', 'Sertraline', '50mg', 'tablet', 400, 0.60, 45.00, 40.00, 'Depression'),
+('SER-100-TAB', 'Sertraline', 'Sertraline', '100mg', 'tablet', 400, 0.80, 50.00, 45.00, 'Depression'),
+('ESC-10-TAB', 'Escitalopram', 'Escitalopram', '10mg', 'tablet', 400, 0.70, 40.00, 35.00, 'Depression'),
+('BUP-150-TAB', 'Bupropion XL', 'Bupropion', '150mg', 'tablet', 300, 0.90, 55.00, 50.00, 'Depression')
+ON CONFLICT (sku) DO NOTHING;
+
+-- Grant permissions if needed (adjust based on your database users)
+-- GRANT ALL ON ALL TABLES IN SCHEMA public TO your_app_user;
+-- GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO your_app_user;
