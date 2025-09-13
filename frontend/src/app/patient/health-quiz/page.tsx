@@ -13,6 +13,16 @@ export default function HealthQuizPage() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [responses, setResponses] = useState<Record<string, any>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showPersonalInfo, setShowPersonalInfo] = useState(true);
+  const [personalInfo, setPersonalInfo] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    dateOfBirth: ''
+  });
+  const [showPlanSelection, setShowPlanSelection] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<string>('');
 
   // Available conditions with enhanced details
   const conditions = [
@@ -176,13 +186,8 @@ export default function HealthQuizPage() {
       setCurrentSectionIndex(currentSectionIndex + 1);
       setCurrentQuestionIndex(0);
     } else {
-      // Form complete - save and redirect
-      localStorage.setItem('intakeFormResponses', JSON.stringify({
-        condition: selectedCondition,
-        responses,
-        timestamp: new Date().toISOString()
-      }));
-      router.push('/patient/new-consultation');
+      // Form complete - show plan selection
+      setShowPlanSelection(true);
     }
   };
 
@@ -466,8 +471,125 @@ export default function HealthQuizPage() {
       <main className="container mx-auto px-4 py-8 max-w-3xl">
         <div className="bg-white rounded-2xl shadow-sm p-8">
           
+          {/* Personal Information Form */}
+          {!selectedCondition && showPersonalInfo && (
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-4">
+                Let's create your account
+              </h1>
+              <p className="text-lg text-gray-600 mb-8">
+                We'll need some basic information to get started
+              </p>
+              
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      First Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={personalInfo.firstName}
+                      onChange={(e) => setPersonalInfo({ ...personalInfo, firstName: e.target.value })}
+                      className="w-full p-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-purple-600"
+                      placeholder="Enter your first name"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Last Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={personalInfo.lastName}
+                      onChange={(e) => setPersonalInfo({ ...personalInfo, lastName: e.target.value })}
+                      className="w-full p-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-purple-600"
+                      placeholder="Enter your last name"
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email Address <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    value={personalInfo.email}
+                    onChange={(e) => setPersonalInfo({ ...personalInfo, email: e.target.value })}
+                    className="w-full p-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-purple-600"
+                    placeholder="your@email.com"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    We'll use this to create your account and send consultation updates
+                  </p>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Phone Number <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    value={personalInfo.phone}
+                    onChange={(e) => setPersonalInfo({ ...personalInfo, phone: e.target.value })}
+                    className="w-full p-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-purple-600"
+                    placeholder="(555) 123-4567"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    For prescription verification and urgent updates only
+                  </p>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Date of Birth <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={personalInfo.dateOfBirth}
+                    onChange={(e) => setPersonalInfo({ ...personalInfo, dateOfBirth: e.target.value })}
+                    className="w-full p-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-purple-600"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Required for medical prescriptions and age verification
+                  </p>
+                </div>
+                
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <div className="flex items-start">
+                    <svg className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                    <div className="ml-3">
+                      <h4 className="text-sm font-medium text-blue-900">Your account will be created automatically</h4>
+                      <p className="text-sm text-blue-700 mt-1">
+                        After completing the medical questionnaire, you'll receive login credentials via email to track your consultation and access your patient portal.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <button
+                  onClick={() => {
+                    // Validate personal info
+                    if (!personalInfo.firstName || !personalInfo.lastName || !personalInfo.email || !personalInfo.phone || !personalInfo.dateOfBirth) {
+                      alert('Please fill in all required fields');
+                      return;
+                    }
+                    setShowPersonalInfo(false);
+                  }}
+                  className="w-full py-3 bg-purple-600 text-white rounded-full font-semibold hover:bg-purple-700 transition-all"
+                >
+                  Continue to Medical Assessment →
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Condition Selection */}
-          {!selectedCondition && (
+          {!selectedCondition && !showPersonalInfo && (
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-4">
                 What brings you here today?
@@ -503,8 +625,234 @@ export default function HealthQuizPage() {
             </div>
           )}
           
+          {/* Subscription Plan Selection */}
+          {showPlanSelection && (
+            <div>
+              <div className="text-center mb-8">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                  Great! You qualify for treatment
+                </h1>
+                <p className="text-lg text-gray-600">
+                  Choose your subscription plan for {selectedCondition === 'weightLoss' ? 'Semaglutide (GLP-1)' : 
+                    selectedCondition === 'hairLoss' ? 'Finasteride + Minoxidil' :
+                    selectedCondition === 'mensHealth' ? 'Sildenafil' : 'your medication'}
+                </p>
+              </div>
+
+              {/* Subscription Plans */}
+              <div className="grid md:grid-cols-3 gap-4 mb-8">
+                {/* Monthly Plan */}
+                <button
+                  onClick={() => setSelectedPlan('monthly')}
+                  className={`relative p-6 rounded-xl border-2 text-left transition-all ${
+                    selectedPlan === 'monthly' 
+                      ? 'border-purple-600 bg-purple-50' 
+                      : 'border-gray-200 hover:border-purple-300'
+                  }`}
+                >
+                  <div className="mb-4">
+                    <h3 className="text-lg font-bold text-gray-900">Monthly</h3>
+                    <p className="text-sm text-gray-500">Pay as you go</p>
+                  </div>
+                  <div className="mb-4">
+                    <span className="text-3xl font-bold text-gray-900">
+                      ${selectedCondition === 'weightLoss' ? '299' : 
+                        selectedCondition === 'hairLoss' ? '59' :
+                        selectedCondition === 'mensHealth' ? '30' : '89'}
+                    </span>
+                    <span className="text-gray-500">/month</span>
+                  </div>
+                  <ul className="space-y-2 text-sm">
+                    <li className="flex items-start">
+                      <svg className="w-4 h-4 text-green-500 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                      Cancel anytime
+                    </li>
+                    <li className="flex items-start">
+                      <svg className="w-4 h-4 text-green-500 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                      Free shipping
+                    </li>
+                    <li className="flex items-start">
+                      <svg className="w-4 h-4 text-green-500 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                      Ongoing provider support
+                    </li>
+                  </ul>
+                </button>
+
+                {/* Quarterly Plan */}
+                <button
+                  onClick={() => setSelectedPlan('quarterly')}
+                  className={`relative p-6 rounded-xl border-2 text-left transition-all ${
+                    selectedPlan === 'quarterly' 
+                      ? 'border-purple-600 bg-purple-50' 
+                      : 'border-gray-200 hover:border-purple-300'
+                  }`}
+                >
+                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                    <span className="bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold px-3 py-1 rounded-full">
+                      MOST POPULAR
+                    </span>
+                  </div>
+                  <div className="mb-4">
+                    <h3 className="text-lg font-bold text-gray-900">Quarterly</h3>
+                    <p className="text-sm text-gray-500">Save 10%</p>
+                  </div>
+                  <div className="mb-4">
+                    <span className="text-3xl font-bold text-gray-900">
+                      ${selectedCondition === 'weightLoss' ? '269' : 
+                        selectedCondition === 'hairLoss' ? '53' :
+                        selectedCondition === 'mensHealth' ? '27' : '80'}
+                    </span>
+                    <span className="text-gray-500">/month</span>
+                    <div className="text-sm text-green-600 font-medium">
+                      Billed ${selectedCondition === 'weightLoss' ? '807' : 
+                        selectedCondition === 'hairLoss' ? '159' :
+                        selectedCondition === 'mensHealth' ? '81' : '240'} every 3 months
+                    </div>
+                  </div>
+                  <ul className="space-y-2 text-sm">
+                    <li className="flex items-start">
+                      <svg className="w-4 h-4 text-green-500 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                      10% discount
+                    </li>
+                    <li className="flex items-start">
+                      <svg className="w-4 h-4 text-green-500 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                      Priority support
+                    </li>
+                    <li className="flex items-start">
+                      <svg className="w-4 h-4 text-green-500 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                      Free shipping
+                    </li>
+                  </ul>
+                </button>
+
+                {/* Annual Plan */}
+                <button
+                  onClick={() => setSelectedPlan('annual')}
+                  className={`relative p-6 rounded-xl border-2 text-left transition-all ${
+                    selectedPlan === 'annual' 
+                      ? 'border-purple-600 bg-purple-50' 
+                      : 'border-gray-200 hover:border-purple-300'
+                  }`}
+                >
+                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                    <span className="bg-gradient-to-r from-green-600 to-emerald-600 text-white text-xs font-bold px-3 py-1 rounded-full">
+                      BEST VALUE
+                    </span>
+                  </div>
+                  <div className="mb-4">
+                    <h3 className="text-lg font-bold text-gray-900">Annual</h3>
+                    <p className="text-sm text-gray-500">Save 20%</p>
+                  </div>
+                  <div className="mb-4">
+                    <span className="text-3xl font-bold text-gray-900">
+                      ${selectedCondition === 'weightLoss' ? '239' : 
+                        selectedCondition === 'hairLoss' ? '47' :
+                        selectedCondition === 'mensHealth' ? '24' : '71'}
+                    </span>
+                    <span className="text-gray-500">/month</span>
+                    <div className="text-sm text-green-600 font-medium">
+                      Billed ${selectedCondition === 'weightLoss' ? '2,868' : 
+                        selectedCondition === 'hairLoss' ? '564' :
+                        selectedCondition === 'mensHealth' ? '288' : '852'} annually
+                    </div>
+                  </div>
+                  <ul className="space-y-2 text-sm">
+                    <li className="flex items-start">
+                      <svg className="w-4 h-4 text-green-500 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                      20% discount (save ${selectedCondition === 'weightLoss' ? '720' : 
+                        selectedCondition === 'hairLoss' ? '144' :
+                        selectedCondition === 'mensHealth' ? '72' : '216'}/year)
+                    </li>
+                    <li className="flex items-start">
+                      <svg className="w-4 h-4 text-green-500 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                      VIP support
+                    </li>
+                    <li className="flex items-start">
+                      <svg className="w-4 h-4 text-green-500 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                      Bonus health coaching
+                    </li>
+                  </ul>
+                </button>
+              </div>
+
+              {/* Continue Button */}
+              <button
+                onClick={() => {
+                  if (!selectedPlan) {
+                    alert('Please select a subscription plan');
+                    return;
+                  }
+                  
+                  // Save complete submission
+                  const submissionData = {
+                    personalInfo,
+                    condition: selectedCondition,
+                    responses,
+                    subscriptionPlan: selectedPlan,
+                    timestamp: new Date().toISOString()
+                  };
+                  
+                  localStorage.setItem('intakeFormResponses', JSON.stringify(submissionData));
+                  
+                  alert(`Account created for ${personalInfo.firstName} ${personalInfo.lastName}! You selected the ${selectedPlan} plan. Check ${personalInfo.email} for login details.`);
+                  
+                  router.push('/patient/checkout');
+                }}
+                disabled={!selectedPlan}
+                className={`w-full py-3 rounded-full font-semibold transition-all ${
+                  selectedPlan 
+                    ? 'bg-purple-600 text-white hover:bg-purple-700' 
+                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                }`}
+              >
+                Continue to Checkout →
+              </button>
+
+              {/* Trust Badges */}
+              <div className="mt-8 pt-8 border-t border-gray-200">
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <div className="text-2xl mb-1">🔒</div>
+                    <p className="text-xs text-gray-600">256-bit SSL Encryption</p>
+                  </div>
+                  <div>
+                    <div className="text-2xl mb-1">💊</div>
+                    <p className="text-xs text-gray-600">FDA-Approved Medications</p>
+                  </div>
+                  <div>
+                    <div className="text-2xl mb-1">📞</div>
+                    <p className="text-xs text-gray-600">24/7 Provider Support</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Intake Form Questions */}
-          {currentForm && getCurrentQuestion() && (
+          {currentForm && getCurrentQuestion() && !showPlanSelection && (
             <div>
               {/* Section Title */}
               <div className="mb-6">

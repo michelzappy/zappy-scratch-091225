@@ -58,274 +58,271 @@ export const treatmentProtocols = {
       description: 'Try different medications to find what works',
       medications: [
         { sku: 'SIL-50-TAB', name: 'Sildenafil 50mg', price: 10, qty: 6, instructions: 'Take 1 tablet 30-60 min before activity', refills: 0 },
-      prevention: {
-        name: 'Early Prevention',
-        description: 'For mild thinning or family history',
-        medications: [
-          { sku: 'FIN-1-TAB', name: 'Finasteride 1mg', price: 25, qty: 30, instructions: 'Take 1 tablet daily' }
-        ],
-        total: 25
-      },
-      standard: {
-        name: 'Standard Treatment',
-        description: 'Proven combination therapy',
-        medications: [
-          { sku: 'FIN-1-TAB', name: 'Finasteride 1mg', price: 25, qty: 30, instructions: 'Take 1 tablet daily' },
-          { sku: 'MIN-5-SOL', name: 'Minoxidil 5% Solution', price: 29, qty: 1, instructions: 'Apply 1ml to scalp twice daily' }
-        ],
-        total: 54
-      },
-      advanced: {
-        name: 'Advanced Protocol',
-        description: 'Maximum medical therapy',
-        medications: [
-          { sku: 'FIN-1-TAB', name: 'Finasteride 1mg', price: 25, qty: 30, instructions: 'Take 1 tablet daily' },
-          { sku: 'MIN-5-FOAM', name: 'Minoxidil 5% Foam', price: 35, qty: 2, instructions: 'Apply to scalp twice daily' },
-          { sku: 'KET-2-SH', name: 'Ketoconazole 2% Shampoo', price: 35, qty: 1, instructions: 'Use 2-3 times weekly' },
-          { sku: 'BIOTIN-10', name: 'Biotin 10mg', price: 20, qty: 30, instructions: 'Take 1 daily' }
-        ],
-        total: 115
-      },
-      dutasteride: {
-        name: 'Dutasteride Protocol',
-        description: 'For aggressive hair loss',
-        medications: [
-          { sku: 'DUT-05-TAB', name: 'Dutasteride 0.5mg', price: 45, qty: 30, instructions: 'Take 1 tablet daily' },
-          { sku: 'MIN-5-FOAM', name: 'Minoxidil 5% Foam', price: 35, qty: 2, instructions: 'Apply to scalp twice daily' }
-        ],
-        total: 80
-      },
-      women: {
-        name: 'Women\'s Hair Loss',
-        description: 'Female pattern hair loss',
-        medications: [
-          { sku: 'MIN-2-SOL', name: 'Minoxidil 2% Solution', price: 25, qty: 1, instructions: 'Apply 1ml to scalp twice daily' },
-          { sku: 'SPIRO-50', name: 'Spironolactone 50mg', price: 30, qty: 30, instructions: 'Take 1 tablet daily' },
-          { sku: 'BIOTIN-10', name: 'Biotin 10mg', price: 20, qty: 30, instructions: 'Take 1 daily' }
-        ],
-        contraindications: ['Pregnancy', 'Kidney disease'],
-        total: 75
-      }
+        { sku: 'TAD-10-TAB', name: 'Tadalafil 10mg', price: 15, qty: 4, instructions: 'Take 1 tablet 30 min before activity', refills: 0 }
+      ],
+      duration: '1 month trial',
+      followUp: '4 weeks',
+      total: 120
+    },
+    standard: {
+      name: 'ED Standard Supply',
+      description: 'Most popular option for regular use',
+      medications: [
+        { sku: 'SIL-100-TAB', name: 'Sildenafil 100mg', price: 15, qty: 12, instructions: 'Take 1 tablet 30-60 min before activity', refills: 11 }
+      ],
+      duration: 'Monthly refills',
+      followUp: '3 months',
+      total: 180
+    },
+    daily: {
+      name: 'Daily ED Treatment',
+      description: 'Daily medication for spontaneity',
+      medications: [
+        { sku: 'TAD-5-TAB', name: 'Tadalafil 5mg', price: 25, qty: 30, instructions: 'Take 1 tablet daily at same time', refills: 11 }
+      ],
+      duration: 'Monthly refills',
+      followUp: '3 months',
+      total: 750
+    },
+    combination: {
+      name: 'ED Combination Therapy',
+      description: 'For treatment-resistant cases',
+      medications: [
+        { sku: 'SIL-100-TAB', name: 'Sildenafil 100mg', price: 15, qty: 8, instructions: 'Take as needed', refills: 5 },
+        { sku: 'TAD-5-TAB', name: 'Tadalafil 5mg', price: 25, qty: 30, instructions: 'Take 1 tablet daily', refills: 5 }
+      ],
+      duration: 'Monthly refills',
+      followUp: '6 weeks',
+      total: 870
     }
   },
 
-  longevity: {
-    name: 'Longevity & Anti-Aging',
-    icon: '🧬',
-    protocols: {
-      basic: {
-        name: 'Longevity Basics',
-        description: 'Evidence-based anti-aging',
-        medications: [
-          { sku: 'MET-500-TAB', name: 'Metformin ER 500mg', price: 35, qty: 60, instructions: 'Take 1 tablet twice daily' },
-          { sku: 'VIT-D3', name: 'Vitamin D3 5000IU', price: 15, qty: 30, instructions: 'Take 1 daily' },
-          { sku: 'OMEGA-3', name: 'Omega-3 EPA/DHA', price: 25, qty: 30, instructions: 'Take 2 capsules daily' }
-        ],
-        total: 75
-      },
-      nad_boost: {
-        name: 'NAD+ Enhancement',
-        description: 'Cellular energy optimization',
-        medications: [
-          { sku: 'NAD-500-SUB', name: 'NAD+ Sublingual 500mg', price: 89, qty: 30, instructions: 'Dissolve 1 tablet under tongue daily' },
-          { sku: 'NMN-250', name: 'NMN 250mg', price: 65, qty: 30, instructions: 'Take 1 capsule in morning' },
-          { sku: 'RESV-500', name: 'Resveratrol 500mg', price: 35, qty: 30, instructions: 'Take 1 capsule daily' }
-        ],
-        total: 189
-      },
-      comprehensive: {
-        name: 'Comprehensive Longevity',
-        description: 'Full anti-aging protocol',
-        medications: [
-          { sku: 'MET-500-TAB', name: 'Metformin ER 500mg', price: 35, qty: 60, instructions: 'Take 1 tablet twice daily' },
-          { sku: 'NAD-500-SUB', name: 'NAD+ Sublingual 500mg', price: 89, qty: 30, instructions: 'Dissolve 1 tablet under tongue daily' },
-          { sku: 'RAPA-1', name: 'Rapamycin 1mg', price: 120, qty: 4, instructions: 'Take 1mg once weekly' },
-          { sku: 'VIT-D3', name: 'Vitamin D3 5000IU', price: 15, qty: 30, instructions: 'Take 1 daily' }
-        ],
-        requiresLabs: true,
-        total: 259
-      },
-      hormone_optimize: {
-        name: 'Hormone Optimization',
-        description: 'Age-related hormone support',
-        medications: [
-          { sku: 'DHEA-25', name: 'DHEA 25mg', price: 20, qty: 30, instructions: 'Take 1 daily in morning' },
-          { sku: 'PREG-10', name: 'Pregnenolone 10mg', price: 25, qty: 30, instructions: 'Take 1 daily' },
-          { sku: 'MEL-3', name: 'Melatonin 3mg', price: 15, qty: 30, instructions: 'Take 1 at bedtime' }
-        ],
-        total: 60
-      }
+  hairLoss: {
+    prevention: {
+      name: 'Hair Loss Prevention',
+      description: 'Early intervention for thinning hair',
+      medications: [
+        { sku: 'FIN-1-TAB', name: 'Finasteride 1mg', price: 25, qty: 30, instructions: 'Take 1 tablet daily', refills: 11 }
+      ],
+      duration: 'Ongoing',
+      followUp: '6 months',
+      total: 25
+    },
+    standard: {
+      name: 'Hair Loss Standard',
+      description: 'Comprehensive hair regrowth protocol',
+      medications: [
+        { sku: 'FIN-1-TAB', name: 'Finasteride 1mg', price: 25, qty: 30, instructions: 'Take 1 tablet daily', refills: 11 },
+        { sku: 'MIN-5-SOL', name: 'Minoxidil 5% Solution', price: 29, qty: 1, instructions: 'Apply 1ml to scalp twice daily', refills: 11 }
+      ],
+      duration: 'Ongoing',
+      followUp: '3 months',
+      total: 54
+    },
+    aggressive: {
+      name: 'Hair Loss Aggressive',
+      description: 'Maximum strength protocol',
+      medications: [
+        { sku: 'FIN-1-TAB', name: 'Finasteride 1mg', price: 25, qty: 30, instructions: 'Take 1 tablet daily', refills: 11 },
+        { sku: 'MIN-5-FOA', name: 'Minoxidil 5% Foam', price: 35, qty: 2, instructions: 'Apply twice daily', refills: 11 },
+        { sku: 'KET-2-SH', name: 'Ketoconazole 2% Shampoo', price: 35, qty: 1, instructions: 'Use 2-3 times weekly', refills: 5 },
+        { sku: 'BIO-10K', name: 'Biotin 10,000mcg', price: 15, qty: 30, instructions: 'Take 1 daily', refills: 11 }
+      ],
+      duration: 'Ongoing',
+      followUp: '3 months',
+      total: 120
+    },
+    postpartum: {
+      name: 'Postpartum Hair Loss',
+      description: 'Safe for breastfeeding mothers',
+      medications: [
+        { sku: 'MIN-2-SOL', name: 'Minoxidil 2% Solution', price: 25, qty: 1, instructions: 'Apply 1ml twice daily', refills: 5 },
+        { sku: 'BIO-10K', name: 'Biotin 10,000mcg', price: 15, qty: 30, instructions: 'Take 1 daily', refills: 5 },
+        { sku: 'IRON-65', name: 'Iron 65mg', price: 12, qty: 30, instructions: 'Take 1 daily with vitamin C', refills: 5 }
+      ],
+      duration: '6 months',
+      followUp: '2 months',
+      total: 52
     }
   },
 
-  womensHealth: {
-    name: 'Women\'s Health',
-    icon: '👩‍⚕️',
-    protocols: {
-      birth_control: {
-        name: 'Birth Control',
-        description: 'Combined oral contraceptive',
-        medications: [
-          { sku: 'BC-COMBO', name: 'Combination OCP (Generic)', price: 20, qty: 3, instructions: 'Take 1 tablet daily at same time' }
-        ],
-        total: 60
-      },
-      uti_treatment: {
-        name: 'UTI Treatment',
-        description: 'Uncomplicated UTI',
-        medications: [
-          { sku: 'NITRO-100', name: 'Nitrofurantoin 100mg', price: 25, qty: 14, instructions: 'Take 1 capsule twice daily with food x 7 days' },
-          { sku: 'AZO-STD', name: 'Phenazopyridine 200mg', price: 15, qty: 6, instructions: 'Take 1 tablet three times daily for 2 days' }
-        ],
-        total: 40
-      },
-      yeast_infection: {
-        name: 'Yeast Infection',
-        description: 'Vaginal candidiasis treatment',
-        medications: [
-          { sku: 'FLUC-150', name: 'Fluconazole 150mg', price: 15, qty: 1, instructions: 'Take 1 tablet as single dose' }
-        ],
-        total: 15
-      },
-      menopause_mild: {
-        name: 'Menopause Support - Mild',
-        description: 'Non-hormonal symptom relief',
-        medications: [
-          { sku: 'BLACK-COH', name: 'Black Cohosh 40mg', price: 25, qty: 30, instructions: 'Take 1 tablet twice daily' },
-          { sku: 'VIT-E', name: 'Vitamin E 400IU', price: 15, qty: 30, instructions: 'Take 1 daily' }
-        ],
-        total: 40
-      },
-      menopause_hrt: {
-        name: 'HRT - Bioidentical',
-        description: 'Hormone replacement therapy',
-        medications: [
-          { sku: 'ESTR-1-CR', name: 'Estradiol 1mg Cream', price: 65, qty: 1, instructions: 'Apply 1 pump daily to inner arm' },
-          { sku: 'PROG-100', name: 'Progesterone 100mg', price: 45, qty: 30, instructions: 'Take 1 capsule at bedtime days 14-28' }
-        ],
-        requiresLabs: true,
-        total: 110
-      },
-      pcos: {
-        name: 'PCOS Management',
-        description: 'Polycystic ovary syndrome',
-        medications: [
-          { sku: 'MET-500-TAB', name: 'Metformin ER 500mg', price: 35, qty: 60, instructions: 'Take 1 tablet twice daily with meals' },
-          { sku: 'SPIRO-50', name: 'Spironolactone 50mg', price: 30, qty: 30, instructions: 'Take 1 tablet daily' },
-          { sku: 'INOSITOL', name: 'Inositol Powder', price: 25, qty: 1, instructions: '2g twice daily in water' }
-        ],
-        total: 90
-      }
+  weightLoss: {
+    starter: {
+      name: 'Weight Loss Starter',
+      description: 'Begin with lifestyle modification support',
+      medications: [
+        { sku: 'MET-500-TAB', name: 'Metformin 500mg', price: 35, qty: 60, instructions: 'Take 1 tablet twice daily with meals', refills: 5 },
+        { sku: 'ORL-60-CAP', name: 'Orlistat 60mg', price: 45, qty: 90, instructions: 'Take 1 with each fat-containing meal', refills: 5 }
+      ],
+      duration: '3 months',
+      followUp: '4 weeks',
+      total: 80
+    },
+    standard: {
+      name: 'Weight Loss Standard',
+      description: 'Appetite suppressant therapy',
+      medications: [
+        { sku: 'PHE-375-TAB', name: 'Phentermine 37.5mg', price: 89, qty: 30, instructions: 'Take 1 tablet in morning before breakfast', refills: 2 }
+      ],
+      duration: '3 months max',
+      followUp: '2 weeks',
+      total: 89
+    },
+    glp1: {
+      name: 'GLP-1 Weight Loss',
+      description: 'Latest injectable weight loss medication',
+      medications: [
+        { sku: 'SEM-05-INJ', name: 'Semaglutide 0.5mg weekly', price: 299, qty: 4, instructions: 'Inject 0.5mg subcutaneously once weekly', refills: 11 }
+      ],
+      duration: 'Ongoing',
+      followUp: 'Monthly',
+      total: 299
+    },
+    combination: {
+      name: 'Weight Loss Combination',
+      description: 'Multi-modal approach for significant weight loss',
+      medications: [
+        { sku: 'PHE-375-TAB', name: 'Phentermine 37.5mg', price: 89, qty: 30, instructions: 'Take 1 tablet in morning', refills: 2 },
+        { sku: 'MET-500-TAB', name: 'Metformin 500mg', price: 35, qty: 60, instructions: 'Take 1 tablet twice daily with meals', refills: 5 },
+        { sku: 'TOP-25-TAB', name: 'Topiramate 25mg', price: 45, qty: 30, instructions: 'Take 1 tablet at bedtime', refills: 5 }
+      ],
+      duration: '3-6 months',
+      followUp: '2 weeks',
+      total: 169
+    },
+    maintenance: {
+      name: 'Weight Maintenance',
+      description: 'Long-term weight management',
+      medications: [
+        { sku: 'MET-1000-TAB', name: 'Metformin 1000mg', price: 40, qty: 60, instructions: 'Take 1 tablet twice daily', refills: 11 },
+        { sku: 'NAL-50-TAB', name: 'Naltrexone 50mg', price: 55, qty: 30, instructions: 'Take 1 tablet daily', refills: 11 }
+      ],
+      duration: 'Ongoing',
+      followUp: '3 months',
+      total: 95
     }
   },
 
-  mensHealth: {
-    name: 'Men\'s Health',
-    icon: '👨‍⚕️',
-    protocols: {
-      ed_trial: {
-        name: 'ED Trial Pack',
-        description: 'Try different options',
-        medications: [
-          { sku: 'SIL-50-TAB', name: 'Sildenafil 50mg', price: 10, qty: 6, instructions: 'Take 1 tablet 30-60 min before activity' },
-          { sku: 'TAD-10-TAB', name: 'Tadalafil 10mg', price: 15, qty: 4, instructions: 'Take 1 tablet 30 min before activity' }
-        ],
-        total: 120
-      },
-      ed_daily: {
-        name: 'Daily ED Treatment',
-        description: 'Continuous coverage',
-        medications: [
-          { sku: 'TAD-5-TAB', name: 'Tadalafil 5mg', price: 8, qty: 30, instructions: 'Take 1 tablet daily at same time' }
-        ],
-        total: 240
-      },
-      premature_ejac: {
-        name: 'Premature Ejaculation',
-        description: 'SSRI treatment',
-        medications: [
-          { sku: 'SERT-50', name: 'Sertraline 50mg', price: 20, qty: 30, instructions: 'Take 1 tablet daily' },
-          { sku: 'LIDO-SPRAY', name: 'Lidocaine Spray', price: 35, qty: 1, instructions: 'Apply 3 sprays 10-15 min before activity' }
-        ],
-        total: 55
-      },
-      prostate_health: {
-        name: 'Prostate Support',
-        description: 'BPH management',
-        medications: [
-          { sku: 'TAMS-04', name: 'Tamsulosin 0.4mg', price: 25, qty: 30, instructions: 'Take 1 capsule daily after same meal' },
-          { sku: 'SAW-PALM', name: 'Saw Palmetto 320mg', price: 20, qty: 30, instructions: 'Take 1 capsule daily' }
-        ],
-        total: 45
-      }
+  anxiety: {
+    mild: {
+      name: 'Mild Anxiety Management',
+      description: 'Non-controlled options for daily anxiety',
+      medications: [
+        { sku: 'HYD-25-TAB', name: 'Hydroxyzine 25mg', price: 35, qty: 30, instructions: 'Take 1 tablet up to 3 times daily as needed', refills: 5 },
+        { sku: 'PRO-20-TAB', name: 'Propranolol 20mg', price: 25, qty: 30, instructions: 'Take 1 tablet before stressful events', refills: 5 }
+      ],
+      duration: 'As needed',
+      followUp: '6 weeks',
+      total: 60
+    },
+    performance: {
+      name: 'Performance Anxiety',
+      description: 'For public speaking and performance',
+      medications: [
+        { sku: 'PRO-40-TAB', name: 'Propranolol 40mg', price: 30, qty: 20, instructions: 'Take 1 tablet 1 hour before event', refills: 5 }
+      ],
+      duration: 'As needed',
+      followUp: '3 months',
+      total: 30
+    },
+    daily: {
+      name: 'Daily Anxiety Treatment',
+      description: 'SSRI therapy for generalized anxiety',
+      medications: [
+        { sku: 'SER-50-TAB', name: 'Sertraline 50mg', price: 45, qty: 30, instructions: 'Take 1 tablet daily in morning', refills: 5 },
+        { sku: 'HYD-25-TAB', name: 'Hydroxyzine 25mg', price: 35, qty: 30, instructions: 'Take as needed for breakthrough anxiety', refills: 5 }
+      ],
+      duration: 'Ongoing',
+      followUp: '4 weeks initially, then 3 months',
+      total: 80
     }
   },
 
-  trt: {
-    name: 'Testosterone Therapy',
-    icon: '💪',
-    protocols: {
-      injection_starter: {
-        name: 'TRT Starter - Injections',
-        description: 'Weekly testosterone cypionate',
-        medications: [
-          { sku: 'TEST-CYP-200', name: 'Testosterone Cypionate 200mg/ml', price: 80, qty: 1, instructions: 'Inject 0.5ml (100mg) IM weekly' },
-          { sku: 'HCG-5000', name: 'HCG 5000IU', price: 60, qty: 1, instructions: 'Inject 250IU subQ twice weekly' },
-          { sku: 'AI-ARIM', name: 'Anastrozole 1mg', price: 30, qty: 10, instructions: 'Take 0.5mg twice weekly if needed' }
-        ],
-        labsRequired: ['Total T', 'Free T', 'Estradiol', 'PSA', 'CBC', 'CMP'],
-        followUp: '6 weeks',
-        total: 170
-      },
-      injection_maintain: {
-        name: 'TRT Maintenance',
-        description: 'Monthly supply',
-        medications: [
-          { sku: 'TEST-CYP-200', name: 'Testosterone Cypionate 200mg/ml', price: 80, qty: 2, instructions: 'Inject prescribed dose IM weekly' },
-          { sku: 'HCG-5000', name: 'HCG 5000IU', price: 60, qty: 1, instructions: 'Inject 250IU subQ twice weekly' }
-        ],
-        total: 220
-      },
-      gel_daily: {
-        name: 'TRT Gel',
-        description: 'Daily topical application',
-        medications: [
-          { sku: 'TEST-GEL-1', name: 'Testosterone Gel 1%', price: 120, qty: 1, instructions: 'Apply 2 pumps to shoulders/upper arms daily' }
-        ],
-        total: 120
-      },
-      pellets: {
-        name: 'TRT Pellets',
-        description: 'Long-acting implants',
-        medications: [
-          { sku: 'TEST-PEL', name: 'Testosterone Pellets', price: 650, qty: 1, instructions: 'Implanted every 4-6 months (includes procedure)' }
-        ],
-        total: 650
-      },
-      clomid_restart: {
-        name: 'Natural T Boost',
-        description: 'Clomiphene for natural production',
-        medications: [
-          { sku: 'CLOM-50', name: 'Clomiphene 50mg', price: 40, qty: 30, instructions: 'Take 25mg daily (half tablet)' },
-          { sku: 'DHEA-50', name: 'DHEA 50mg', price: 20, qty: 30, instructions: 'Take 1 daily in morning' },
-          { sku: 'VIT-D3', name: 'Vitamin D3 5000IU', price: 15, qty: 30, instructions: 'Take 1 daily' }
-        ],
-        total: 75
-      }
+  depression: {
+    mild: {
+      name: 'Mild Depression Treatment',
+      description: 'First-line SSRI therapy',
+      medications: [
+        { sku: 'ESC-10-TAB', name: 'Escitalopram 10mg', price: 40, qty: 30, instructions: 'Take 1 tablet daily', refills: 5 }
+      ],
+      duration: 'Minimum 6 months',
+      followUp: '2 weeks, then monthly',
+      total: 40
+    },
+    standard: {
+      name: 'Depression Standard Treatment',
+      description: 'Optimized SSRI/SNRI therapy',
+      medications: [
+        { sku: 'SER-100-TAB', name: 'Sertraline 100mg', price: 50, qty: 30, instructions: 'Take 1 tablet daily', refills: 5 },
+        { sku: 'BUP-150-TAB', name: 'Bupropion XL 150mg', price: 55, qty: 30, instructions: 'Take 1 tablet in morning', refills: 5 }
+      ],
+      duration: 'Ongoing',
+      followUp: 'Monthly',
+      total: 105
+    }
+  },
+
+  skincare: {
+    antiAging: {
+      name: 'Anti-Aging Protocol',
+      description: 'Prescription-strength anti-aging regimen',
+      medications: [
+        { sku: 'TRE-01-CR', name: 'Tretinoin 0.1% Cream', price: 79, qty: 1, instructions: 'Apply at night', refills: 5 },
+        { sku: 'HYD-4-CR', name: 'Hydroquinone 4% Cream', price: 65, qty: 1, instructions: 'Apply to dark spots twice daily', refills: 2 },
+        { sku: 'VIT-C-SER', name: 'Vitamin C 20% Serum', price: 45, qty: 1, instructions: 'Apply in morning', refills: 5 }
+      ],
+      duration: 'Ongoing',
+      followUp: '12 weeks',
+      total: 189
+    },
+    melasma: {
+      name: 'Melasma Treatment',
+      description: 'Triple combination therapy for melasma',
+      medications: [
+        { sku: 'TRI-CR', name: 'Tri-Luma Cream', price: 125, qty: 1, instructions: 'Apply to affected areas at night', refills: 2 },
+        { sku: 'SPF-50', name: 'Medical Grade SPF 50', price: 35, qty: 1, instructions: 'Apply every morning', refills: 5 }
+      ],
+      duration: '8-12 weeks',
+      followUp: '4 weeks',
+      total: 160
+    },
+    rosacea: {
+      name: 'Rosacea Management',
+      description: 'Reduce redness and inflammation',
+      medications: [
+        { sku: 'MET-075-GEL', name: 'Metronidazole 0.75% Gel', price: 55, qty: 1, instructions: 'Apply twice daily', refills: 5 },
+        { sku: 'DOX-40-CAP', name: 'Doxycycline 40mg', price: 65, qty: 30, instructions: 'Take 1 daily', refills: 5 },
+        { sku: 'IVE-1-CR', name: 'Ivermectin 1% Cream', price: 85, qty: 1, instructions: 'Apply once daily', refills: 5 }
+      ],
+      duration: 'Ongoing',
+      followUp: '8 weeks',
+      total: 205
     }
   }
 };
 
-// Helper function to get protocols for a specific condition
-export function getProtocolsByCondition(condition: string) {
-  return treatmentProtocols[condition as keyof typeof treatmentProtocols] || null;
-}
+// Function to get all conditions
+export const getAllConditions = () => {
+  return Object.keys(treatmentProtocols);
+};
 
-// Helper function to get all conditions
-export function getAllConditions() {
-  return Object.keys(treatmentProtocols).map(key => ({
-    key,
-    name: treatmentProtocols[key as keyof typeof treatmentProtocols].name,
-    icon: treatmentProtocols[key as keyof typeof treatmentProtocols].icon
-  }));
-}
+// Function to get protocols for a condition
+export const getProtocolsForCondition = (condition: string) => {
+  return treatmentProtocols[condition as keyof typeof treatmentProtocols] || {};
+};
+
+// Function to calculate total cost for a protocol
+export const calculateProtocolCost = (medications: any[]) => {
+  return medications.reduce((sum, med) => sum + (med.price * (med.qty || 1)), 0);
+};
+
+// Export condition display names
+export const conditionDisplayNames: { [key: string]: string } = {
+  acne: 'Acne Treatment',
+  ed: 'Erectile Dysfunction',
+  hairLoss: 'Hair Loss',
+  weightLoss: 'Weight Loss',
+  anxiety: 'Anxiety',
+  depression: 'Depression', 
+  skincare: 'Skincare'
+};

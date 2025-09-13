@@ -120,7 +120,7 @@ export default function ProviderConsultationReview() {
   const [selectedMedications, setSelectedMedications] = useState<any[]>([]);
   const [sending, setSending] = useState(false);
   const [hpiSummary, setHpiSummary] = useState('');
-  const [selectedProtocol, setSelectedProtocol] = useState('');
+  const [selectedProtocols, setSelectedProtocols] = useState<string[]>([]);
   const [patientCondition, setPatientCondition] = useState(conditionFromUrl); // From URL param
 
   useEffect(() => {
@@ -208,17 +208,9 @@ export default function ProviderConsultationReview() {
         ed: 'standard'
       };
       
-      const protocol = defaultProtocols[conditionFromUrl] || 'moderate';
-      setSelectedProtocol(protocol);
-      
-      // Set medications based on condition and protocol
-      const conditionProtocols = treatmentProtocols[conditionFromUrl as keyof typeof treatmentProtocols] || treatmentProtocols.acne;
-      const selectedProtocolData = (conditionProtocols as any)[protocol];
-      if (selectedProtocolData && selectedProtocolData.medications) {
-        setSelectedMedications(selectedProtocolData.medications);
-      } else {
-        setSelectedMedications([]);
-      }
+      // Don't pre-select any protocols - let provider choose
+      setSelectedProtocols([]);
+      setSelectedMedications([]);
       setPatientCondition(conditionFromUrl);
       
     } catch (error) {
@@ -367,50 +359,94 @@ export default function ProviderConsultationReview() {
               )}
             </div>
 
-            {/* Treatment Protocol Selection */}
+            {/* Treatment Protocol Selection - Multiple Choice */}
             <div>
-              <p className="text-xs font-medium text-slate-700 mb-2">Select Treatment Protocol:</p>
+              <p className="text-xs font-medium text-slate-700 mb-2">Select Treatment Protocols (can choose multiple):</p>
               <div className="space-y-2">
-                {Object.entries(treatmentProtocols[patientCondition as keyof typeof treatmentProtocols] || {}).map(([key, protocol]) => (
-                  <button
-                    key={key}
-                    onClick={() => {
-                      setSelectedProtocol(key);
-                      setSelectedMedications(protocol.medications);
-                    }}
-                    className={`w-full text-left px-3 py-2 rounded transition ${
-                      selectedProtocol === key 
-                        ? 'bg-medical-50 border-2 border-medical-500 text-medical-700' 
-                        : 'bg-white border border-slate-200 hover:bg-slate-50'
-                    }`}
-                  >
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <div className="text-sm font-medium">{protocol.name}</div>
-                        <div className="text-xs text-slate-500 mt-0.5">
-                          {protocol.medications.map(m => m.name).join(' + ')}
+                {Object.entries(treatmentProtocols[patientCondition as keyof typeof treatmentProtocols] || {}).map(([key, protocol]) => {
+                  const isSelected = selectedProtocols.includes(key);
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => {
+                        if (isSelected) {
+                          // Remove protocol
+                          setSelectedProtocols(selectedProtocols.filter(p => p !== key));
+                          // Remove medications from this protocol
+                          const protocolMeds = protocol.medications.map(m => m.sku);
+                          setSelectedMedications(selectedMedications.filter(m => !protocolMeds.includes(m.sku)));
+                        } else {
+                          // Add protocol
+                          setSelectedProtocols([...selectedProtocols, key]);
+                          // Add medications from this protocol
+                          const newMeds = protocol.medications.filter(
+                            m => !selectedMedications.some(existing => existing.sku === m.sku)
+                          );
+                          setSelectedMedications([...selectedMedications, ...newMeds]);
+                        }
+                      }}
+                      className={`w-full text-left px-3 py-2 rounded transition ${
+                        isSelected 
+                          ? 'bg-medical-50 border-2 border-medical-500 text-medical-700' 
+                          : 'bg-white border border-slate-200 hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                            isSelected ? 'bg-medical-500 border-medical-500' : 'bg-white border-slate-300'
+                          }`}>
+                            {isSelected && (
+                              <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            )}
+                          </div>
+                          <div>
+                            <div className="text-sm font-medium">{protocol.name}</div>
+                            <div className="text-xs text-slate-500 mt-0.5">
+                              {protocol.medications.map(m => m.name).join(' + ')}
+                            </div>
+                          </div>
                         </div>
+                        <span className="text-sm font-bold text-emerald-600">${protocol.total}</span>
                       </div>
-                      <span className="text-sm font-bold text-emerald-600">${protocol.total}</span>
-                    </div>
-                  </button>
-                ))}
+                    </button>
+                  );
+                })}
               </div>
               
-              {/* Custom medication option */}
+              {/* Add individual medications */}
               <button
                 onClick={() => {
-                  setSelectedProtocol('custom');
-                  setSelectedMedications([]);
+                  // Toggle custom mode
+                  if (selectedProtocols.includes('custom')) {
+                    setSelectedProtocols(selectedProtocols.filter(p => p !== 'custom'));
+                  } else {
+                    setSelectedProtocols([...selectedProtocols, 'custom']);
+                  }
                 }}
                 className={`w-full mt-2 text-left px-3 py-2 rounded transition ${
-                  selectedProtocol === 'custom' 
+                  selectedProtocols.includes('custom') 
                     ? 'bg-purple-50 border-2 border-purple-500 text-purple-700' 
                     : 'bg-white border border-dashed border-slate-300 hover:bg-slate-50'
                 }`}
               >
-                <div className="text-sm font-medium">Custom Protocol</div>
-                <div className="text-xs text-slate-500">Build your own combination</div>
+                <div className="flex items-center gap-2">
+                  <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                    selectedProtocols.includes('custom') ? 'bg-purple-500 border-purple-500' : 'bg-white border-slate-300'
+                  }`}>
+                    {selectedProtocols.includes('custom') && (
+                      <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium">Add Custom Medications</div>
+                    <div className="text-xs text-slate-500">Add individual medications not in protocols</div>
+                  </div>
+                </div>
               </button>
             </div>
           </div>
