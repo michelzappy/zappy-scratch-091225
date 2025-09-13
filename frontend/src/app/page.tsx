@@ -72,21 +72,20 @@ export default function Home() {
             
             {/* Quick Access Portal Buttons */}
             <div className="border-t border-white/20 pt-6 mt-6">
-              <p className="text-white/70 text-sm mb-4">Quick Access Portal</p>
+              <p className="text-white/70 text-sm mb-4">Healthcare Professional Access</p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Link href="/patient/dashboard" 
+                <Link href="/portal/login" 
                   className="inline-block bg-white/10 backdrop-blur-sm text-white border border-white/30 px-6 py-2 rounded-lg text-sm font-medium hover:bg-white/20 transition-all">
-                  🏥 Patient Portal
+                  🏥 Staff Portal Login
                 </Link>
-                <Link href="/provider/dashboard" 
+                <Link href="/patient/login" 
                   className="inline-block bg-white/10 backdrop-blur-sm text-white border border-white/30 px-6 py-2 rounded-lg text-sm font-medium hover:bg-white/20 transition-all">
-                  👨‍⚕️ Provider Portal
-                </Link>
-                <Link href="/admin/dashboard" 
-                  className="inline-block bg-white/10 backdrop-blur-sm text-white border border-white/30 px-6 py-2 rounded-lg text-sm font-medium hover:bg-white/20 transition-all">
-                  ⚙️ Admin Portal
+                  👤 Patient Portal Login
                 </Link>
               </div>
+              <p className="text-white/60 text-xs mt-3">
+                Healthcare providers and administrators use the unified Staff Portal
+              </p>
             </div>
           </div>
         </div>
