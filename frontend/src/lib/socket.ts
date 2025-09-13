@@ -1,5 +1,5 @@
 import { io, Socket } from 'socket.io-client';
-import { supabase } from './auth';
+import { authService } from './auth';
 
 class SocketManager {
   private socket: Socket | null = null;
@@ -26,12 +26,8 @@ class SocketManager {
     this.isConnecting = true;
 
     try {
-      let token = null;
-      
-      if (supabase) {
-        const { data: { session } } = await supabase.auth.getSession();
-        token = session?.access_token;
-      }
+      // Get access token from our auth service
+      const token = authService.getAccessToken();
       
       if (!token) {
         throw new Error('No auth token available');

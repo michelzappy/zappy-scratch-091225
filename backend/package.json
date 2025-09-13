@@ -16,6 +16,7 @@
     "format": "prettier --write src/"
   },
   "dependencies": {
+    "@sendgrid/mail": "^8.1.0",
     "@supabase/supabase-js": "^2.38.4",
     "aws-sdk": "^2.1491.0",
     "bcryptjs": "^2.4.3",
@@ -33,12 +34,14 @@
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.1",
+    "node-cron": "^3.0.3",
     "nodemailer": "^6.9.7",
     "pg": "^8.11.3",
     "postgres": "^3.4.3",
     "sharp": "^0.32.6",
     "socket.io": "^4.7.4",
     "stripe": "^18.5.0",
+    "twilio": "^4.19.3",
     "uuid": "^9.0.1",
     "zod": "^3.22.4"
   },

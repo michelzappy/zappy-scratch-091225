@@ -26,6 +26,7 @@ import providerConsultationRoutes from './routes/provider-consultations.js';
 import orderRoutes from './routes/orders.js';
 import fileRoutes from './routes/files.js';
 import adminRoutes from './routes/admin.js';
+import webhookRoutes from './routes/webhooks.js';
 
 // Import socket handlers
 import { setupSocketHandlers } from './sockets/index.js';
@@ -76,6 +77,10 @@ app.use(cors({
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Webhook routes (before rate limiting and audit logging)
+// These routes need raw body parsing and different middleware
+app.use('/webhooks', webhookRoutes);
 
 // Rate limiting
 app.use(generalLimiter);

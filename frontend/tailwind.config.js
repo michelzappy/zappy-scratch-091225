@@ -16,7 +16,17 @@ module.exports = {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ['Avenir', 'Helvetica', 'Arial', 'sans-serif'],
+      },
       colors: {
+        // Zappy brand colors
+        'zappy-pink': '#f76d6d',
+        'zappy-blue': '#3c5b99',
+        'zappy-light-blue': '#eef2ff',
+        'zappy-light-yellow': '#fefce8',
+        
+        // Existing colors
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',

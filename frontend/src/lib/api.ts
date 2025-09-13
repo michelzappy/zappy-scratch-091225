@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
-import { supabase } from './auth';
+import { authService } from './auth';
 
 class ApiClient {
   public client: AxiosInstance;
@@ -16,12 +16,11 @@ class ApiClient {
     // Request interceptor to add auth token
     this.client.interceptors.request.use(
       async (config) => {
-        if (supabase) {
-          const { data: { session } } = await supabase.auth.getSession();
-          
-          if (session?.access_token) {
-            config.headers.Authorization = `Bearer ${session.access_token}`;
-          }
+        // Get access token from our auth service
+        const accessToken = authService.getAccessToken();
+        
+        if (accessToken) {
+          config.headers.Authorization = `Bearer ${accessToken}`;
         }
 
         return config;
@@ -34,15 +33,19 @@ class ApiClient {
     // Response interceptor for error handling
     this.client.interceptors.response.use(
       (response) => response,
-      (error: AxiosError) => {
+      async (error: AxiosError) => {
         if (error.response?.status === 401) {
-          // Handle unauthorized access
-          if (supabase) {
-            supabase.auth.signOut();
+          // Try to refresh token
+          const refreshed = await authService.refreshToken();
+          
+          if (refreshed && error.config) {
+            // Retry the original request with new token
+            error.config.headers.Authorization = `Bearer ${refreshed.accessToken}`;
+            return this.client.request(error.config);
           }
-          if (typeof window !== 'undefined') {
-            window.location.href = '/login';
-          }
+          
+          // If refresh failed, logout and redirect
+          await authService.logout();
         }
         
         return Promise.reject(error);
