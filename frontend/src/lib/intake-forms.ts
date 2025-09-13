@@ -1,20 +1,52 @@
-// Comprehensive Intake Forms for All Telehealth Conditions
+// Comprehensive Medical Intake Forms for DTC Telehealth Platform
+// Designed to be thorough yet elegant, following best practices from leading telehealth companies
 
 export interface IntakeQuestion {
   id: string;
   question: string;
-  type: 'select' | 'multiselect' | 'text' | 'number' | 'yesno' | 'scale' | 'date';
+  type: 'select' | 'multiselect' | 'text' | 'number' | 'yesno' | 'scale' | 'date' | 'height' | 'blood_pressure' | 'textarea';
   options?: string[];
   required: boolean;
-  followUp?: { condition: any; questions: IntakeQuestion[] };
-  validation?: any;
+  placeholder?: string;
+  helpText?: string;
+  followUp?: { 
+    condition: { field: string; value: any };
+    questions: IntakeQuestion[];
+  };
+  validation?: {
+    min?: number;
+    max?: number;
+    pattern?: string;
+    message?: string;
+  };
+  skipLogic?: {
+    field: string;
+    value: any;
+    action: 'show' | 'hide';
+  };
 }
 
-export const intakeForms = {
+export interface IntakeSection {
+  title: string;
+  subtitle?: string;
+  questions: IntakeQuestion[];
+}
+
+export interface IntakeForm {
+  name: string;
+  icon: string;
+  estimatedTime: string;
+  description: string;
+  sections: IntakeSection[];
+  disclaimers?: string[];
+}
+
+export const intakeForms: Record<string, IntakeForm> = {
   weightLoss: {
-    name: 'Weight Management Consultation',
+    name: 'Weight Management & GLP-1 Consultation',
     icon: '⚖️',
-    estimatedTime: '5-7 minutes',
+    estimatedTime: '8-10 minutes',
+    description: 'Comprehensive assessment for medical weight management including GLP-1 medications',
     sections: [
       {
         title: 'Weight History',
@@ -147,9 +179,10 @@ export const intakeForms = {
   },
 
   hairLoss: {
-    name: 'Hair Loss Consultation',
+    name: 'Hair Loss & Restoration Consultation',
     icon: '💇',
-    estimatedTime: '3-5 minutes',
+    estimatedTime: '6-8 minutes',
+    description: 'Comprehensive evaluation for hair loss treatment including prescription options',
     sections: [
       {
         title: 'Hair Loss Pattern',
@@ -234,7 +267,8 @@ export const intakeForms = {
   longevity: {
     name: 'Longevity & Anti-Aging Consultation',
     icon: '🧬',
-    estimatedTime: '5-7 minutes',
+    estimatedTime: '7-10 minutes',
+    description: 'Optimize your healthspan with personalized longevity protocols and biomarker tracking',
     sections: [
       {
         title: 'Health Goals',
@@ -344,7 +378,8 @@ export const intakeForms = {
   womensHealth: {
     name: 'Women\'s Health Consultation',
     icon: '👩‍⚕️',
-    estimatedTime: '5-7 minutes',
+    estimatedTime: '6-8 minutes',
+    description: 'Comprehensive women\'s health services including birth control, UTI treatment, and hormonal care',
     sections: [
       {
         title: 'Primary Concern',
@@ -444,9 +479,10 @@ export const intakeForms = {
   },
 
   mensHealth: {
-    name: 'Men\'s Health Consultation',
+    name: 'Men\'s Health & ED Consultation',
     icon: '👨‍⚕️',
-    estimatedTime: '3-5 minutes',
+    estimatedTime: '5-7 minutes',
+    description: 'Confidential consultation for erectile dysfunction, premature ejaculation, and men\'s wellness',
     sections: [
       {
         title: 'Primary Concern',
@@ -539,7 +575,8 @@ export const intakeForms = {
   trt: {
     name: 'Testosterone Replacement Therapy Consultation',
     icon: '💪',
-    estimatedTime: '7-10 minutes',
+    estimatedTime: '8-10 minutes',
+    description: 'Expert assessment for low testosterone symptoms and personalized TRT treatment plans',
     sections: [
       {
         title: 'Symptoms',

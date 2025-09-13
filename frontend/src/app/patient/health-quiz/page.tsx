@@ -1,177 +1,499 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-
-interface QuizData {
-  condition: string;
-  symptoms: string[];
-  duration: string;
-  severity: string;
-  previousTreatments: string[];
-  allergies: string[];
-  medications: string[];
-  medicalHistory: string[];
-  lifestyle: {
-    smoking: boolean;
-    alcohol: string;
-    exercise: string;
-  };
-}
+import { intakeForms, type IntakeQuestion, type IntakeForm, type IntakeSection } from '@/lib/intake-forms';
 
 export default function HealthQuizPage() {
   const router = useRouter();
-  const [step, setStep] = useState(1);
-  const [quizData, setQuizData] = useState<QuizData>({
-    condition: '',
-    symptoms: [],
-    duration: '',
-    severity: '',
-    previousTreatments: [],
-    allergies: [],
-    medications: [],
-    medicalHistory: [],
-    lifestyle: {
-      smoking: false,
-      alcohol: 'none',
-      exercise: 'none'
-    }
-  });
+  const [selectedCondition, setSelectedCondition] = useState<string>('');
+  const [currentForm, setCurrentForm] = useState<IntakeForm | null>(null);
+  const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [responses, setResponses] = useState<Record<string, any>>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Available conditions with enhanced details
   const conditions = [
-    { id: 'hair-loss', name: 'Hair Loss', icon: '💊', description: 'Thinning hair or balding' },
-    { id: 'ed', name: 'Erectile Dysfunction', icon: '🔵', description: 'Difficulty with erections' },
-    { id: 'weight-loss', name: 'Weight Management', icon: '⚖️', description: 'Weight loss solutions' },
-    { id: 'skin', name: 'Skin Conditions', icon: '✨', description: 'Acne, aging, or other skin issues' },
-    { id: 'mental-health', name: 'Mental Health', icon: '🧠', description: 'Anxiety or depression' }
+    { 
+      id: 'weightLoss', 
+      name: 'Weight Management & GLP-1', 
+      icon: '⚖️', 
+      description: 'Medical weight loss including Ozempic, Wegovy, and Mounjaro',
+      estimatedTime: '8-10 minutes'
+    },
+    { 
+      id: 'hairLoss', 
+      name: 'Hair Loss & Restoration', 
+      icon: '💇', 
+      description: 'Prescription treatments for hair regrowth and prevention',
+      estimatedTime: '6-8 minutes'
+    },
+    { 
+      id: 'mensHealth', 
+      name: 'Men\'s Health & ED', 
+      icon: '👨‍⚕️', 
+      description: 'Erectile dysfunction and men\'s wellness treatments',
+      estimatedTime: '5-7 minutes'
+    },
+    { 
+      id: 'womensHealth', 
+      name: 'Women\'s Health', 
+      icon: '👩‍⚕️', 
+      description: 'Birth control, UTI treatment, and hormonal care',
+      estimatedTime: '6-8 minutes'
+    },
+    { 
+      id: 'trt', 
+      name: 'Testosterone Therapy', 
+      icon: '💪', 
+      description: 'TRT for low testosterone symptoms',
+      estimatedTime: '8-10 minutes'
+    },
+    { 
+      id: 'longevity', 
+      name: 'Longevity & Anti-Aging', 
+      icon: '🧬', 
+      description: 'Optimize healthspan with personalized protocols',
+      estimatedTime: '7-10 minutes'
+    }
   ];
 
-  const symptomsByCondition: Record<string, string[]> = {
-    'hair-loss': [
-      'Gradual thinning on top of head',
-      'Circular or patchy bald spots',
-      'Sudden loosening of hair',
-      'Full-body hair loss',
-      'Patches of scaling'
-    ],
-    'ed': [
-      'Trouble getting an erection',
-      'Trouble keeping an erection',
-      'Reduced sexual desire',
-      'Premature ejaculation',
-      'Delayed ejaculation'
-    ],
-    'weight-loss': [
-      'Difficulty losing weight',
-      'Constant hunger',
-      'Low energy',
-      'Slow metabolism',
-      'Emotional eating'
-    ],
-    'skin': [
-      'Acne breakouts',
-      'Dark spots',
-      'Fine lines and wrinkles',
-      'Uneven skin tone',
-      'Dry or oily skin'
-    ],
-    'mental-health': [
-      'Persistent sadness',
-      'Loss of interest',
-      'Anxiety or worry',
-      'Difficulty sleeping',
-      'Difficulty concentrating'
-    ]
+  // Load the selected form
+  useEffect(() => {
+    if (selectedCondition && intakeForms[selectedCondition]) {
+      setCurrentForm(intakeForms[selectedCondition]);
+      setCurrentSectionIndex(0);
+      setCurrentQuestionIndex(0);
+    }
+  }, [selectedCondition]);
+
+  // Calculate progress
+  const calculateProgress = () => {
+    if (!currentForm) return 0;
+    
+    const totalSections = currentForm.sections.length;
+    const totalQuestions = currentForm.sections.reduce((acc: number, section: IntakeSection) => 
+      acc + section.questions.length, 0
+    );
+    
+    let questionsAnswered = 0;
+    for (let i = 0; i < currentSectionIndex; i++) {
+      questionsAnswered += currentForm.sections[i].questions.length;
+    }
+    questionsAnswered += currentQuestionIndex;
+    
+    return (questionsAnswered / totalQuestions) * 100;
   };
 
-  const handleNext = () => {
-    if (step < 7) {
-      setStep(step + 1);
+  // Get current question
+  const getCurrentQuestion = (): IntakeQuestion | null => {
+    if (!currentForm) return null;
+    const section = currentForm.sections[currentSectionIndex];
+    if (!section) return null;
+    return section.questions[currentQuestionIndex] || null;
+  };
+
+  // Check if question should be displayed based on skip logic
+  const shouldShowQuestion = (question: IntakeQuestion): boolean => {
+    if (!question.skipLogic) return true;
+    
+    const { field, value, action } = question.skipLogic;
+    const fieldValue = responses[field];
+    
+    if (action === 'show') {
+      return fieldValue === value || (Array.isArray(fieldValue) && fieldValue.includes(value));
     } else {
-      // Save quiz data and redirect to consultation
-      localStorage.setItem('healthQuizData', JSON.stringify(quizData));
+      return fieldValue !== value && !(Array.isArray(fieldValue) && fieldValue.includes(value));
+    }
+  };
+
+  // Validate current question
+  const validateQuestion = (question: IntakeQuestion): boolean => {
+    const value = responses[question.id];
+    
+    if (question.required && !value) {
+      setErrors({ ...errors, [question.id]: 'This field is required' });
+      return false;
+    }
+    
+    if (question.validation && value) {
+      const { min, max, pattern, message } = question.validation;
+      
+      if (question.type === 'number') {
+        const numValue = Number(value);
+        if (min !== undefined && numValue < min) {
+          setErrors({ ...errors, [question.id]: message || `Value must be at least ${min}` });
+          return false;
+        }
+        if (max !== undefined && numValue > max) {
+          setErrors({ ...errors, [question.id]: message || `Value must be less than ${max}` });
+          return false;
+        }
+      }
+      
+      if (pattern && typeof value === 'string') {
+        const regex = new RegExp(pattern);
+        if (!regex.test(value)) {
+          setErrors({ ...errors, [question.id]: message || 'Invalid format' });
+          return false;
+        }
+      }
+    }
+    
+    // Clear error if validation passes
+    const newErrors = { ...errors };
+    delete newErrors[question.id];
+    setErrors(newErrors);
+    
+    return true;
+  };
+
+  // Handle next question/section
+  const handleNext = () => {
+    if (!currentForm) return;
+    
+    const currentQuestion = getCurrentQuestion();
+    if (currentQuestion && currentQuestion.required && !validateQuestion(currentQuestion)) {
+      return;
+    }
+    
+    const section = currentForm.sections[currentSectionIndex];
+    
+    // Find next visible question in current section
+    let nextQuestionIndex = currentQuestionIndex + 1;
+    while (nextQuestionIndex < section.questions.length) {
+      if (shouldShowQuestion(section.questions[nextQuestionIndex])) {
+        setCurrentQuestionIndex(nextQuestionIndex);
+        return;
+      }
+      nextQuestionIndex++;
+    }
+    
+    // Move to next section
+    if (currentSectionIndex < currentForm.sections.length - 1) {
+      setCurrentSectionIndex(currentSectionIndex + 1);
+      setCurrentQuestionIndex(0);
+    } else {
+      // Form complete - save and redirect
+      localStorage.setItem('intakeFormResponses', JSON.stringify({
+        condition: selectedCondition,
+        responses,
+        timestamp: new Date().toISOString()
+      }));
       router.push('/patient/new-consultation');
     }
   };
 
+  // Handle previous question/section
   const handleBack = () => {
-    if (step > 1) {
-      setStep(step - 1);
+    if (currentQuestionIndex > 0) {
+      setCurrentQuestionIndex(currentQuestionIndex - 1);
+    } else if (currentSectionIndex > 0) {
+      setCurrentSectionIndex(currentSectionIndex - 1);
+      const prevSection = currentForm!.sections[currentSectionIndex - 1];
+      setCurrentQuestionIndex(prevSection.questions.length - 1);
+    } else {
+      // Go back to condition selection
+      setSelectedCondition('');
+      setCurrentForm(null);
+      setResponses({});
+      setErrors({});
     }
   };
 
-  const updateQuizData = (field: keyof QuizData, value: any) => {
-    setQuizData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+  // Update response for current question
+  const updateResponse = (questionId: string, value: any) => {
+    setResponses({ ...responses, [questionId]: value });
+    // Clear error when user starts typing
+    if (errors[questionId]) {
+      const newErrors = { ...errors };
+      delete newErrors[questionId];
+      setErrors(newErrors);
+    }
   };
 
-  const progressPercentage = (step / 7) * 100;
+  // Render question based on type
+  const renderQuestion = (question: IntakeQuestion) => {
+    const value = responses[question.id] || '';
+    const error = errors[question.id];
+    
+    switch (question.type) {
+      case 'select':
+        return (
+          <div>
+            <select
+              value={value}
+              onChange={(e) => updateResponse(question.id, e.target.value)}
+              className={`w-full p-4 border-2 rounded-lg focus:outline-none focus:border-purple-600 ${
+                error ? 'border-red-500' : 'border-gray-200'
+              }`}
+            >
+              <option value="">Select an option...</option>
+              {question.options?.map(option => (
+                <option key={option} value={option}>{option}</option>
+              ))}
+            </select>
+            {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
+          </div>
+        );
+        
+      case 'multiselect':
+        return (
+          <div className="space-y-3">
+            {question.options?.map(option => (
+              <label
+                key={option}
+                className="flex items-center p-4 rounded-lg border-2 border-gray-200 hover:border-purple-600 cursor-pointer transition-all"
+              >
+                <input
+                  type="checkbox"
+                  checked={Array.isArray(value) && value.includes(option)}
+                  onChange={(e) => {
+                    const currentValues = Array.isArray(value) ? value : [];
+                    if (e.target.checked) {
+                      updateResponse(question.id, [...currentValues, option]);
+                    } else {
+                      updateResponse(question.id, currentValues.filter(v => v !== option));
+                    }
+                  }}
+                  className="w-5 h-5 text-purple-600 rounded focus:ring-purple-500"
+                />
+                <span className="ml-3 text-gray-900">{option}</span>
+              </label>
+            ))}
+            {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
+          </div>
+        );
+        
+      case 'text':
+      case 'textarea':
+        return (
+          <div>
+            {question.type === 'textarea' ? (
+              <textarea
+                value={value}
+                onChange={(e) => updateResponse(question.id, e.target.value)}
+                placeholder={question.placeholder}
+                className={`w-full p-4 border-2 rounded-lg focus:outline-none focus:border-purple-600 h-32 ${
+                  error ? 'border-red-500' : 'border-gray-200'
+                }`}
+              />
+            ) : (
+              <input
+                type="text"
+                value={value}
+                onChange={(e) => updateResponse(question.id, e.target.value)}
+                placeholder={question.placeholder}
+                className={`w-full p-4 border-2 rounded-lg focus:outline-none focus:border-purple-600 ${
+                  error ? 'border-red-500' : 'border-gray-200'
+                }`}
+              />
+            )}
+            {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
+          </div>
+        );
+        
+      case 'number':
+        return (
+          <div>
+            <input
+              type="number"
+              value={value}
+              onChange={(e) => updateResponse(question.id, e.target.value)}
+              placeholder={question.placeholder}
+              min={question.validation?.min}
+              max={question.validation?.max}
+              className={`w-full p-4 border-2 rounded-lg focus:outline-none focus:border-purple-600 ${
+                error ? 'border-red-500' : 'border-gray-200'
+              }`}
+            />
+            {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
+          </div>
+        );
+        
+      case 'yesno':
+        return (
+          <div className="flex gap-4">
+            {['Yes', 'No'].map(option => (
+              <button
+                key={option}
+                onClick={() => updateResponse(question.id, option === 'Yes')}
+                className={`flex-1 p-4 rounded-lg border-2 transition-all ${
+                  value === (option === 'Yes')
+                    ? 'border-purple-600 bg-purple-50'
+                    : 'border-gray-200 hover:border-purple-600'
+                }`}
+              >
+                {option}
+              </button>
+            ))}
+            {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
+          </div>
+        );
+        
+      case 'scale':
+        return (
+          <div>
+            <div className="flex justify-between mb-2">
+              <span className="text-sm text-gray-500">Low</span>
+              <span className="text-sm text-gray-500">High</span>
+            </div>
+            <div className="grid grid-cols-10 gap-2">
+              {question.options?.map(option => (
+                <button
+                  key={option}
+                  onClick={() => updateResponse(question.id, option)}
+                  className={`p-3 rounded-lg border-2 transition-all ${
+                    value === option
+                      ? 'border-purple-600 bg-purple-600 text-white'
+                      : 'border-gray-200 hover:border-purple-600'
+                  }`}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+            {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
+          </div>
+        );
+        
+      case 'date':
+        return (
+          <div>
+            <input
+              type="date"
+              value={value}
+              onChange={(e) => updateResponse(question.id, e.target.value)}
+              className={`w-full p-4 border-2 rounded-lg focus:outline-none focus:border-purple-600 ${
+                error ? 'border-red-500' : 'border-gray-200'
+              }`}
+            />
+            {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
+          </div>
+        );
+        
+      case 'height':
+        return (
+          <div className="flex gap-4">
+            <input
+              type="number"
+              placeholder="Feet"
+              value={value.feet || ''}
+              onChange={(e) => updateResponse(question.id, { ...value, feet: e.target.value })}
+              className={`flex-1 p-4 border-2 rounded-lg focus:outline-none focus:border-purple-600 ${
+                error ? 'border-red-500' : 'border-gray-200'
+              }`}
+            />
+            <input
+              type="number"
+              placeholder="Inches"
+              value={value.inches || ''}
+              onChange={(e) => updateResponse(question.id, { ...value, inches: e.target.value })}
+              className={`flex-1 p-4 border-2 rounded-lg focus:outline-none focus:border-purple-600 ${
+                error ? 'border-red-500' : 'border-gray-200'
+              }`}
+            />
+            {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
+          </div>
+        );
+        
+      case 'blood_pressure':
+        return (
+          <div className="flex gap-4">
+            <input
+              type="number"
+              placeholder="Systolic (top number)"
+              value={value.systolic || ''}
+              onChange={(e) => updateResponse(question.id, { ...value, systolic: e.target.value })}
+              className={`flex-1 p-4 border-2 rounded-lg focus:outline-none focus:border-purple-600 ${
+                error ? 'border-red-500' : 'border-gray-200'
+              }`}
+            />
+            <span className="self-center text-gray-500">/</span>
+            <input
+              type="number"
+              placeholder="Diastolic (bottom number)"
+              value={value.diastolic || ''}
+              onChange={(e) => updateResponse(question.id, { ...value, diastolic: e.target.value })}
+              className={`flex-1 p-4 border-2 rounded-lg focus:outline-none focus:border-purple-600 ${
+                error ? 'border-red-500' : 'border-gray-200'
+              }`}
+            />
+            {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
+          </div>
+        );
+        
+      default:
+        return null;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b">
+      <header className="bg-white border-b sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <Link href="/" className="text-2xl font-bold text-purple-600">
               TeleHealth
             </Link>
-            <span className="text-sm text-gray-600">
-              Step {step} of 7
-            </span>
+            {currentForm && (
+              <span className="text-sm text-gray-600">
+                {currentForm.estimatedTime} • {Math.round(calculateProgress())}% complete
+              </span>
+            )}
           </div>
         </div>
       </header>
 
       {/* Progress Bar */}
-      <div className="bg-white border-b">
-        <div className="container mx-auto px-4">
-          <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-purple-600 transition-all duration-300"
-              style={{ width: `${progressPercentage}%` }}
-            />
+      {currentForm && (
+        <div className="bg-white border-b">
+          <div className="container mx-auto px-4">
+            <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-purple-600 transition-all duration-300"
+                style={{ width: `${calculateProgress()}%` }}
+              />
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Quiz Content */}
+      {/* Main Content */}
       <main className="container mx-auto px-4 py-8 max-w-3xl">
         <div className="bg-white rounded-2xl shadow-sm p-8">
-          {/* Step 1: Condition Selection */}
-          {step === 1 && (
+          
+          {/* Condition Selection */}
+          {!selectedCondition && (
             <div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              <h1 className="text-3xl font-bold text-gray-900 mb-4">
                 What brings you here today?
-              </h2>
+              </h1>
               <p className="text-lg text-gray-600 mb-8">
-                Select the condition you'd like to address
+                Select a condition to begin your medical assessment
               </p>
+              
               <div className="grid gap-4">
                 {conditions.map(condition => (
                   <button
                     key={condition.id}
-                    onClick={() => {
-                      updateQuizData('condition', condition.id);
-                      handleNext();
-                    }}
-                    className={`p-6 rounded-xl border-2 text-left transition-all hover:border-purple-600 hover:shadow-md ${
-                      quizData.condition === condition.id 
-                        ? 'border-purple-600 bg-purple-50' 
-                        : 'border-gray-200'
-                    }`}
+                    onClick={() => setSelectedCondition(condition.id)}
+                    className="p-6 rounded-xl border-2 text-left transition-all hover:border-purple-600 hover:shadow-md border-gray-200 group"
                   >
                     <div className="flex items-start gap-4">
                       <span className="text-3xl">{condition.icon}</span>
-                      <div>
-                        <h3 className="text-xl font-semibold text-gray-900 mb-1">
+                      <div className="flex-1">
+                        <h3 className="text-xl font-semibold text-gray-900 mb-1 group-hover:text-purple-600 transition-colors">
                           {condition.name}
                         </h3>
-                        <p className="text-gray-600">
+                        <p className="text-gray-600 mb-2">
                           {condition.description}
+                        </p>
+                        <p className="text-sm text-purple-600 font-medium">
+                          ⏱ {condition.estimatedTime}
                         </p>
                       </div>
                     </div>
@@ -180,273 +502,75 @@ export default function HealthQuizPage() {
               </div>
             </div>
           )}
-
-          {/* Step 2: Symptoms */}
-          {step === 2 && (
+          
+          {/* Intake Form Questions */}
+          {currentForm && getCurrentQuestion() && (
             <div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                What symptoms are you experiencing?
-              </h2>
-              <p className="text-lg text-gray-600 mb-8">
-                Select all that apply
-              </p>
-              <div className="space-y-3">
-                {symptomsByCondition[quizData.condition]?.map(symptom => (
-                  <label
-                    key={symptom}
-                    className="flex items-center p-4 rounded-lg border-2 border-gray-200 hover:border-purple-600 cursor-pointer transition-all"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={quizData.symptoms.includes(symptom)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          updateQuizData('symptoms', [...quizData.symptoms, symptom]);
-                        } else {
-                          updateQuizData('symptoms', quizData.symptoms.filter(s => s !== symptom));
-                        }
-                      }}
-                      className="w-5 h-5 text-purple-600 rounded focus:ring-purple-500"
-                    />
-                    <span className="ml-3 text-gray-900">{symptom}</span>
-                  </label>
-                ))}
+              {/* Section Title */}
+              <div className="mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {currentForm.sections[currentSectionIndex].title}
+                </h2>
+                {currentForm.sections[currentSectionIndex].subtitle && (
+                  <p className="text-gray-600 mt-2">
+                    {currentForm.sections[currentSectionIndex].subtitle}
+                  </p>
+                )}
               </div>
-            </div>
-          )}
-
-          {/* Step 3: Duration */}
-          {step === 3 && (
-            <div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                How long have you been experiencing this?
-              </h2>
-              <p className="text-lg text-gray-600 mb-8">
-                This helps us understand your condition better
-              </p>
-              <div className="grid gap-4">
-                {[
-                  'Less than 1 month',
-                  '1-3 months',
-                  '3-6 months',
-                  '6-12 months',
-                  'More than 1 year'
-                ].map(duration => (
-                  <button
-                    key={duration}
-                    onClick={() => {
-                      updateQuizData('duration', duration);
-                      handleNext();
-                    }}
-                    className={`p-4 rounded-lg border-2 text-left transition-all hover:border-purple-600 ${
-                      quizData.duration === duration 
-                        ? 'border-purple-600 bg-purple-50' 
-                        : 'border-gray-200'
-                    }`}
-                  >
-                    <span className="text-gray-900 font-medium">{duration}</span>
-                  </button>
-                ))}
+              
+              {/* Current Question */}
+              <div className="mb-8">
+                <label className="block text-lg font-medium text-gray-900 mb-4">
+                  {getCurrentQuestion()!.question}
+                  {getCurrentQuestion()!.required && (
+                    <span className="text-red-500 ml-1">*</span>
+                  )}
+                </label>
+                
+                {getCurrentQuestion()!.helpText && (
+                  <p className="text-sm text-gray-500 mb-4">
+                    {getCurrentQuestion()!.helpText}
+                  </p>
+                )}
+                
+                {renderQuestion(getCurrentQuestion()!)}
               </div>
-            </div>
-          )}
-
-          {/* Step 4: Previous Treatments */}
-          {step === 4 && (
-            <div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                Have you tried any treatments before?
-              </h2>
-              <p className="text-lg text-gray-600 mb-8">
-                Select all that apply
-              </p>
-              <div className="space-y-3">
-                {[
-                  'Over-the-counter medications',
-                  'Prescription medications',
-                  'Natural remedies',
-                  'Lifestyle changes',
-                  'No previous treatments'
-                ].map(treatment => (
-                  <label
-                    key={treatment}
-                    className="flex items-center p-4 rounded-lg border-2 border-gray-200 hover:border-purple-600 cursor-pointer transition-all"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={quizData.previousTreatments.includes(treatment)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          updateQuizData('previousTreatments', [...quizData.previousTreatments, treatment]);
-                        } else {
-                          updateQuizData('previousTreatments', quizData.previousTreatments.filter(t => t !== treatment));
-                        }
-                      }}
-                      className="w-5 h-5 text-purple-600 rounded focus:ring-purple-500"
-                    />
-                    <span className="ml-3 text-gray-900">{treatment}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Step 5: Allergies */}
-          {step === 5 && (
-            <div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                Do you have any allergies?
-              </h2>
-              <p className="text-lg text-gray-600 mb-8">
-                This is important for prescribing safe medications
-              </p>
-              <div className="space-y-3">
-                {[
-                  'No known allergies',
-                  'Penicillin',
-                  'Sulfa drugs',
-                  'Aspirin/NSAIDs',
-                  'Latex',
-                  'Other medications'
-                ].map(allergy => (
-                  <label
-                    key={allergy}
-                    className="flex items-center p-4 rounded-lg border-2 border-gray-200 hover:border-purple-600 cursor-pointer transition-all"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={quizData.allergies.includes(allergy)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          if (allergy === 'No known allergies') {
-                            updateQuizData('allergies', [allergy]);
-                          } else {
-                            updateQuizData('allergies', [...quizData.allergies.filter(a => a !== 'No known allergies'), allergy]);
-                          }
-                        } else {
-                          updateQuizData('allergies', quizData.allergies.filter(a => a !== allergy));
-                        }
-                      }}
-                      className="w-5 h-5 text-purple-600 rounded focus:ring-purple-500"
-                    />
-                    <span className="ml-3 text-gray-900">{allergy}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Step 6: Current Medications */}
-          {step === 6 && (
-            <div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                Are you currently taking any medications?
-              </h2>
-              <p className="text-lg text-gray-600 mb-8">
-                Include prescription, over-the-counter, and supplements
-              </p>
-              <textarea
-                placeholder="List your current medications, one per line..."
-                value={quizData.medications.join('\n')}
-                onChange={(e) => {
-                  const meds = e.target.value.split('\n').filter(m => m.trim());
-                  updateQuizData('medications', meds);
-                }}
-                className="w-full p-4 border-2 border-gray-200 rounded-lg focus:border-purple-600 focus:outline-none h-32"
-              />
-              <p className="text-sm text-gray-500 mt-2">
-                If none, you can leave this blank
-              </p>
-            </div>
-          )}
-
-          {/* Step 7: Medical History */}
-          {step === 7 && (
-            <div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                Do you have any of these conditions?
-              </h2>
-              <p className="text-lg text-gray-600 mb-8">
-                Select all that apply
-              </p>
-              <div className="space-y-3">
-                {[
-                  'None of these',
-                  'High blood pressure',
-                  'Diabetes',
-                  'Heart disease',
-                  'Kidney disease',
-                  'Liver disease',
-                  'Thyroid disorder',
-                  'Mental health conditions'
-                ].map(condition => (
-                  <label
-                    key={condition}
-                    className="flex items-center p-4 rounded-lg border-2 border-gray-200 hover:border-purple-600 cursor-pointer transition-all"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={quizData.medicalHistory.includes(condition)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          if (condition === 'None of these') {
-                            updateQuizData('medicalHistory', [condition]);
-                          } else {
-                            updateQuizData('medicalHistory', [...quizData.medicalHistory.filter(c => c !== 'None of these'), condition]);
-                          }
-                        } else {
-                          updateQuizData('medicalHistory', quizData.medicalHistory.filter(c => c !== condition));
-                        }
-                      }}
-                      className="w-5 h-5 text-purple-600 rounded focus:ring-purple-500"
-                    />
-                    <span className="ml-3 text-gray-900">{condition}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Navigation Buttons */}
-          <div className="flex justify-between mt-8">
-            {step > 1 && (
-              <button
-                onClick={handleBack}
-                className="px-6 py-3 text-gray-600 hover:text-gray-900 font-medium"
-              >
-                ← Back
-              </button>
-            )}
-            <div className="ml-auto">
-              {step < 7 ? (
+              
+              {/* Navigation Buttons */}
+              <div className="flex justify-between">
                 <button
-                  onClick={handleNext}
-                  disabled={
-                    (step === 2 && quizData.symptoms.length === 0) ||
-                    (step === 5 && quizData.allergies.length === 0) ||
-                    (step === 7 && quizData.medicalHistory.length === 0)
-                  }
-                  className="px-8 py-3 bg-purple-600 text-white rounded-full font-semibold hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  onClick={handleBack}
+                  className="px-6 py-3 text-gray-600 hover:text-gray-900 font-medium transition-colors"
                 >
-                  Continue →
+                  ← Back
                 </button>
-              ) : (
+                
                 <button
                   onClick={handleNext}
                   className="px-8 py-3 bg-purple-600 text-white rounded-full font-semibold hover:bg-purple-700 transition-all"
                 >
-                  Complete Assessment →
+                  {currentSectionIndex === currentForm.sections.length - 1 && 
+                   currentQuestionIndex === currentForm.sections[currentSectionIndex].questions.length - 1
+                    ? 'Complete Assessment →'
+                    : 'Continue →'}
                 </button>
-              )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
-
-        {/* Security Notice */}
-        <div className="mt-6 text-center">
+        
+        {/* Security & Disclaimers */}
+        <div className="mt-6 text-center space-y-2">
           <p className="text-sm text-gray-500">
             🔒 Your information is secure and HIPAA compliant
           </p>
+          {currentForm?.disclaimers && currentForm.disclaimers.length > 0 && (
+            <div className="mt-4 p-4 bg-yellow-50 rounded-lg">
+              <p className="text-xs text-yellow-800">
+                {currentForm.disclaimers.join(' • ')}
+              </p>
+            </div>
+          )}
         </div>
       </main>
     </div>

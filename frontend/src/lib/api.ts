@@ -2,7 +2,7 @@ import axios, { AxiosInstance, AxiosError } from 'axios';
 import { supabase } from './auth';
 
 class ApiClient {
-  private client: AxiosInstance;
+  public client: AxiosInstance;
 
   constructor() {
     this.client = axios.create({
@@ -115,3 +115,13 @@ class ApiClient {
 }
 
 export const apiClient = new ApiClient();
+
+// Export a simpler api object for easier use
+export const api = {
+  get: (url: string, config?: any) => apiClient.client.get(url, config),
+  post: (url: string, data?: any, config?: any) => apiClient.client.post(url, data, config),
+  put: (url: string, data?: any, config?: any) => apiClient.client.put(url, data, config),
+  delete: (url: string, config?: any) => apiClient.client.delete(url, config),
+  // Direct access to client for complex operations
+  client: apiClient.client,
+};

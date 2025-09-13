@@ -1,63 +1,63 @@
-// Comprehensive Treatment Protocols for Telehealth Platform
+// Comprehensive Treatment Protocols for DTC Telehealth
 
 export const treatmentProtocols = {
-  weightLoss: {
-    name: 'Weight Management',
-    icon: '⚖️',
-    protocols: {
-      glp1_starter: {
-        name: 'GLP-1 Starter (Semaglutide)',
-        description: 'For BMI >27 with comorbidities or BMI >30',
-        medications: [
-          { sku: 'SEM-025-INJ', name: 'Semaglutide 0.25mg weekly', price: 299, qty: 4, instructions: 'Inject 0.25mg subcutaneously once weekly for 4 weeks' }
-        ],
-        labsRequired: ['HbA1c', 'Lipid Panel', 'CMP'],
-        followUp: '4 weeks',
-        total: 299
-      },
-      glp1_maintenance: {
-        name: 'GLP-1 Maintenance',
-        description: 'After successful starter phase',
-        medications: [
-          { sku: 'SEM-1-INJ', name: 'Semaglutide 1mg weekly', price: 399, qty: 4, instructions: 'Inject 1mg subcutaneously once weekly' }
-        ],
-        total: 399
-      },
-      traditional: {
-        name: 'Traditional Weight Loss',
-        description: 'Phentermine + lifestyle modification',
-        medications: [
-          { sku: 'PHE-375-TAB', name: 'Phentermine 37.5mg', price: 89, qty: 30, instructions: 'Take 1 tablet in morning before breakfast' }
-        ],
-        contraindications: ['Cardiovascular disease', 'Hyperthyroidism'],
-        total: 89
-      },
-      metabolic: {
-        name: 'Metabolic Support',
-        description: 'For insulin resistance/PCOS',
-        medications: [
-          { sku: 'MET-500-TAB', name: 'Metformin ER 500mg', price: 35, qty: 60, instructions: 'Take 1 tablet twice daily with meals' },
-          { sku: 'VIT-B12', name: 'B12 Supplement', price: 15, qty: 30, instructions: 'Take 1 daily' }
-        ],
-        total: 50
-      },
-      comprehensive: {
-        name: 'Comprehensive Program',
-        description: 'GLP-1 + Metformin + B12',
-        medications: [
-          { sku: 'SEM-1-INJ', name: 'Semaglutide 1mg weekly', price: 399, qty: 4, instructions: 'Inject 1mg subcutaneously once weekly' },
-          { sku: 'MET-500-TAB', name: 'Metformin ER 500mg', price: 35, qty: 60, instructions: 'Take 1 tablet twice daily with meals' },
-          { sku: 'B12-INJ', name: 'B12 Injection', price: 25, qty: 4, instructions: 'Inject 1ml IM weekly' }
-        ],
-        total: 459
-      }
+  acne: {
+    mild: {
+      name: 'Mild Acne Protocol',
+      description: 'For occasional breakouts and blackheads',
+      medications: [
+        { sku: 'TRE-025-CR', name: 'Tretinoin 0.025% Cream', price: 59, qty: 1, instructions: 'Apply thin layer at bedtime', refills: 3 },
+        { sku: 'BPO-25-GEL', name: 'Benzoyl Peroxide 2.5% Gel', price: 25, qty: 1, instructions: 'Apply in morning after washing', refills: 3 }
+      ],
+      duration: '8-12 weeks',
+      followUp: '6 weeks',
+      total: 84
+    },
+    moderate: {
+      name: 'Moderate Acne Protocol',
+      description: 'For persistent inflammatory acne',
+      medications: [
+        { sku: 'TRE-050-CR', name: 'Tretinoin 0.05% Cream', price: 69, qty: 1, instructions: 'Apply thin layer at bedtime', refills: 3 },
+        { sku: 'DOX-100-CAP', name: 'Doxycycline 100mg', price: 45, qty: 60, instructions: 'Take 1 tablet twice daily with food', refills: 2 },
+        { sku: 'CLN-1-SOL', name: 'Clindamycin 1% Solution', price: 35, qty: 1, instructions: 'Apply to affected areas twice daily', refills: 3 }
+      ],
+      duration: '12-16 weeks',
+      followUp: '4 weeks',
+      total: 149
+    },
+    severe: {
+      name: 'Severe Acne Protocol',
+      description: 'For cystic or nodular acne',
+      medications: [
+        { sku: 'TRE-050-CR', name: 'Tretinoin 0.05% Cream', price: 69, qty: 1, instructions: 'Apply thin layer at bedtime', refills: 3 },
+        { sku: 'DOX-100-CAP', name: 'Doxycycline 100mg', price: 45, qty: 60, instructions: 'Take 1 tablet twice daily with food', refills: 2 },
+        { sku: 'BPO-5-GEL', name: 'Benzoyl Peroxide 5% Gel', price: 29, qty: 1, instructions: 'Apply in morning after washing', refills: 3 },
+        { sku: 'SPR-100-TAB', name: 'Spironolactone 100mg', price: 35, qty: 30, instructions: 'Take 1 tablet daily (females only)', refills: 3 }
+      ],
+      duration: '16-24 weeks',
+      followUp: '4 weeks',
+      total: 178
+    },
+    hormonal: {
+      name: 'Hormonal Acne Protocol',
+      description: 'For adult female hormonal acne',
+      medications: [
+        { sku: 'SPR-100-TAB', name: 'Spironolactone 100mg', price: 35, qty: 30, instructions: 'Take 1 tablet daily', refills: 6 },
+        { sku: 'TRE-025-CR', name: 'Tretinoin 0.025% Cream', price: 59, qty: 1, instructions: 'Apply thin layer at bedtime', refills: 3 },
+        { sku: 'AZA-15-CR', name: 'Azelaic Acid 15% Cream', price: 45, qty: 1, instructions: 'Apply twice daily', refills: 3 }
+      ],
+      duration: 'Ongoing',
+      followUp: '8 weeks',
+      total: 139
     }
   },
 
-  hairLoss: {
-    name: 'Hair Restoration',
-    icon: '💇',
-    protocols: {
+  ed: {
+    trial: {
+      name: 'ED Trial Pack',
+      description: 'Try different medications to find what works',
+      medications: [
+        { sku: 'SIL-50-TAB', name: 'Sildenafil 50mg', price: 10, qty: 6, instructions: 'Take 1 tablet 30-60 min before activity', refills: 0 },
       prevention: {
         name: 'Early Prevention',
         description: 'For mild thinning or family history',

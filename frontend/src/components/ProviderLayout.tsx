@@ -111,6 +111,13 @@ export default function ProviderLayout({ children }: { children: React.ReactNode
           {!sidebarCollapsed && (
             <div className="space-y-1">
               <Link
+                href="/provider/checkin-reviews"
+                className="flex items-center px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition"
+              >
+                <span className="text-lg text-gray-400 mr-3">✓</span>
+                <span>Check-in Reviews</span>
+              </Link>
+              <Link
                 href="/provider/prescriptions"
                 className="flex items-center px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition"
               >

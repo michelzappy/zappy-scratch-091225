@@ -14,6 +14,7 @@ export default function ProviderDashboard() {
       age: 28,
       gender: 'F',
       complaint: 'Severe acne flare-up',
+      condition: 'acne', // Used for treatment protocols
       severity: 'high',
       waitTime: '12m',
       value: 147,
@@ -26,6 +27,7 @@ export default function ProviderDashboard() {
       age: 35,
       gender: 'M',
       complaint: 'Hair loss progression',
+      condition: 'hairLoss', // Used for treatment protocols
       severity: 'medium',
       waitTime: '25m',
       value: 89,
@@ -37,6 +39,7 @@ export default function ProviderDashboard() {
       age: 42,
       gender: 'F',
       complaint: 'Weight loss consultation',
+      condition: 'weightLoss', // Used for treatment protocols
       severity: 'low',
       waitTime: '1h',
       value: 299,
@@ -48,6 +51,7 @@ export default function ProviderDashboard() {
       age: 31,
       gender: 'M',
       complaint: 'ED consultation',
+      condition: 'ed', // Used for treatment protocols
       severity: 'medium',
       waitTime: '1h 15m',
       value: 59,
@@ -117,7 +121,7 @@ export default function ProviderDashboard() {
             <div
               key={consultation.id}
               className="flex items-center gap-3 p-3 hover:bg-slate-50 transition-colors cursor-pointer"
-              onClick={() => router.push(`/provider/consultation/${consultation.id}`)}
+              onClick={() => router.push(`/provider/consultation/${consultation.id}?condition=${consultation.condition}`)}
             >
               {/* Compact Avatar */}
               <div className="w-8 h-8 bg-slate-200 rounded-full flex items-center justify-center flex-shrink-0">

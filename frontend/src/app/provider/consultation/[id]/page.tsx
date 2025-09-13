@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 
 // Treatment protocols by condition
 const treatmentProtocols = {
@@ -109,7 +109,9 @@ const treatmentProtocols = {
 export default function ProviderConsultationReview() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const consultationId = params.id;
+  const conditionFromUrl = searchParams.get('condition') || 'acne';
 
   const [consultation, setConsultation] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -119,11 +121,11 @@ export default function ProviderConsultationReview() {
   const [sending, setSending] = useState(false);
   const [hpiSummary, setHpiSummary] = useState('');
   const [selectedProtocol, setSelectedProtocol] = useState('');
-  const [patientCondition, setPatientCondition] = useState('acne'); // Determined from intake form
+  const [patientCondition, setPatientCondition] = useState(conditionFromUrl); // From URL param
 
   useEffect(() => {
     fetchConsultation();
-  }, [consultationId]);
+  }, [consultationId, conditionFromUrl]);
 
   const fetchConsultation = async () => {
     try {
@@ -180,14 +182,44 @@ export default function ProviderConsultationReview() {
       
       setHpiSummary(hpiParagraph);
       
-      // Pre-fill with AI suggestions
-      setDiagnosis('Acne vulgaris, moderate to severe');
-      setTreatmentNotes('Start combination therapy with topical retinoid and oral antibiotic. Counsel on skin care routine and sun protection. Follow up in 6-8 weeks.');
+      // Pre-fill with condition-specific diagnosis and treatment notes
+      const conditionDiagnoses: any = {
+        acne: 'Acne vulgaris, moderate to severe',
+        hairLoss: 'Androgenetic alopecia',
+        weightLoss: 'Obesity, BMI > 30',
+        ed: 'Erectile dysfunction'
+      };
       
-      // Pre-select moderate acne protocol as default
-      setSelectedProtocol('moderate');
-      setSelectedMedications(treatmentProtocols.acne.moderate.medications);
-      setPatientCondition('acne'); // This would come from the patient's intake form
+      const conditionTreatmentNotes: any = {
+        acne: 'Start combination therapy with topical retinoid and oral antibiotic. Counsel on skin care routine and sun protection. Follow up in 6-8 weeks.',
+        hairLoss: 'Begin finasteride 1mg daily and minoxidil 5% twice daily. Expect initial shedding. Results visible in 3-6 months.',
+        weightLoss: 'Start phentermine with diet and exercise plan. Monitor BP weekly. Target 1-2 lbs/week weight loss.',
+        ed: 'Begin sildenafil 50mg as needed. Take 30-60 min before activity. Avoid nitrates. Follow up if ineffective.'
+      };
+      
+      setDiagnosis(conditionDiagnoses[conditionFromUrl] || conditionDiagnoses.acne);
+      setTreatmentNotes(conditionTreatmentNotes[conditionFromUrl] || conditionTreatmentNotes.acne);
+      
+      // Pre-select appropriate protocol based on condition
+      const defaultProtocols: any = {
+        acne: 'moderate',
+        hairLoss: 'standard',
+        weightLoss: 'standard',
+        ed: 'standard'
+      };
+      
+      const protocol = defaultProtocols[conditionFromUrl] || 'moderate';
+      setSelectedProtocol(protocol);
+      
+      // Set medications based on condition and protocol
+      const conditionProtocols = treatmentProtocols[conditionFromUrl as keyof typeof treatmentProtocols] || treatmentProtocols.acne;
+      const selectedProtocolData = (conditionProtocols as any)[protocol];
+      if (selectedProtocolData && selectedProtocolData.medications) {
+        setSelectedMedications(selectedProtocolData.medications);
+      } else {
+        setSelectedMedications([]);
+      }
+      setPatientCondition(conditionFromUrl);
       
     } catch (error) {
       console.error('Error:', error);
