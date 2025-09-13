@@ -1,8 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Card from '@/components/Card';
-import Alert from '@/components/Alert';
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'notifications' | 'billing'>('profile');
@@ -14,308 +12,262 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 pb-20 lg:pb-8">
+      {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-slate-900">Profile & Settings</h1>
-        <p className="text-slate-600 mt-2">Manage your account information and preferences</p>
+        <h1 className="text-xl lg:text-2xl font-bold text-slate-900">Profile & Settings</h1>
+        <p className="text-sm text-slate-600 mt-1">Manage your account information</p>
       </div>
 
       {showSuccess && (
-        <Alert 
-          type="success" 
-          title="Changes Saved" 
-          message="Your profile has been updated successfully." 
-        />
+        <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-xl">
+          <p className="text-sm font-medium">✓ Changes saved successfully</p>
+        </div>
       )}
 
-      {/* Tab Navigation */}
-      <div className="border-b border-slate-200">
-        <nav className="-mb-px flex space-x-8">
-          {['profile', 'security', 'notifications', 'billing'].map((tab) => (
+      {/* Mobile-First Tab Navigation */}
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div className="flex overflow-x-auto border-b border-slate-200">
+          {[
+            { id: 'profile', label: 'Profile', icon: '👤' },
+            { id: 'security', label: 'Security', icon: '🔒' },
+            { id: 'notifications', label: 'Alerts', icon: '🔔' },
+            { id: 'billing', label: 'Billing', icon: '💳' }
+          ].map((tab) => (
             <button
-              key={tab}
-              onClick={() => setActiveTab(tab as any)}
-              className={`py-2 px-1 border-b-2 font-medium text-sm capitalize ${
-                activeTab === tab
-                  ? 'border-indigo-500 text-indigo-600'
-                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              className={`flex-1 min-w-[100px] px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors ${
+                activeTab === tab.id
+                  ? 'bg-medical-50 text-medical-700 border-b-2 border-medical-500'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
             >
-              {tab}
+              <span className="lg:hidden text-lg">{tab.icon}</span>
+              <span className="hidden lg:inline">{tab.label}</span>
             </button>
           ))}
-        </nav>
-      </div>
+        </div>
 
-      {/* Profile Tab */}
-      {activeTab === 'profile' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            <Card title="Personal Information">
-              <div className="space-y-4">
+        <div className="p-4 lg:p-6">
+          {/* Profile Tab */}
+          {activeTab === 'profile' && (
+            <div className="space-y-6">
+              {/* Profile Photo - Mobile First */}
+              <div className="flex items-center gap-4 pb-4 border-b border-slate-200">
+                <img
+                  src="/Alex.webp"
+                  alt="Profile"
+                  className="w-16 h-16 lg:w-20 lg:h-20 rounded-full object-cover border-2 border-white shadow-md"
+                />
+                <div>
+                  <h3 className="font-semibold text-slate-900">John Doe</h3>
+                  <button className="text-sm text-medical-600 hover:text-medical-700 mt-1">
+                    Change Photo
+                  </button>
+                </div>
+              </div>
+
+              {/* Personal Information */}
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900 mb-4">Personal Information</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                    <label className="block text-xs font-medium text-slate-700 mb-1">
                       First Name
                     </label>
                     <input
                       type="text"
                       defaultValue="John"
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-medical-500 focus:bg-white transition-colors"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                    <label className="block text-xs font-medium text-slate-700 mb-1">
                       Last Name
                     </label>
                     <input
                       type="text"
                       defaultValue="Doe"
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-medical-500 focus:bg-white transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-700 mb-1">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      defaultValue="john.doe@example.com"
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-medical-500 focus:bg-white transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-700 mb-1">
+                      Phone
+                    </label>
+                    <input
+                      type="tel"
+                      defaultValue="(555) 123-4567"
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-medical-500 focus:bg-white transition-colors"
                     />
                   </div>
                 </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Email Address
-                  </label>
-                  <input
-                    type="email"
-                    defaultValue="john.doe@example.com"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Phone Number
-                  </label>
-                  <input
-                    type="tel"
-                    defaultValue="(555) 123-4567"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Date of Birth
-                  </label>
-                  <input
-                    type="date"
-                    defaultValue="1985-06-15"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
               </div>
-            </Card>
 
-            <Card title="Shipping Address">
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Street Address
-                  </label>
+              {/* Shipping Address */}
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900 mb-4">Shipping Address</h3>
+                <div className="space-y-3">
                   <input
                     type="text"
                     defaultValue="123 Main Street"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="Street Address"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-medical-500 focus:bg-white transition-colors"
                   />
-                </div>
-                
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">
-                      City
-                    </label>
+                  <div className="grid grid-cols-2 gap-3">
                     <input
                       type="text"
                       defaultValue="San Francisco"
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      placeholder="City"
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-medical-500 focus:bg-white transition-colors"
                     />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">
-                      State
-                    </label>
-                    <select className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                      <option>CA</option>
-                      <option>NY</option>
-                      <option>TX</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">
-                      ZIP Code
-                    </label>
                     <input
                       type="text"
                       defaultValue="94102"
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      placeholder="ZIP"
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-medical-500 focus:bg-white transition-colors"
                     />
                   </div>
                 </div>
               </div>
-            </Card>
-          </div>
-
-          <div>
-            <Card title="Profile Photo">
-              <div className="flex flex-col items-center">
-                <div className="w-32 h-32 bg-gradient-to-br from-indigo-400 to-blue-400 rounded-full flex items-center justify-center text-white text-4xl font-bold mb-4">
-                  JD
-                </div>
-                <button className="text-sm text-indigo-600 hover:text-indigo-700">
-                  Change Photo
-                </button>
-              </div>
-            </Card>
-
-            <div className="mt-6">
-              <Card title="Account Status">
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-slate-600">Member Since</span>
-                    <span className="text-sm font-medium">Oct 2025</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-slate-600">Subscription</span>
-                    <span className="text-sm font-medium text-green-600">Active</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-slate-600">Next Billing</span>
-                    <span className="text-sm font-medium">Jan 9, 2026</span>
-                  </div>
-                </div>
-              </Card>
             </div>
-          </div>
-        </div>
-      )}
+          )}
 
-      {/* Security Tab */}
-      {activeTab === 'security' && (
-        <div className="max-w-2xl">
-          <Card title="Password & Security">
+          {/* Security Tab */}
+          {activeTab === 'security' && (
             <div className="space-y-6">
               <div>
-                <h3 className="text-sm font-medium text-slate-900 mb-3">Change Password</h3>
-                <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-slate-900 mb-4">Change Password</h3>
+                <div className="space-y-3 max-w-md">
                   <input
                     type="password"
                     placeholder="Current Password"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-medical-500 focus:bg-white transition-colors"
                   />
                   <input
                     type="password"
                     placeholder="New Password"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-medical-500 focus:bg-white transition-colors"
                   />
                   <input
                     type="password"
                     placeholder="Confirm New Password"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-medical-500 focus:bg-white transition-colors"
                   />
                 </div>
               </div>
 
               <div>
-                <h3 className="text-sm font-medium text-slate-900 mb-3">Two-Factor Authentication</h3>
-                <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
+                <h3 className="text-sm font-semibold text-slate-900 mb-4">Two-Factor Authentication</h3>
+                <div className="bg-slate-50 rounded-xl p-4 flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-slate-900">SMS Authentication</p>
-                    <p className="text-sm text-slate-600">Receive codes via SMS to your phone</p>
+                    <p className="text-xs text-slate-600 mt-1">Get codes via text message</p>
                   </div>
-                  <button className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700">
+                  <button className="px-4 py-2 bg-medical-600 text-white text-sm rounded-lg hover:bg-medical-700 transition-colors">
                     Enable
                   </button>
                 </div>
               </div>
             </div>
-          </Card>
-        </div>
-      )}
+          )}
 
-      {/* Notifications Tab */}
-      {activeTab === 'notifications' && (
-        <div className="max-w-2xl">
-          <Card title="Notification Preferences">
+          {/* Notifications Tab */}
+          {activeTab === 'notifications' && (
             <div className="space-y-4">
               {[
-                { title: 'Order Updates', description: 'Get notified about order status and shipping' },
-                { title: 'Dose Reminders', description: 'Daily reminders to take your medication' },
-                { title: 'Refill Reminders', description: 'Alerts when it\'s time to refill' },
-                { title: 'Provider Messages', description: 'New messages from your care team' },
-                { title: 'Promotional Emails', description: 'Special offers and new products' },
+                { title: '📦 Order Updates', description: 'Shipping and delivery alerts' },
+                { title: '💊 Dose Reminders', description: 'Daily medication reminders' },
+                { title: '🔄 Refill Alerts', description: 'When to reorder' },
+                { title: '👨‍⚕️ Provider Messages', description: 'Messages from doctors' },
+                { title: '🎯 Special Offers', description: 'Deals and promotions' },
               ].map((item) => (
-                <div key={item.title} className="flex items-center justify-between py-3 border-b border-slate-200 last:border-0">
+                <div key={item.title} className="flex items-center justify-between py-3 border-b border-slate-100 last:border-0">
                   <div>
                     <p className="text-sm font-medium text-slate-900">{item.title}</p>
-                    <p className="text-sm text-slate-600">{item.description}</p>
+                    <p className="text-xs text-slate-600 mt-0.5">{item.description}</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" className="sr-only peer" defaultChecked />
-                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-medical-600"></div>
                   </label>
                 </div>
               ))}
             </div>
-          </Card>
-        </div>
-      )}
+          )}
 
-      {/* Billing Tab */}
-      {activeTab === 'billing' && (
-        <div className="space-y-6">
-          <Card title="Payment Methods">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between p-4 border border-slate-200 rounded-lg">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-8 bg-slate-200 rounded flex items-center justify-center text-xs font-bold">
-                    VISA
+          {/* Billing Tab */}
+          {activeTab === 'billing' && (
+            <div className="space-y-6">
+              {/* Payment Methods */}
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900 mb-4">Payment Methods</h3>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-8 bg-slate-700 rounded flex items-center justify-center text-xs font-bold text-white">
+                        VISA
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">•••• 4242</p>
+                        <p className="text-xs text-slate-600">Expires 12/26</p>
+                      </div>
+                    </div>
+                    <span className="px-2 py-1 bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-full">
+                      Primary
+                    </span>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium">•••• •••• •••• 4242</p>
-                    <p className="text-xs text-slate-600">Expires 12/2026</p>
-                  </div>
+                  <button className="w-full py-2.5 px-4 border-2 border-dashed border-slate-300 text-slate-600 rounded-xl hover:border-slate-400 hover:text-slate-700 transition-colors text-sm">
+                    + Add Payment Method
+                  </button>
                 </div>
-                <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">Primary</span>
               </div>
-              <button className="w-full py-2 px-4 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors">
-                + Add Payment Method
-              </button>
-            </div>
-          </Card>
 
-          <Card title="Billing History">
-            <div className="space-y-3">
-              {[
-                { date: 'Dec 9, 2025', amount: '$299.00', status: 'Paid' },
-                { date: 'Nov 9, 2025', amount: '$299.00', status: 'Paid' },
-                { date: 'Oct 9, 2025', amount: '$328.00', status: 'Paid' },
-              ].map((invoice, idx) => (
-                <div key={idx} className="flex items-center justify-between py-3 border-b border-slate-200 last:border-0">
-                  <div>
-                    <p className="text-sm font-medium">{invoice.date}</p>
-                    <p className="text-sm text-slate-600">Monthly Subscription</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium">{invoice.amount}</p>
-                    <button className="text-xs text-indigo-600 hover:text-indigo-700">Download</button>
-                  </div>
+              {/* Recent Charges */}
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900 mb-4">Recent Charges</h3>
+                <div className="space-y-2">
+                  {[
+                    { date: 'Dec 9', amount: '$299', desc: 'Monthly' },
+                    { date: 'Nov 9', amount: '$299', desc: 'Monthly' },
+                    { date: 'Oct 9', amount: '$328', desc: 'Monthly + Extra' },
+                  ].map((charge, idx) => (
+                    <div key={idx} className="flex items-center justify-between py-2.5 px-3 hover:bg-slate-50 rounded-lg transition-colors">
+                      <div>
+                        <p className="text-sm font-medium text-slate-900">{charge.date}</p>
+                        <p className="text-xs text-slate-600">{charge.desc}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-semibold text-slate-900">{charge.amount}</p>
+                        <button className="text-xs text-medical-600 hover:text-medical-700">
+                          Receipt
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
             </div>
-          </Card>
+          )}
         </div>
-      )}
+      </div>
 
-      {/* Save Button */}
-      <div className="flex justify-end pt-4">
+      {/* Save Button - Mobile Optimized */}
+      <div className="fixed bottom-20 lg:relative lg:bottom-auto left-0 right-0 p-4 bg-white border-t border-slate-200 lg:border-0 lg:p-0">
         <button 
           onClick={handleSave}
-          className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+          className="w-full lg:w-auto px-6 py-3 bg-medical-600 text-white rounded-xl font-medium hover:bg-medical-700 transition-colors shadow-sm"
         >
           Save Changes
         </button>

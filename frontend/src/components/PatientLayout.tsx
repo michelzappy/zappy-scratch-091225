@@ -45,12 +45,15 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
   const [user, setUser] = useState<any>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Check if we're on the login page
+  // Check if we're on pages that don't need the layout
   const isLoginPage = pathname === '/patient/login';
+  const isHealthQuizPage = pathname === '/patient/health-quiz';
+  const isNewConsultationPage = pathname === '/patient/new-consultation';
+  const noLayoutPages = isLoginPage || isHealthQuizPage || isNewConsultationPage;
 
   useEffect(() => {
-    // Don't check auth on login page
-    if (isLoginPage) return;
+    // Don't check auth on pages that don't need layout
+    if (noLayoutPages) return;
     
     const userData = localStorage.getItem('user');
     if (userData) {
@@ -126,8 +129,8 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
     router.push('/');
   };
 
-  // If we're on the login page, just render the children without the layout
-  if (isLoginPage) {
+  // If we're on pages that don't need layout, just render the children
+  if (noLayoutPages) {
     return <>{children}</>;
   }
 
@@ -138,31 +141,9 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
 
   const sidebarContent = (
     <div className="flex flex-col w-64 bg-white h-full border-r border-slate-200">
-      {/* Logo Section */}
-      <div className="flex items-center justify-center h-20 border-b border-slate-200 flex-shrink-0">
-        <div className="p-2 bg-gradient-to-br from-indigo-500 to-blue-500 rounded-lg">
-          <svg className="w-7 h-7 text-white" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15v-4H8l4-5 1 4h3l-4 5z"/>
-          </svg>
-        </div>
-        <span className="ml-3 text-2xl font-extrabold bg-gradient-to-r from-indigo-600 to-blue-500 bg-clip-text text-transparent">
-          Zappy
-        </span>
-      </div>
-
-      {/* User Profile Section */}
-      <div className="px-4 py-3 border-b border-slate-100">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-indigo-400 to-blue-400 rounded-full flex items-center justify-center">
-            <span className="text-white font-semibold">
-              {user?.name?.charAt(0) || user?.email?.charAt(0) || 'P'}
-            </span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-gray-900 truncate">{user?.name || 'Patient'}</p>
-            <p className="text-xs text-gray-500 truncate">{user?.email}</p>
-          </div>
-        </div>
+      {/* Simple Logo */}
+      <div className="h-16 flex items-center justify-center border-b border-slate-200">
+        <span className="text-xl font-bold text-medical-600">TeleHealth</span>
       </div>
 
       {/* Navigation Menu */}
@@ -241,53 +222,19 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <header className="bg-white shadow-sm border-b border-slate-200">
-          <div className="px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
-              {/* Mobile menu button */}
-              <button
-                type="button"
-                className="lg:hidden px-2 py-1.5 text-slate-600 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500"
-                onClick={() => setSidebarOpen(true)}
-              >
-                <span className="sr-only">Open sidebar</span>
-                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              </button>
+        {/* Mobile menu button - positioned absolutely */}
+        <button
+          type="button"
+          className="lg:hidden fixed top-4 right-4 z-30 px-2 py-1.5 bg-white rounded-md shadow-lg text-slate-600 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500"
+          onClick={() => setSidebarOpen(true)}
+        >
+          <span className="sr-only">Open sidebar</span>
+          <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
 
-              {/* Page title */}
-              <div className="flex-1 px-4 lg:px-0">
-                <h1 className="text-xl font-semibold text-gray-900">
-                  Welcome back, {user?.name || 'Patient'}
-                </h1>
-              </div>
-
-              {/* Header actions */}
-              <div className="flex items-center space-x-4">
-                {/* Notifications */}
-                <button className="relative p-2 text-gray-600 hover:text-gray-900">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                  </svg>
-                  <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-400 ring-2 ring-white" />
-                </button>
-
-                {/* Profile dropdown */}
-                <div className="relative">
-                  <button className="flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                    <div className="h-8 w-8 rounded-full bg-gradient-to-br from-indigo-400 to-blue-400 flex items-center justify-center text-white font-semibold">
-                      {user?.name?.charAt(0) || 'P'}
-                    </div>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </header>
-
-        {/* Page Content */}
+        {/* Page Content - no header */}
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-zinc-50">
           <div className="container mx-auto px-4 sm:px-6 py-8">
             {children}

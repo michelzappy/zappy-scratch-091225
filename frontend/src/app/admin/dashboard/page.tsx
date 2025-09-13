@@ -1,298 +1,345 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import Link from 'next/link';
 
 export default function AdminDashboard() {
-  const router = useRouter();
-  const [stats, setStats] = useState({
-    totalPatients: 0,
-    totalProviders: 0,
-    pendingConsultations: 0,
-    totalOrders: 0,
-    totalRevenue: 0,
-    activeSubscriptions: 0,
-  });
+  const [period, setPeriod] = useState('today');
 
-  const [recentActivity, setRecentActivity] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
-  const fetchDashboardData = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        router.push('/admin/login');
-        return;
-      }
-
-      // Fetch dashboard stats
-      const statsResponse = await fetch('/api/admin/stats', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (statsResponse.ok) {
-        const data = await statsResponse.json();
-        setStats(data.stats);
-        setRecentActivity(data.recentActivity || []);
-      }
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-    } finally {
-      setLoading(false);
+  // Patient-focused metrics
+  const metrics = [
+    {
+      label: 'Active Patients',
+      value: '2,847',
+      urgent: 12,
+      description: 'awaiting response',
+      color: 'red'
+    },
+    {
+      label: 'Open Consultations',
+      value: '43',
+      urgent: 8,
+      description: 'need provider review',
+      color: 'yellow'
+    },
+    {
+      label: 'Support Tickets',
+      value: '27',
+      urgent: 5,
+      description: 'high priority',
+      color: 'orange'
+    },
+    {
+      label: 'Pending Prescriptions',
+      value: '18',
+      urgent: 3,
+      description: 'await approval',
+      color: 'blue'
     }
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-      </div>
-    );
-  }
-
-  const statCards = [
-    {
-      title: 'Total Patients',
-      value: stats.totalPatients.toLocaleString(),
-      change: '+12%',
-      changeType: 'increase',
-      icon: '👥',
-    },
-    {
-      title: 'Active Providers',
-      value: stats.totalProviders.toLocaleString(),
-      change: '+3',
-      changeType: 'increase',
-      icon: '👨‍⚕️',
-    },
-    {
-      title: 'Pending Reviews',
-      value: stats.pendingConsultations.toLocaleString(),
-      change: '-5%',
-      changeType: 'decrease',
-      icon: '📋',
-    },
-    {
-      title: 'Total Orders',
-      value: stats.totalOrders.toLocaleString(),
-      change: '+23%',
-      changeType: 'increase',
-      icon: '📦',
-    },
-    {
-      title: 'Monthly Revenue',
-      value: `$${(stats.totalRevenue / 100).toLocaleString()}`,
-      change: '+18%',
-      changeType: 'increase',
-      icon: '💰',
-    },
-    {
-      title: 'Active Subscriptions',
-      value: stats.activeSubscriptions.toLocaleString(),
-      change: '+45',
-      changeType: 'increase',
-      icon: '🔄',
-    },
   ];
 
-  const quickActions = [
-    { name: 'Add Medication', href: '/admin/medications', icon: '💊' },
-    { name: 'Manage Providers', href: '/admin/providers', icon: '👨‍⚕️' },
-    { name: 'View Orders', href: '/admin/orders', icon: '📦' },
-    { name: 'System Settings', href: '/admin/settings', icon: '⚙️' },
+  // Patient support issues
+  const patientIssues = [
+    {
+      id: 'P-12847',
+      patient: 'Sarah Johnson',
+      issue: 'Question about medication dosage',
+      time: '12 min ago',
+      priority: 'high',
+      status: 'pending'
+    },
+    {
+      id: 'P-12846',
+      patient: 'Michael Chen',
+      issue: 'Needs prescription refill',
+      time: '28 min ago',
+      priority: 'medium',
+      status: 'in-progress'
+    },
+    {
+      id: 'P-12845',
+      patient: 'Emily Davis',
+      issue: 'Reporting mild side effects',
+      time: '45 min ago',
+      priority: 'high',
+      status: 'assigned'
+    },
+    {
+      id: 'P-12844',
+      patient: 'James Wilson',
+      issue: 'Follow-up consultation needed',
+      time: '1 hour ago',
+      priority: 'low',
+      status: 'pending'
+    },
+    {
+      id: 'P-12843',
+      patient: 'Lisa Martinez',
+      issue: 'Billing inquiry',
+      time: '2 hours ago',
+      priority: 'low',
+      status: 'pending'
+    }
+  ];
+
+  // Recent consultations needing review
+  const pendingConsultations = [
+    {
+      id: 'C-3421',
+      patient: 'Robert Brown',
+      condition: 'Hair Loss',
+      submitted: '5 min ago',
+      provider: 'Unassigned',
+      status: 'new'
+    },
+    {
+      id: 'C-3420',
+      patient: 'Amanda White',
+      condition: 'Weight Management',
+      submitted: '18 min ago',
+      provider: 'Dr. Smith',
+      status: 'reviewing'
+    },
+    {
+      id: 'C-3419',
+      patient: 'David Lee',
+      condition: 'Testosterone Therapy',
+      submitted: '35 min ago',
+      provider: 'Dr. Johnson',
+      status: 'reviewing'
+    },
+    {
+      id: 'C-3418',
+      patient: 'Jennifer Taylor',
+      condition: 'Women\'s Health',
+      submitted: '1 hour ago',
+      provider: 'Unassigned',
+      status: 'new'
+    }
+  ];
+
+  // Problem categories
+  const problemCategories = [
+    { category: 'Medication Issues', count: 23, percentage: 35 },
+    { category: 'Platform Access', count: 18, percentage: 27 },
+    { category: 'Billing Problems', count: 12, percentage: 18 },
+    { category: 'Consultation Delays', count: 8, percentage: 12 },
+    { category: 'Shipping Issues', count: 5, percentage: 8 }
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="max-w-7xl mx-auto">
       {/* Header */}
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-500">Admin User</span>
-              <button
-                onClick={() => {
-                  localStorage.removeItem('token');
-                  router.push('/admin/login');
-                }}
-                className="text-sm text-red-600 hover:text-red-700"
-              >
-                Logout
-              </button>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">Operations Dashboard</h1>
+          <p className="text-sm text-gray-500 mt-1">Patient care management and support overview</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <select 
+            value={period}
+            onChange={(e) => setPeriod(e.target.value)}
+            className="px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-900"
+          >
+            <option value="today">Today</option>
+            <option value="week">This Week</option>
+            <option value="month">This Month</option>
+          </select>
+          <button className="px-4 py-1.5 text-sm bg-gray-900 text-white rounded-md hover:bg-gray-800 transition">
+            Priority Queue
+          </button>
+        </div>
+      </div>
+
+      {/* Status Banner */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <div className="flex items-start">
+          <div className="flex-shrink-0">
+            <svg className="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <div className="ml-3 flex-1">
+            <h3 className="text-sm font-medium text-blue-800">
+              3 Items Need Your Attention
+            </h3>
+            <p className="mt-1 text-sm text-blue-700">
+              2 patients with questions • 1 consultation awaiting review
+            </p>
+          </div>
+          <button className="ml-3 text-sm font-medium text-blue-800 hover:text-blue-900">
+            Review →
+          </button>
+        </div>
+      </div>
+
+      {/* Metrics Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        {metrics.map((metric, index) => (
+          <div key={index} className="bg-white rounded-lg border border-gray-200 p-4">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">{metric.label}</p>
+                <p className="text-2xl font-semibold text-gray-900 mt-1">{metric.value}</p>
+              </div>
+              {metric.urgent > 0 && (
+                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                  metric.color === 'red' ? 'bg-red-100 text-red-800' :
+                  metric.color === 'yellow' ? 'bg-yellow-100 text-yellow-800' :
+                  metric.color === 'orange' ? 'bg-orange-100 text-orange-800' :
+                  'bg-blue-100 text-blue-800'
+                }`}>
+                  {metric.urgent} urgent
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-gray-500 mt-2">{metric.urgent} {metric.description}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Two Column Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        {/* Patient Support Queue */}
+        <div className="bg-white rounded-lg border border-gray-200">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">Patient Support Queue</h2>
+              <Link href="/admin/support" className="text-sm text-gray-600 hover:text-gray-900">
+                View all →
+              </Link>
             </div>
           </div>
-        </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {statCards.map((stat, index) => (
-            <div key={index} className="bg-white rounded-lg shadow p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">{stat.title}</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
-                  <div className="flex items-center mt-2">
-                    <span className={`text-sm font-medium ${
-                      stat.changeType === 'increase' ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      {stat.change}
-                    </span>
-                    <span className="text-sm text-gray-500 ml-2">from last month</span>
+          <div className="divide-y divide-gray-200">
+            {patientIssues.map((issue) => (
+              <div key={issue.id} className="p-4 hover:bg-gray-50 transition">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-sm font-mono text-gray-600">{issue.id}</span>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                        issue.priority === 'high' ? 'bg-blue-100 text-blue-800' :
+                        issue.priority === 'medium' ? 'bg-green-100 text-green-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {issue.priority}
+                      </span>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                        issue.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                        issue.status === 'assigned' ? 'bg-blue-100 text-blue-800' :
+                        issue.status === 'in-progress' ? 'bg-green-100 text-green-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {issue.status}
+                      </span>
+                    </div>
+                    <p className="text-sm font-medium text-gray-900">{issue.patient}</p>
+                    <p className="text-sm text-gray-600 mt-1">{issue.issue}</p>
+                    <p className="text-xs text-gray-500 mt-1">{issue.time}</p>
                   </div>
+                  <button className="ml-3 text-sm font-medium text-blue-600 hover:text-blue-700">
+                    Handle
+                  </button>
                 </div>
-                <div className="text-3xl">{stat.icon}</div>
               </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Quick Actions */}
-        <div className="bg-white rounded-lg shadow p-6 mb-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {quickActions.map((action) => (
-              <Link
-                key={action.name}
-                href={action.href}
-                className="flex flex-col items-center justify-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition"
-              >
-                <span className="text-2xl mb-2">{action.icon}</span>
-                <span className="text-sm font-medium text-gray-700">{action.name}</span>
-              </Link>
             ))}
           </div>
         </div>
 
-        {/* Two Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Recent Activity */}
-          <div className="bg-white rounded-lg shadow">
-            <div className="p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h2>
-              <div className="space-y-4">
-                <div className="flex items-start">
-                  <div className="flex-shrink-0">
-                    <div className="w-2 h-2 bg-green-400 rounded-full mt-2"></div>
-                  </div>
-                  <div className="ml-3">
-                    <p className="text-sm text-gray-900">New consultation submitted</p>
-                    <p className="text-xs text-gray-500">Patient #12345 - 5 minutes ago</p>
-                  </div>
-                </div>
-                <div className="flex items-start">
-                  <div className="flex-shrink-0">
-                    <div className="w-2 h-2 bg-blue-400 rounded-full mt-2"></div>
-                  </div>
-                  <div className="ml-3">
-                    <p className="text-sm text-gray-900">Order shipped</p>
-                    <p className="text-xs text-gray-500">Order #ORD-241209-0023 - 12 minutes ago</p>
-                  </div>
-                </div>
-                <div className="flex items-start">
-                  <div className="flex-shrink-0">
-                    <div className="w-2 h-2 bg-yellow-400 rounded-full mt-2"></div>
-                  </div>
-                  <div className="ml-3">
-                    <p className="text-sm text-gray-900">Provider logged in</p>
-                    <p className="text-xs text-gray-500">Dr. Smith - 1 hour ago</p>
-                  </div>
-                </div>
-                <div className="flex items-start">
-                  <div className="flex-shrink-0">
-                    <div className="w-2 h-2 bg-purple-400 rounded-full mt-2"></div>
-                  </div>
-                  <div className="ml-3">
-                    <p className="text-sm text-gray-900">New subscription started</p>
-                    <p className="text-xs text-gray-500">Patient #12344 - 2 hours ago</p>
-                  </div>
-                </div>
-              </div>
+        {/* Pending Consultations */}
+        <div className="bg-white rounded-lg border border-gray-200">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">Pending Consultations</h2>
+              <Link href="/admin/consultations" className="text-sm text-gray-600 hover:text-gray-900">
+                View all →
+              </Link>
             </div>
           </div>
-
-          {/* System Health */}
-          <div className="bg-white rounded-lg shadow">
-            <div className="p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">System Health</h2>
-              <div className="space-y-4">
-                <div>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-gray-600">API Response Time</span>
-                    <span className="font-medium text-green-600">124ms</span>
+          <div className="divide-y divide-gray-200">
+            {pendingConsultations.map((consultation) => (
+              <div key={consultation.id} className="p-4 hover:bg-gray-50 transition">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-sm font-mono text-gray-600">{consultation.id}</span>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                        consultation.status === 'new' ? 'bg-green-100 text-green-800' :
+                        'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {consultation.status}
+                      </span>
+                    </div>
+                    <p className="text-sm font-medium text-gray-900">{consultation.patient}</p>
+                    <p className="text-sm text-gray-600">{consultation.condition}</p>
+                    <div className="flex items-center justify-between mt-2">
+                      <p className="text-xs text-gray-500">{consultation.submitted}</p>
+                      <p className="text-xs text-gray-600">
+                        {consultation.provider === 'Unassigned' ? (
+                          <span className="text-red-600 font-medium">Needs assignment</span>
+                        ) : (
+                          consultation.provider
+                        )}
+                      </p>
+                    </div>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-green-500 h-2 rounded-full" style={{ width: '95%' }}></div>
-                  </div>
-                </div>
-                <div>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-gray-600">Database Load</span>
-                    <span className="font-medium text-yellow-600">67%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-yellow-500 h-2 rounded-full" style={{ width: '67%' }}></div>
-                  </div>
-                </div>
-                <div>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-gray-600">Memory Usage</span>
-                    <span className="font-medium text-green-600">42%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-green-500 h-2 rounded-full" style={{ width: '42%' }}></div>
-                  </div>
-                </div>
-                <div>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-gray-600">Uptime</span>
-                    <span className="font-medium text-green-600">99.98%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-green-500 h-2 rounded-full" style={{ width: '99.98%' }}></div>
-                  </div>
+                  <button className="ml-3 text-sm font-medium text-blue-600 hover:text-blue-700">
+                    Review
+                  </button>
                 </div>
               </div>
-            </div>
+            ))}
           </div>
         </div>
+      </div>
 
-        {/* Revenue Chart Placeholder */}
-        <div className="mt-8 bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Revenue Trend</h2>
-          <div className="h-64 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-lg flex items-center justify-center">
-            <p className="text-gray-500">Revenue chart would go here</p>
-          </div>
-        </div>
-
-        {/* Alerts Section */}
-        <div className="mt-8 bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-          <div className="flex items-start">
-            <svg className="w-5 h-5 text-yellow-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-            </svg>
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-yellow-800">System Notifications</h3>
-              <div className="mt-2 text-sm text-yellow-700">
-                <ul className="list-disc space-y-1 pl-5">
-                  <li>5 medications are low in stock</li>
-                  <li>2 provider licenses expire within 30 days</li>
-                  <li>Database backup scheduled for tonight at 2:00 AM</li>
-                </ul>
+      {/* Problem Categories */}
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Common Problem Areas</h2>
+        <div className="space-y-3">
+          {problemCategories.map((category, index) => (
+            <div key={index}>
+              <div className="flex items-center justify-between text-sm mb-1">
+                <span className="text-gray-700">{category.category}</span>
+                <span className="font-medium text-gray-900">{category.count} issues</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-blue-600 h-2 rounded-full" 
+                  style={{ width: `${category.percentage}%` }}
+                />
               </div>
             </div>
-          </div>
+          ))}
         </div>
-      </main>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
+        <button className="p-4 bg-white rounded-lg border border-gray-200 hover:border-gray-300 transition text-left">
+          <span className="text-xl mb-2 block">🚨</span>
+          <p className="text-sm font-medium text-gray-900">Emergency Response</p>
+          <p className="text-xs text-gray-500 mt-1">Handle critical issues</p>
+        </button>
+        
+        <button className="p-4 bg-white rounded-lg border border-gray-200 hover:border-gray-300 transition text-left">
+          <span className="text-xl mb-2 block">💬</span>
+          <p className="text-sm font-medium text-gray-900">Message Center</p>
+          <p className="text-xs text-gray-500 mt-1">Patient communications</p>
+        </button>
+        
+        <button className="p-4 bg-white rounded-lg border border-gray-200 hover:border-gray-300 transition text-left">
+          <span className="text-xl mb-2 block">📋</span>
+          <p className="text-sm font-medium text-gray-900">Provider Queue</p>
+          <p className="text-xs text-gray-500 mt-1">Assign consultations</p>
+        </button>
+        
+        <button className="p-4 bg-white rounded-lg border border-gray-200 hover:border-gray-300 transition text-left">
+          <span className="text-xl mb-2 block">📊</span>
+          <p className="text-sm font-medium text-gray-900">Analytics</p>
+          <p className="text-xs text-gray-500 mt-1">Response metrics</p>
+        </button>
+      </div>
     </div>
   );
 }

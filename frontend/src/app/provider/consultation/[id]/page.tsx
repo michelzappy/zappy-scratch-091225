@@ -3,25 +3,107 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 
-// Common medications database
-const medicationDatabase = {
-  acne: [
-    { sku: 'TRE-025-CR', name: 'Tretinoin 0.025%', price: 59 },
-    { sku: 'TRE-050-CR', name: 'Tretinoin 0.05%', price: 69 },
-    { sku: 'DOX-100-CAP', name: 'Doxycycline 100mg', price: 4 }
-  ],
-  ed: [
-    { sku: 'SIL-50-TAB', name: 'Sildenafil 50mg', price: 10 },
-    { sku: 'SIL-100-TAB', name: 'Sildenafil 100mg', price: 15 }
-  ],
-  hairLoss: [
-    { sku: 'FIN-1-TAB', name: 'Finasteride 1mg', price: 2 },
-    { sku: 'MIN-5-SOL', name: 'Minoxidil 5%', price: 29 }
-  ],
-  weightLoss: [
-    { sku: 'PHE-375-TAB', name: 'Phentermine 37.5mg', price: 89 },
-    { sku: 'MET-500-TAB', name: 'Metformin 500mg', price: 3 }
-  ]
+// Treatment protocols by condition
+const treatmentProtocols = {
+  acne: {
+    mild: {
+      name: 'Mild Acne Protocol',
+      medications: [
+        { sku: 'TRE-025-CR', name: 'Tretinoin 0.025% Cream', price: 59, qty: 1, instructions: 'Apply thin layer at bedtime' }
+      ],
+      total: 59
+    },
+    moderate: {
+      name: 'Moderate Acne Protocol',
+      medications: [
+        { sku: 'TRE-050-CR', name: 'Tretinoin 0.05% Cream', price: 69, qty: 1, instructions: 'Apply thin layer at bedtime' },
+        { sku: 'DOX-100-CAP', name: 'Doxycycline 100mg', price: 45, qty: 60, instructions: 'Take 1 tablet twice daily with food' }
+      ],
+      total: 114
+    },
+    severe: {
+      name: 'Severe Acne Protocol',
+      medications: [
+        { sku: 'TRE-050-CR', name: 'Tretinoin 0.05% Cream', price: 69, qty: 1, instructions: 'Apply thin layer at bedtime' },
+        { sku: 'DOX-100-CAP', name: 'Doxycycline 100mg', price: 45, qty: 60, instructions: 'Take 1 tablet twice daily with food' },
+        { sku: 'BPO-5-GEL', name: 'Benzoyl Peroxide 5% Gel', price: 29, qty: 1, instructions: 'Apply in morning after washing' }
+      ],
+      total: 143
+    }
+  },
+  ed: {
+    trial: {
+      name: 'ED Trial Pack',
+      medications: [
+        { sku: 'SIL-50-TAB', name: 'Sildenafil 50mg', price: 10, qty: 6, instructions: 'Take 1 tablet 30-60 min before activity' }
+      ],
+      total: 60
+    },
+    standard: {
+      name: 'ED Standard Supply',
+      medications: [
+        { sku: 'SIL-100-TAB', name: 'Sildenafil 100mg', price: 15, qty: 12, instructions: 'Take 1 tablet 30-60 min before activity' }
+      ],
+      total: 180
+    },
+    daily: {
+      name: 'Daily ED Treatment',
+      medications: [
+        { sku: 'TAD-5-TAB', name: 'Tadalafil 5mg', price: 25, qty: 30, instructions: 'Take 1 tablet daily at same time' }
+      ],
+      total: 750
+    }
+  },
+  hairLoss: {
+    prevention: {
+      name: 'Hair Loss Prevention',
+      medications: [
+        { sku: 'FIN-1-TAB', name: 'Finasteride 1mg', price: 25, qty: 30, instructions: 'Take 1 tablet daily' }
+      ],
+      total: 25
+    },
+    standard: {
+      name: 'Hair Loss Standard',
+      medications: [
+        { sku: 'FIN-1-TAB', name: 'Finasteride 1mg', price: 25, qty: 30, instructions: 'Take 1 tablet daily' },
+        { sku: 'MIN-5-SOL', name: 'Minoxidil 5% Solution', price: 29, qty: 1, instructions: 'Apply 1ml to scalp twice daily' }
+      ],
+      total: 54
+    },
+    aggressive: {
+      name: 'Hair Loss Aggressive',
+      medications: [
+        { sku: 'FIN-1-TAB', name: 'Finasteride 1mg', price: 25, qty: 30, instructions: 'Take 1 tablet daily' },
+        { sku: 'MIN-5-SOL', name: 'Minoxidil 5% Solution', price: 29, qty: 2, instructions: 'Apply 1ml to scalp twice daily' },
+        { sku: 'KET-2-SH', name: 'Ketoconazole 2% Shampoo', price: 35, qty: 1, instructions: 'Use 2-3 times weekly' }
+      ],
+      total: 89
+    }
+  },
+  weightLoss: {
+    starter: {
+      name: 'Weight Loss Starter',
+      medications: [
+        { sku: 'MET-500-TAB', name: 'Metformin 500mg', price: 35, qty: 60, instructions: 'Take 1 tablet twice daily with meals' }
+      ],
+      total: 35
+    },
+    standard: {
+      name: 'Weight Loss Standard',
+      medications: [
+        { sku: 'PHE-375-TAB', name: 'Phentermine 37.5mg', price: 89, qty: 30, instructions: 'Take 1 tablet in morning before breakfast' }
+      ],
+      total: 89
+    },
+    combination: {
+      name: 'Weight Loss Combination',
+      medications: [
+        { sku: 'PHE-375-TAB', name: 'Phentermine 37.5mg', price: 89, qty: 30, instructions: 'Take 1 tablet in morning before breakfast' },
+        { sku: 'MET-500-TAB', name: 'Metformin 500mg', price: 35, qty: 60, instructions: 'Take 1 tablet twice daily with meals' }
+      ],
+      total: 124
+    }
+  }
 };
 
 export default function ProviderConsultationReview() {
@@ -31,11 +113,13 @@ export default function ProviderConsultationReview() {
 
   const [consultation, setConsultation] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('assessment');
   const [diagnosis, setDiagnosis] = useState('');
   const [treatmentNotes, setTreatmentNotes] = useState('');
   const [selectedMedications, setSelectedMedications] = useState<any[]>([]);
   const [sending, setSending] = useState(false);
+  const [hpiSummary, setHpiSummary] = useState('');
+  const [selectedProtocol, setSelectedProtocol] = useState('');
+  const [patientCondition, setPatientCondition] = useState('acne'); // Determined from intake form
 
   useEffect(() => {
     fetchConsultation();
@@ -43,43 +127,67 @@ export default function ProviderConsultationReview() {
 
   const fetchConsultation = async () => {
     try {
-      // Mock consultation data
+      // Mock consultation data with full HPI
       const mockConsultation = {
         id: consultationId,
         first_name: 'Emily',
         last_name: 'Johnson',
-        email: 'emily.johnson@email.com',
-        phone: '(555) 123-4567',
         date_of_birth: '1996-03-15',
         age: 28,
         gender: 'Female',
         
         // Medical history
         allergies: 'Penicillin, Sulfa drugs',
-        current_medications: 'Birth control (Yaz), Vitamin D',
+        current_medications: 'Birth control (Yaz), Vitamin D 2000 IU daily',
         
         // Current consultation
-        chief_complaint: 'Persistent acne on face and back for 6 months',
-        symptoms: 'Inflammatory acne with scarring, worse during menstrual cycle',
+        chief_complaint: 'Persistent acne on face and back',
         symptom_duration: '6 months',
         severity: 7,
         submitted_at: new Date(Date.now() - 45 * 60000).toISOString(),
         
-        // Shipping
-        shipping_address: '123 Main St, Apt 4B, San Francisco, CA 94102'
+        // Full HPI from intake form
+        hpi: {
+          onset: 'Started 6 months ago, gradually worsening',
+          location: 'Face (cheeks, forehead, chin) and upper back',
+          character: 'Inflammatory papules and pustules with some comedones',
+          timing: 'Worse during menstrual cycle (week before period)',
+          aggravating: 'Stress, dairy products, touching face',
+          relieving: 'Some improvement with OTC benzoyl peroxide',
+          associated: 'Oily skin, occasional scarring, mild hyperpigmentation',
+          previous_treatments: [
+            'Benzoyl peroxide 2.5% - minimal improvement',
+            'Salicylic acid cleanser - dried skin',
+            'Proactiv system - no improvement'
+          ],
+          lifestyle: {
+            sleep: '5-6 hours/night (irregular)',
+            stress_level: 'High (work deadlines)',
+            diet: 'Regular dairy consumption, occasional fast food',
+            exercise: '2-3 times per week',
+            skincare: 'Cetaphil cleanser, moisturizer SPF 30'
+          },
+          goals: 'Clear skin for wedding in 3 months, prevent scarring',
+          family_history: 'Mother had severe acne in 20s',
+          relevant_history: 'No history of isotretinoin use, not pregnant/planning'
+        }
       };
       
       setConsultation(mockConsultation);
+      
+      // Pre-fill HPI summary as a paragraph
+      const hpiParagraph = `28-year-old female presents with persistent acne on face and back for 6 months with severity 7/10. Started 6 months ago and has been gradually worsening. Located on face (cheeks, forehead, chin) and upper back. Characterized as inflammatory papules and pustules with some comedones. Symptoms worsen during menstrual cycle (week before period) and are aggravated by stress, dairy products, and touching face. Some improvement noted with OTC benzoyl peroxide. Previous treatments include benzoyl peroxide 2.5% (minimal improvement), salicylic acid cleanser (dried skin), and Proactiv system (no improvement). Patient's goal is clear skin for wedding in 3 months and prevention of scarring. Allergies: Penicillin, Sulfa drugs. Current medications: Birth control (Yaz), Vitamin D 2000 IU daily.`;
+      
+      setHpiSummary(hpiParagraph);
       
       // Pre-fill with AI suggestions
       setDiagnosis('Acne vulgaris, moderate to severe');
       setTreatmentNotes('Start combination therapy with topical retinoid and oral antibiotic. Counsel on skin care routine and sun protection. Follow up in 6-8 weeks.');
       
-      // Pre-select common medications
-      setSelectedMedications([
-        { ...medicationDatabase.acne[0], qty: 1, instructions: 'Apply QHS' },
-        { ...medicationDatabase.acne[2], qty: 90, instructions: 'Take 100mg BID with food' }
-      ]);
+      // Pre-select moderate acne protocol as default
+      setSelectedProtocol('moderate');
+      setSelectedMedications(treatmentProtocols.acne.moderate.medications);
+      setPatientCondition('acne'); // This would come from the patient's intake form
       
     } catch (error) {
       console.error('Error:', error);
@@ -99,15 +207,15 @@ export default function ProviderConsultationReview() {
   const sendTreatmentPlan = () => {
     setSending(true);
     setTimeout(() => {
-      alert('Treatment plan sent to patient!');
+      alert('Treatment plan sent to patient and pharmacy!');
       router.push('/provider/dashboard');
     }, 1000);
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-medical-600"></div>
       </div>
     );
   }
@@ -115,203 +223,163 @@ export default function ProviderConsultationReview() {
   const totalCost = selectedMedications.reduce((sum, med) => sum + (med.price * (med.qty || 1)), 0);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+    <div className="min-h-screen bg-slate-50">
       {/* Compact Header */}
-      <header className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={() => router.push('/provider/dashboard')}
-              className="text-slate-600 hover:text-slate-900"
-            >
-              ← Back
-            </button>
-            <div>
-              <h1 className="text-lg font-semibold text-slate-900">Consultation #{consultationId}</h1>
-              <p className="text-xs text-slate-500">Submitted {new Date(consultation?.submitted_at).toLocaleTimeString()}</p>
-            </div>
-          </div>
-          
-          <div className="flex items-center space-x-3">
-            <span className="px-3 py-1 bg-orange-100 text-orange-700 text-sm rounded-full">
-              Pending Review
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-40">
+        <div className="max-w-6xl mx-auto px-4 py-2 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button onClick={() => router.push('/provider/dashboard')} className="text-slate-600 hover:text-slate-900">←</button>
+            <span className="text-sm font-medium text-slate-900">
+              {consultation.first_name} {consultation.last_name}, {consultation.age} • #{consultationId}
             </span>
-            <button
-              onClick={sendTreatmentPlan}
-              disabled={sending}
-              className="px-6 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 transition disabled:opacity-50"
-            >
-              {sending ? 'Sending...' : 'Send Treatment Plan'}
-            </button>
           </div>
+          <button
+            onClick={sendTreatmentPlan}
+            disabled={sending || selectedMedications.length === 0}
+            className="px-4 py-1.5 bg-medical-600 text-white text-sm font-medium rounded hover:bg-medical-700 transition disabled:opacity-50"
+          >
+            {sending ? 'Sending...' : 'Approve & Send'}
+          </button>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 py-4">
-        {/* Patient Info Bar */}
-        <div className="bg-white rounded-lg shadow-sm p-4 mb-4">
-          <div className="grid grid-cols-6 gap-4 text-sm">
-            <div>
-              <span className="text-slate-500">Patient</span>
-              <p className="font-semibold">{consultation.first_name} {consultation.last_name}</p>
-              <p className="text-xs text-slate-600">{consultation.age}y {consultation.gender}</p>
+      <div className="max-w-5xl mx-auto px-4 py-3">
+        {/* Provider-focused layout: HPI → Treatment → Prescriptions */}
+        <div className="grid grid-cols-2 gap-3">
+          {/* Left Column: HPI + Treatment Plan */}
+          <div className="space-y-3">
+            {/* HPI - Editable paragraph summary */}
+            <div className="bg-white rounded border border-slate-200 p-3">
+              <h3 className="text-sm font-semibold text-slate-900 mb-2">Patient Presentation (HPI)</h3>
+              <textarea
+                value={hpiSummary}
+                onChange={(e) => setHpiSummary(e.target.value)}
+                className="w-full px-2 py-1.5 text-sm text-slate-700 border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-medical-500"
+                rows={6}
+                placeholder="Patient history and presentation..."
+              />
             </div>
-            <div className="col-span-2">
-              <span className="text-slate-500">Chief Complaint</span>
-              <p className="font-semibold text-red-600">{consultation.chief_complaint}</p>
-              <p className="text-xs text-slate-600">Severity: {consultation.severity}/10 • Duration: {consultation.symptom_duration}</p>
-            </div>
-            <div>
-              <span className="text-slate-500">Allergies</span>
-              <p className="font-semibold text-orange-600">{consultation.allergies}</p>
-            </div>
-            <div>
-              <span className="text-slate-500">Current Meds</span>
-              <p className="font-semibold">{consultation.current_medications}</p>
-            </div>
-            <div>
-              <span className="text-slate-500">Contact</span>
-              <p className="text-xs">{consultation.email}</p>
-              <p className="text-xs">{consultation.phone}</p>
-            </div>
-          </div>
-        </div>
 
-        {/* Main Content Area - Side by Side */}
-        <div className="grid grid-cols-2 gap-4">
-          {/* Left Column - Assessment & Treatment */}
-          <div className="bg-white rounded-lg shadow-sm p-4">
-            <div className="mb-4">
-              <div className="flex items-center justify-between mb-2">
-                <h2 className="text-sm font-semibold text-slate-900">Clinical Assessment</h2>
-                <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">AI Assisted</span>
-              </div>
+            {/* Treatment Plan & Message to Patient */}
+            <div className="bg-white rounded border border-slate-200 p-3">
+              <h3 className="text-sm font-semibold text-slate-900 mb-2">Treatment Plan</h3>
               
-              {/* Diagnosis */}
               <div className="mb-3">
-                <label className="text-xs text-slate-500 font-medium">Diagnosis</label>
+                <label className="text-xs font-medium text-slate-700">Diagnosis</label>
                 <input
                   type="text"
                   value={diagnosis}
                   onChange={(e) => setDiagnosis(e.target.value)}
-                  className="w-full px-3 py-1.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter diagnosis..."
+                  className="w-full px-2 py-1 text-sm border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-medical-500"
                 />
               </div>
 
-              {/* Treatment Plan */}
               <div>
-                <label className="text-xs text-slate-500 font-medium">Treatment Plan</label>
+                <label className="text-xs font-medium text-slate-700">Message to Patient</label>
                 <textarea
                   value={treatmentNotes}
                   onChange={(e) => setTreatmentNotes(e.target.value)}
-                  className="w-full px-3 py-1.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  rows={3}
+                  className="w-full px-2 py-1 text-sm border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-medical-500"
+                  rows={4}
+                  placeholder="Instructions for the patient..."
                 />
               </div>
             </div>
-
-            {/* Detailed Symptoms (Collapsible) */}
-            <details className="border-t pt-3">
-              <summary className="text-xs font-medium text-slate-600 cursor-pointer hover:text-slate-900">
-                View Detailed Symptoms & History
-              </summary>
-              <div className="mt-2 text-sm text-slate-600 space-y-1">
-                <p><strong>Symptoms:</strong> {consultation.symptoms}</p>
-                <p><strong>Previous Treatments:</strong> OTC benzoyl peroxide, Proactiv (no improvement)</p>
-                <p><strong>Lifestyle:</strong> High stress, irregular sleep, dairy consumption</p>
-                <p><strong>Goal:</strong> Clear skin for wedding in 3 months</p>
-              </div>
-            </details>
           </div>
 
-          {/* Right Column - Medications */}
-          <div className="bg-white rounded-lg shadow-sm p-4">
+          {/* Right Column: Prescriptions Only */}
+          <div className="bg-white rounded border border-slate-200 p-3 h-fit">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-semibold text-slate-900">Medications</h2>
-              <span className="text-sm font-bold text-green-600">Total: ${totalCost}</span>
+              <h3 className="text-sm font-semibold text-slate-900">Prescriptions</h3>
+              <span className="text-lg font-bold text-emerald-600">${totalCost}</span>
             </div>
 
             {/* Selected Medications */}
-            <div className="space-y-2 mb-3 max-h-32 overflow-y-auto">
-              {selectedMedications.map((med, index) => (
-                <div key={index} className="flex items-center justify-between p-2 bg-blue-50 rounded text-sm">
-                  <div className="flex-1">
-                    <span className="font-medium">{med.name}</span>
-                    <span className="text-slate-600 ml-2">${med.price}</span>
+            <div className="space-y-2 mb-3">
+              {selectedMedications.length === 0 ? (
+                <p className="text-sm text-slate-500 text-center py-4">No medications selected</p>
+              ) : (
+                selectedMedications.map((med, index) => (
+                  <div key={index} className="bg-blue-50 rounded p-2">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-medium">{med.name}</span>
+                      <button onClick={() => removeMedication(index)} className="text-red-500 hover:text-red-700">×</button>
+                    </div>
+                    <div className="flex gap-2">
+                      <input
+                        type="number"
+                        value={med.qty}
+                        onChange={(e) => {
+                          const updated = [...selectedMedications];
+                          updated[index].qty = parseInt(e.target.value) || 1;
+                          setSelectedMedications(updated);
+                        }}
+                        className="w-16 px-2 py-1 text-xs border border-slate-200 rounded"
+                        placeholder="Qty"
+                      />
+                      <input
+                        type="text"
+                        value={med.instructions}
+                        onChange={(e) => {
+                          const updated = [...selectedMedications];
+                          updated[index].instructions = e.target.value;
+                          setSelectedMedications(updated);
+                        }}
+                        className="flex-1 px-2 py-1 text-xs border border-slate-200 rounded"
+                        placeholder="Sig: instructions..."
+                      />
+                      <span className="text-sm text-slate-600 self-center">${med.price}</span>
+                    </div>
                   </div>
-                  <input
-                    type="number"
-                    value={med.qty}
-                    onChange={(e) => {
-                      const updated = [...selectedMedications];
-                      updated[index].qty = parseInt(e.target.value) || 1;
-                      setSelectedMedications(updated);
-                    }}
-                    className="w-16 px-2 py-1 text-xs border rounded mx-2"
-                    placeholder="Qty"
-                  />
-                  <input
-                    type="text"
-                    value={med.instructions}
-                    onChange={(e) => {
-                      const updated = [...selectedMedications];
-                      updated[index].instructions = e.target.value;
-                      setSelectedMedications(updated);
-                    }}
-                    className="w-24 px-2 py-1 text-xs border rounded"
-                    placeholder="Instructions"
-                  />
-                  <button
-                    onClick={() => removeMedication(index)}
-                    className="ml-2 text-red-500 hover:text-red-700"
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
+                ))
+              )}
             </div>
 
-            {/* Quick Add Medications */}
-            <div className="border-t pt-3">
-              <p className="text-xs font-medium text-slate-600 mb-2">Quick Add</p>
-              <div className="grid grid-cols-2 gap-1">
-                {Object.entries(medicationDatabase).map(([category, meds]) => (
-                  <div key={category}>
-                    <p className="text-xs text-slate-500 capitalize mb-1">{category}</p>
-                    {meds.slice(0, 2).map((med) => (
-                      <button
-                        key={med.sku}
-                        onClick={() => addMedication(med)}
-                        className="w-full text-left px-2 py-1 text-xs border border-slate-200 rounded hover:bg-blue-50 hover:border-blue-300 mb-1"
-                      >
-                        {med.name} - ${med.price}
-                      </button>
-                    ))}
-                  </div>
+            {/* Treatment Protocol Selection */}
+            <div>
+              <p className="text-xs font-medium text-slate-700 mb-2">Select Treatment Protocol:</p>
+              <div className="space-y-2">
+                {Object.entries(treatmentProtocols[patientCondition as keyof typeof treatmentProtocols] || {}).map(([key, protocol]) => (
+                  <button
+                    key={key}
+                    onClick={() => {
+                      setSelectedProtocol(key);
+                      setSelectedMedications(protocol.medications);
+                    }}
+                    className={`w-full text-left px-3 py-2 rounded transition ${
+                      selectedProtocol === key 
+                        ? 'bg-medical-50 border-2 border-medical-500 text-medical-700' 
+                        : 'bg-white border border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <div className="text-sm font-medium">{protocol.name}</div>
+                        <div className="text-xs text-slate-500 mt-0.5">
+                          {protocol.medications.map(m => m.name).join(' + ')}
+                        </div>
+                      </div>
+                      <span className="text-sm font-bold text-emerald-600">${protocol.total}</span>
+                    </div>
+                  </button>
                 ))}
               </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom Info Bar */}
-        <div className="mt-4 bg-white rounded-lg shadow-sm p-3">
-          <div className="flex items-center justify-between text-sm">
-            <div className="flex items-center space-x-4">
-              <span className="text-slate-500">
-                <strong>Ship to:</strong> {consultation.shipping_address}
-              </span>
-            </div>
-            <div className="flex items-center space-x-4">
-              <label className="flex items-center">
-                <input type="checkbox" className="mr-2" defaultChecked />
-                <span className="text-sm">Send copy to patient</span>
-              </label>
-              <label className="flex items-center">
-                <input type="checkbox" className="mr-2" defaultChecked />
-                <span className="text-sm">Enable follow-up messaging</span>
-              </label>
+              
+              {/* Custom medication option */}
+              <button
+                onClick={() => {
+                  setSelectedProtocol('custom');
+                  setSelectedMedications([]);
+                }}
+                className={`w-full mt-2 text-left px-3 py-2 rounded transition ${
+                  selectedProtocol === 'custom' 
+                    ? 'bg-purple-50 border-2 border-purple-500 text-purple-700' 
+                    : 'bg-white border border-dashed border-slate-300 hover:bg-slate-50'
+                }`}
+              >
+                <div className="text-sm font-medium">Custom Protocol</div>
+                <div className="text-xs text-slate-500">Build your own combination</div>
+              </button>
             </div>
           </div>
         </div>

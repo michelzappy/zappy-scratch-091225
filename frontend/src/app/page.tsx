@@ -66,9 +66,28 @@ export default function Home() {
                 Browse Treatments
               </a>
             </div>
-            <p className="text-white/80 text-sm">
+            <p className="text-white/80 text-sm mb-8">
               ✓ Free online consultation &nbsp;&nbsp; ✓ Free 2-day shipping &nbsp;&nbsp; ✓ Cancel anytime
             </p>
+            
+            {/* Quick Access Portal Buttons */}
+            <div className="border-t border-white/20 pt-6 mt-6">
+              <p className="text-white/70 text-sm mb-4">Quick Access Portal</p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Link href="/patient/dashboard" 
+                  className="inline-block bg-white/10 backdrop-blur-sm text-white border border-white/30 px-6 py-2 rounded-lg text-sm font-medium hover:bg-white/20 transition-all">
+                  🏥 Patient Portal
+                </Link>
+                <Link href="/provider/dashboard" 
+                  className="inline-block bg-white/10 backdrop-blur-sm text-white border border-white/30 px-6 py-2 rounded-lg text-sm font-medium hover:bg-white/20 transition-all">
+                  👨‍⚕️ Provider Portal
+                </Link>
+                <Link href="/admin/dashboard" 
+                  className="inline-block bg-white/10 backdrop-blur-sm text-white border border-white/30 px-6 py-2 rounded-lg text-sm font-medium hover:bg-white/20 transition-all">
+                  ⚙️ Admin Portal
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
         

@@ -14,7 +14,7 @@ export default function ProviderPatients() {
       name: 'Emily Johnson',
       age: 28,
       gender: 'F',
-      lastVisit: '2024-01-10',
+      lastVisit: 'Jan 10, 2024',
       totalVisits: 8,
       subscription: 'Premium',
       status: 'active',
@@ -27,7 +27,7 @@ export default function ProviderPatients() {
       name: 'Michael Chen',
       age: 35,
       gender: 'M',
-      lastVisit: '2024-01-08',
+      lastVisit: 'Jan 8, 2024',
       totalVisits: 4,
       subscription: 'Essential',
       status: 'active',
@@ -40,7 +40,7 @@ export default function ProviderPatients() {
       name: 'Sarah Williams',
       age: 42,
       gender: 'F',
-      lastVisit: '2023-12-15',
+      lastVisit: 'Dec 15, 2023',
       totalVisits: 12,
       subscription: 'Premium',
       status: 'inactive',
@@ -53,7 +53,7 @@ export default function ProviderPatients() {
       name: 'James Wilson',
       age: 31,
       gender: 'M',
-      lastVisit: '2024-01-11',
+      lastVisit: 'Jan 11, 2024',
       totalVisits: 2,
       subscription: 'Essential',
       status: 'active',
@@ -71,176 +71,182 @@ export default function ProviderPatients() {
     return matchesSearch && matchesFilter;
   });
 
+  const stats = {
+    total: 347,
+    active: 289,
+    avgLTV: '$1,847',
+    retention: '89%',
+    premium: '42%'
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="space-y-4 pb-20 lg:pb-8">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200">
-        <div className="px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-medium text-gray-900">Patients</h1>
-              <p className="text-sm text-gray-500 mt-0.5">
-                {filteredPatients.length} total • {filteredPatients.filter(p => p.status === 'active').length} active
-              </p>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              {/* Search */}
-              <input
-                type="text"
-                placeholder="Search patients..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900"
-              />
-              
-              {/* Filter */}
-              <select 
-                value={filterBy}
-                onChange={(e) => setFilterBy(e.target.value)}
-                className="text-sm border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900"
-              >
-                <option value="all">All Patients</option>
-                <option value="active">Active Only</option>
-                <option value="premium">Premium Only</option>
-              </select>
+      <div>
+        <h1 className="text-xl lg:text-2xl font-bold text-slate-900">Patients</h1>
+        <p className="text-sm text-slate-600 mt-1">
+          {filteredPatients.length} total • {filteredPatients.filter(p => p.status === 'active').length} active
+        </p>
+      </div>
 
-              {/* Add Patient */}
-              <button className="px-4 py-1.5 bg-gray-900 text-white text-sm rounded-lg hover:bg-gray-800 transition">
-                + Add Patient
-              </button>
-            </div>
-          </div>
+      {/* Search and Filters - Mobile Optimized */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <input
+          type="text"
+          placeholder="Search patients..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-medical-500 focus:bg-white transition-colors"
+        />
+        
+        <select 
+          value={filterBy}
+          onChange={(e) => setFilterBy(e.target.value)}
+          className="px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-medical-500 focus:border-medical-500"
+        >
+          <option value="all">All Patients</option>
+          <option value="active">Active Only</option>
+          <option value="premium">Premium Only</option>
+        </select>
+      </div>
+
+      {/* Stats Cards - Mobile Grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+        <div className="bg-white rounded-xl border border-slate-200 p-4">
+          <p className="text-xs text-slate-600">Total</p>
+          <p className="text-xl font-bold text-slate-900 mt-1">{stats.total}</p>
+          <p className="text-xs text-emerald-600 mt-1">↑ 12 new</p>
         </div>
-      </header>
+        <div className="bg-white rounded-xl border border-slate-200 p-4">
+          <p className="text-xs text-slate-600">Active</p>
+          <p className="text-xl font-bold text-emerald-600 mt-1">{stats.active}</p>
+          <p className="text-xs text-slate-500 mt-1">83%</p>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 p-4">
+          <p className="text-xs text-slate-600">Avg LTV</p>
+          <p className="text-xl font-bold text-slate-900 mt-1">{stats.avgLTV}</p>
+          <p className="text-xs text-emerald-600 mt-1">↑ $234</p>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 p-4">
+          <p className="text-xs text-slate-600">Retention</p>
+          <p className="text-xl font-bold text-slate-900 mt-1">{stats.retention}</p>
+          <p className="text-xs text-slate-500 mt-1">3mo avg</p>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 p-4 col-span-2 lg:col-span-1">
+          <p className="text-xs text-slate-600">Premium</p>
+          <p className="text-xl font-bold text-purple-600 mt-1">{stats.premium}</p>
+          <p className="text-xs text-emerald-600 mt-1">↑ 5%</p>
+        </div>
+      </div>
 
-      {/* Patient List */}
-      <div className="p-6">
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          {/* Table Header */}
-          <div className="grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-500 uppercase">
-            <div className="col-span-3">Patient</div>
-            <div className="col-span-2">Conditions</div>
-            <div className="col-span-1">Last Visit</div>
-            <div className="col-span-1">Visits</div>
-            <div className="col-span-1">Revenue</div>
-            <div className="col-span-1">Compliance</div>
-            <div className="col-span-2">Subscription</div>
-            <div className="col-span-1">Action</div>
-          </div>
-
-          {/* Table Body */}
-          <div className="divide-y divide-gray-100">
-            {filteredPatients.map((patient) => (
-              <div 
-                key={patient.id}
-                className="grid grid-cols-12 gap-4 px-6 py-3 hover:bg-gray-50 transition cursor-pointer items-center"
-                onClick={() => router.push(`/provider/patient/${patient.id}`)}
-              >
-                {/* Patient */}
-                <div className="col-span-3 flex items-center space-x-3">
-                  <div className="w-9 h-9 bg-gray-200 rounded-full flex items-center justify-center">
-                    <span className="text-xs font-medium text-gray-600">
-                      {patient.name.split(' ').map(n => n[0]).join('')}
+      {/* Patient Cards - Mobile First */}
+      <div className="space-y-3">
+        {filteredPatients.map((patient) => (
+          <div 
+            key={patient.id}
+            onClick={() => router.push(`/provider/patient/${patient.id}`)}
+            className="bg-white rounded-xl border border-slate-200 p-4 hover:shadow-md transition-all cursor-pointer"
+          >
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-start gap-3">
+                {/* Patient Avatar */}
+                <div className="w-10 h-10 bg-slate-200 rounded-full flex items-center justify-center">
+                  <span className="text-xs font-medium text-slate-600">
+                    {patient.name.split(' ').map(n => n[0]).join('')}
+                  </span>
+                </div>
+                
+                {/* Patient Info */}
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="font-medium text-sm text-slate-900">{patient.name}</h3>
+                    <span className="text-xs text-slate-500">{patient.age}{patient.gender}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                      patient.status === 'active'
+                        ? 'bg-emerald-100 text-emerald-700'
+                        : 'bg-slate-100 text-slate-500'
+                    }`}>
+                      {patient.status}
+                    </span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                      patient.subscription === 'Premium'
+                        ? 'bg-purple-100 text-purple-700'
+                        : 'bg-slate-100 text-slate-600'
+                    }`}>
+                      {patient.subscription}
                     </span>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">{patient.name}</p>
-                    <p className="text-xs text-gray-500">{patient.age}{patient.gender}</p>
-                  </div>
-                </div>
-
-                {/* Conditions */}
-                <div className="col-span-2">
-                  <div className="flex flex-wrap gap-1">
-                    {patient.conditions.slice(0, 2).map((condition, idx) => (
-                      <span key={idx} className="inline-flex px-1.5 py-0.5 text-xs bg-gray-100 text-gray-600 rounded">
+                  
+                  {/* Conditions */}
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {patient.conditions.map((condition, idx) => (
+                      <span key={idx} className="text-xs px-2 py-0.5 bg-slate-100 text-slate-600 rounded">
                         {condition}
                       </span>
                     ))}
                   </div>
                 </div>
-
-                {/* Last Visit */}
-                <div className="col-span-1">
-                  <p className="text-sm text-gray-600">{patient.lastVisit}</p>
-                </div>
-
-                {/* Total Visits */}
-                <div className="col-span-1">
-                  <p className="text-sm font-medium text-gray-900">{patient.totalVisits}</p>
-                </div>
-
-                {/* Revenue */}
-                <div className="col-span-1">
-                  <p className="text-sm font-medium text-gray-900">${patient.revenue}</p>
-                </div>
-
-                {/* Compliance */}
-                <div className="col-span-1">
-                  <span className={`text-sm font-medium ${
-                    patient.compliance >= 90 ? 'text-green-600' :
-                    patient.compliance >= 75 ? 'text-orange-600' :
-                    'text-red-600'
-                  }`}>
-                    {patient.compliance}%
-                  </span>
-                </div>
-
-                {/* Subscription */}
-                <div className="col-span-2">
-                  <div className="flex items-center space-x-2">
-                    <span className={`inline-flex px-2 py-0.5 text-xs rounded ${
-                      patient.subscription === 'Premium'
-                        ? 'bg-purple-100 text-purple-700'
-                        : 'bg-gray-100 text-gray-600'
-                    }`}>
-                      {patient.subscription}
-                    </span>
-                    <span className={`inline-flex px-2 py-0.5 text-xs rounded ${
-                      patient.status === 'active'
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-gray-100 text-gray-500'
-                    }`}>
-                      {patient.status}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Action */}
-                <div className="col-span-1">
-                  <button className="text-sm font-medium text-gray-900 hover:text-gray-600">
-                    View →
-                  </button>
-                </div>
               </div>
-            ))}
-          </div>
-        </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-4 gap-4 mt-6">
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <p className="text-xs font-medium text-gray-500">TOTAL PATIENTS</p>
-            <p className="text-xl font-light text-gray-900 mt-1">347</p>
-            <p className="text-xs text-green-600 mt-1">↑ 12 this month</p>
+              {/* Compliance Badge */}
+              <div className="text-center">
+                <span className={`text-lg font-bold ${
+                  patient.compliance >= 90 ? 'text-emerald-600' :
+                  patient.compliance >= 75 ? 'text-orange-600' :
+                  'text-red-600'
+                }`}>
+                  {patient.compliance}%
+                </span>
+                <p className="text-xs text-slate-500">compliance</p>
+              </div>
+            </div>
+
+            {/* Bottom Info */}
+            <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+              <div className="flex items-center gap-4 text-xs text-slate-600">
+                <span>📅 {patient.lastVisit}</span>
+                <span>🔄 {patient.totalVisits} visits</span>
+                <span className="font-medium text-slate-900">${patient.revenue}</span>
+              </div>
+              
+              <button className="text-sm font-medium text-medical-600 hover:text-medical-700">
+                View Details →
+              </button>
+            </div>
           </div>
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <p className="text-xs font-medium text-gray-500">AVG LTV</p>
-            <p className="text-xl font-light text-gray-900 mt-1">$1,847</p>
-            <p className="text-xs text-green-600 mt-1">↑ $234 from last month</p>
-          </div>
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <p className="text-xs font-medium text-gray-500">RETENTION</p>
-            <p className="text-xl font-light text-gray-900 mt-1">89%</p>
-            <p className="text-xs text-gray-500 mt-1">3 month average</p>
-          </div>
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <p className="text-xs font-medium text-gray-500">PREMIUM %</p>
-            <p className="text-xl font-light text-gray-900 mt-1">42%</p>
-            <p className="text-xs text-green-600 mt-1">↑ 5% this quarter</p>
-          </div>
+        ))}
+      </div>
+
+      {/* Empty State */}
+      {filteredPatients.length === 0 && (
+        <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
+          <div className="text-4xl mb-4">👥</div>
+          <p className="text-sm text-slate-600">No patients found</p>
+          <p className="text-xs text-slate-500 mt-1">Try adjusting your search or filters</p>
         </div>
+      )}
+
+      {/* Quick Actions - Mobile Optimized */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <button className="bg-white rounded-xl border-2 border-medical-200 p-4 text-center hover:shadow-lg transition-all hover:scale-[1.02]">
+          <div className="text-2xl mb-2">📊</div>
+          <p className="text-sm font-semibold text-medical-700">Export List</p>
+        </button>
+        
+        <button className="bg-white rounded-xl border-2 border-emerald-200 p-4 text-center hover:shadow-lg transition-all hover:scale-[1.02]">
+          <div className="text-2xl mb-2">📧</div>
+          <p className="text-sm font-semibold text-emerald-700">Bulk Message</p>
+        </button>
+        
+        <button className="bg-white rounded-xl border-2 border-purple-200 p-4 text-center hover:shadow-lg transition-all hover:scale-[1.02]">
+          <div className="text-2xl mb-2">🏷️</div>
+          <p className="text-sm font-semibold text-purple-700">Tag Patients</p>
+        </button>
+        
+        <button className="bg-white rounded-xl border-2 border-blue-200 p-4 text-center hover:shadow-lg transition-all hover:scale-[1.02]">
+          <div className="text-2xl mb-2">➕</div>
+          <p className="text-sm font-semibold text-blue-700">Add Patient</p>
+        </button>
       </div>
     </div>
   );
