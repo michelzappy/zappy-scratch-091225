@@ -31,10 +31,6 @@ router.get('/metrics',
       SELECT 
         (SELECT COUNT(*) FROM patients WHERE is_active = true) as active_patients,
         (SELECT COUNT(*) FROM consultations WHERE status = 'pending') as open_consultations,
-        (SELECT COUNT(*) FROM consultations c 
-         WHERE c.status = 'pending' AND c.urgency = 'urgent') as urgent_consultations,
-        (SELECT COUNT(*) FROM support_tickets WHERE status = 'open') as open_tickets,
-        (SELECT COUNT(*) FROM support_tickets WHERE priority = 'high' AND status = 'open') as high_priority_tickets,
         (SELECT COUNT(*) FROM prescriptions WHERE status = 'active') as active_prescriptions,
         (SELECT COUNT(*) FROM orders WHERE payment_status = 'pending') as pending_payments,
         (SELECT COUNT(*) FROM orders WHERE fulfillment_status = 'pending') as pending_fulfillment,
@@ -51,123 +47,6 @@ router.get('/metrics',
   })
 );
 
-// Get support tickets
-router.get('/support/tickets',
-  requireAuth,
-  requireRole('admin'),
-  [
-    query('status').optional().isString(),
-    query('priority').optional().isString(),
-    query('limit').optional().isInt({ min: 1, max: 100 }),
-    query('offset').optional().isInt({ min: 0 })
-  ],
-  handleValidationErrors,
-  asyncHandler(async (req, res) => {
-    const db = getDatabase();
-    const { status = 'open', priority, limit = 20, offset = 0 } = req.query;
-
-    let whereConditions = [`status = $1`];
-    let params = [status];
-    let paramIndex = 2;
-
-    if (priority) {
-      whereConditions.push(`priority = $${paramIndex}`);
-      params.push(priority);
-      paramIndex++;
-    }
-
-    const tickets = await db.raw(`
-      SELECT 
-        st.*,
-        CASE 
-          WHEN st.requester_type = 'patient' THEN p.first_name || ' ' || p.last_name
-          WHEN st.requester_type = 'provider' THEN pr.first_name || ' ' || pr.last_name
-          ELSE st.requester_email
-        END as requester_name,
-        au.first_name || ' ' || au.last_name as assigned_to_name
-      FROM support_tickets st
-      LEFT JOIN patients p ON st.requester_id = p.id AND st.requester_type = 'patient'
-      LEFT JOIN providers pr ON st.requester_id = pr.id AND st.requester_type = 'provider'
-      LEFT JOIN admin_users au ON st.assigned_to = au.id
-      WHERE ${whereConditions.join(' AND ')}
-      ORDER BY 
-        CASE priority 
-          WHEN 'high' THEN 0
-          WHEN 'medium' THEN 1
-          ELSE 2
-        END,
-        st.created_at DESC
-      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
-    `, [...params, limit, offset]);
-
-    res.json({
-      success: true,
-      data: tickets.rows || []
-    });
-  })
-);
-
-// Create support ticket
-router.post('/support/tickets',
-  requireAuth,
-  [
-    body('category').isString().notEmpty(),
-    body('subject').isString().notEmpty(),
-    body('description').isString().notEmpty(),
-    body('priority').optional().isIn(['low', 'medium', 'high']),
-    body('requester_id').optional().isUUID(),
-    body('requester_type').optional().isIn(['patient', 'provider', 'admin']),
-    body('related_consultation_id').optional().isUUID(),
-    body('related_order_id').optional().isUUID()
-  ],
-  handleValidationErrors,
-  asyncHandler(async (req, res) => {
-    const db = getDatabase();
-    
-    const ticketData = {
-      ...req.body,
-      status: 'open',
-      created_at: new Date()
-    };
-
-    const [ticket] = await db
-      .insert('support_tickets')
-      .values(ticketData)
-      .returning();
-
-    res.status(201).json({
-      success: true,
-      data: ticket,
-      message: 'Support ticket created successfully'
-    });
-  })
-);
-
-// Get problem categories analytics
-router.get('/analytics/problem-categories',
-  requireAuth,
-  requireRole('admin'),
-  asyncHandler(async (req, res) => {
-    const db = getDatabase();
-    
-    const categories = await db.raw(`
-      SELECT 
-        category,
-        COUNT(*) as count,
-        ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER (), 2) as percentage
-      FROM support_tickets
-      WHERE created_at >= NOW() - INTERVAL '30 days'
-      GROUP BY category
-      ORDER BY count DESC
-      LIMIT 10
-    `);
-
-    res.json({
-      success: true,
-      data: categories.rows || []
-    });
-  })
-);
 
 // Get pending consultations for admin review
 router.get('/consultations/pending',
@@ -196,13 +75,7 @@ router.get('/consultations/pending',
       JOIN patients p ON c.patient_id = p.id
       LEFT JOIN providers pr ON c.provider_id = pr.id
       WHERE c.status IN ('pending', 'assigned')
-      ORDER BY 
-        CASE c.urgency 
-          WHEN 'emergency' THEN 0
-          WHEN 'urgent' THEN 1
-          ELSE 2
-        END,
-        c.submitted_at ASC
+      ORDER BY c.submitted_at ASC
       LIMIT ?
     `, [limit]);
 
@@ -347,84 +220,6 @@ router.get('/providers',
   })
 );
 
-// Get inventory management
-router.get('/inventory',
-  requireAuth,
-  requireRole('admin'),
-  [
-    query('category').optional().isString(),
-    query('low_stock').optional().isBoolean()
-  ],
-  handleValidationErrors,
-  asyncHandler(async (req, res) => {
-    const db = getDatabase();
-    const { category, low_stock } = req.query;
-
-    let whereConditions = ['is_active = true'];
-    if (category) {
-      whereConditions.push(`category = '${category}'`);
-    }
-    if (low_stock) {
-      whereConditions.push(`quantity_on_hand <= reorder_point`);
-    }
-
-    const inventory = await db.raw(`
-      SELECT 
-        i.*,
-        (quantity_on_hand - quantity_reserved) as available_quantity,
-        CASE 
-          WHEN quantity_on_hand <= reorder_point THEN 'low'
-          WHEN quantity_on_hand <= reorder_point * 2 THEN 'medium'
-          ELSE 'good'
-        END as stock_status
-      FROM inventory i
-      WHERE ${whereConditions.join(' AND ')}
-      ORDER BY 
-        CASE 
-          WHEN quantity_on_hand <= reorder_point THEN 0
-          ELSE 1
-        END,
-        medication_name
-    `);
-
-    res.json({
-      success: true,
-      data: inventory.rows || []
-    });
-  })
-);
-
-// Update inventory
-router.put('/inventory/:id',
-  requireAuth,
-  requireRole('admin'),
-  [
-    param('id').isUUID(),
-    body('quantity_on_hand').optional().isInt({ min: 0 }),
-    body('reorder_point').optional().isInt({ min: 0 }),
-    body('retail_price').optional().isFloat({ min: 0 }),
-    body('subscription_price').optional().isFloat({ min: 0 })
-  ],
-  handleValidationErrors,
-  asyncHandler(async (req, res) => {
-    const db = getDatabase();
-    
-    const [updated] = await db
-      .update('inventory')
-      .set({
-        ...req.body,
-        updated_at: new Date()
-      })
-      .where({ id: req.params.id })
-      .returning();
-
-    res.json({
-      success: true,
-      data: updated,
-      message: 'Inventory updated successfully'
-    });
-  })
-);
 
 // Get order statistics
 router.get('/orders/stats',
@@ -453,47 +248,6 @@ router.get('/orders/stats',
   })
 );
 
-// Handle support ticket
-router.put('/support/tickets/:id',
-  requireAuth,
-  requireRole('admin'),
-  [
-    param('id').isUUID(),
-    body('status').optional().isIn(['open', 'in_progress', 'resolved', 'closed']),
-    body('priority').optional().isIn(['low', 'medium', 'high']),
-    body('assigned_to').optional().isUUID(),
-    body('resolution').optional().isString()
-  ],
-  handleValidationErrors,
-  asyncHandler(async (req, res) => {
-    const db = getDatabase();
-    
-    const updateData = {
-      ...req.body,
-      updated_at: new Date()
-    };
-
-    if (req.body.status === 'resolved') {
-      updateData.resolved_at = new Date();
-    }
-
-    if (req.body.assigned_to) {
-      updateData.assigned_at = new Date();
-    }
-
-    const [updated] = await db
-      .update('support_tickets')
-      .set(updateData)
-      .where({ id: req.params.id })
-      .returning();
-
-    res.json({
-      success: true,
-      data: updated,
-      message: 'Ticket updated successfully'
-    });
-  })
-);
 
 // Admin login
 router.post('/login',
@@ -509,7 +263,7 @@ router.post('/login',
     // Find admin user
     const [admin] = await db
       .select()
-      .from('admin_users')
+      .from('admins')
       .where({ email })
       .limit(1);
 
@@ -530,7 +284,7 @@ router.post('/login',
 
     // Update last login
     await db
-      .update('admin_users')
+      .update('admins')
       .set({ last_login: new Date() })
       .where({ id: admin.id });
 

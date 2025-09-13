@@ -22,7 +22,7 @@ import consultationRoutes from './routes/consultations.js';
 import messageRoutes from './routes/messages.js';
 import patientRoutes from './routes/patients.js';
 import providerRoutes from './routes/providers.js';
-import providerConsultationRoutes from './routes/provider-consultations.js';
+// Removed missing provider-consultations import
 import orderRoutes from './routes/orders.js';
 import fileRoutes from './routes/files.js';
 import adminRoutes from './routes/admin.js';
@@ -105,7 +105,8 @@ app.use('/api/consultations', consultationRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/patients', patientRoutes);
 app.use('/api/providers', providerRoutes);
-app.use('/api/provider/consultations', providerConsultationRoutes);
+// Removed missing provider-consultations route
+// Provider consultation functionality is handled in consultations route
 app.use('/api/orders', orderRoutes);
 app.use('/api/files', fileRoutes);
 app.use('/api/admin', adminRoutes);
