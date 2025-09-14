@@ -1,6 +1,7 @@
 import sgMail from '@sendgrid/mail';
-import nodemailer from 'nodemailer';
-import pool from '../config/database.js';
+import pkg from 'nodemailer';
+const { createTransport, getTestMessageUrl } = pkg;
+import { getDatabase } from '../config/database.js';
 
 // Initialize SendGrid
 if (process.env.SENDGRID_API_KEY) {
@@ -17,7 +18,7 @@ const createTransporter = () => {
   // Use nodemailer for development/testing
   if (process.env.NODE_ENV === 'development') {
     // Use Ethereal Email for testing (free fake SMTP service)
-    return nodemailer.createTransport({
+    return createTransport({
       host: 'smtp.ethereal.email',
       port: 587,
       auth: {
@@ -28,7 +29,7 @@ const createTransporter = () => {
   }
 
   // Fallback to SMTP configuration
-  return nodemailer.createTransporter({
+  return createTransport({
     host: process.env.SMTP_HOST || 'smtp.gmail.com',
     port: process.env.SMTP_PORT || 587,
     secure: false,
@@ -409,7 +410,7 @@ class EmailService {
 
         // Log test email URL if using Ethereal
         if (process.env.NODE_ENV === 'development') {
-          console.log('Preview URL: %s', nodemailer.getTestMessageUrl(info));
+          console.log('Preview URL: %s', getTestMessageUrl(info));
         }
       }
 
@@ -431,7 +432,8 @@ class EmailService {
         INSERT INTO email_logs (recipient, template, data, message_id, status, sent_at)
         VALUES ($1, $2, $3, $4, $5, NOW())
       `;
-      await pool.query(query, [to, template, JSON.stringify(data), messageId, 'sent']);
+      const db = getDatabase();
+      await db.query(query, [to, template, JSON.stringify(data), messageId, 'sent']);
     } catch (error) {
       console.error('Error logging email:', error);
     }
@@ -443,7 +445,8 @@ class EmailService {
         INSERT INTO email_logs (recipient, template, status, error_message, sent_at)
         VALUES ($1, $2, $3, $4, NOW())
       `;
-      await pool.query(query, [to, template, 'failed', error.message]);
+      const db = getDatabase();
+      await db.query(query, [to, template, 'failed', error.message]);
     } catch (error) {
       console.error('Error logging email error:', error);
     }
@@ -473,7 +476,8 @@ class EmailService {
         VALUES ($1, $2, $3, $4, 'pending', NOW())
         RETURNING id
       `;
-      const result = await pool.query(query, [to, template, JSON.stringify(data), sendAt]);
+      const db = getDatabase();
+      const result = await db.query(query, [to, template, JSON.stringify(data), sendAt]);
       return result.rows[0].id;
     } catch (error) {
       console.error('Error queuing email:', error);
@@ -491,7 +495,8 @@ class EmailService {
         LIMIT 10
         FOR UPDATE SKIP LOCKED
       `;
-      const { rows: emails } = await pool.query(query);
+      const db = getDatabase();
+      const { rows: emails } = await db.query(query);
 
       for (const email of emails) {
         try {
@@ -501,12 +506,12 @@ class EmailService {
             JSON.parse(email.data)
           );
 
-          await pool.query(
+          await db.query(
             'UPDATE email_queue SET status = $1, sent_at = NOW() WHERE id = $2',
             ['sent', email.id]
           );
         } catch (error) {
-          await pool.query(
+          await db.query(
             `UPDATE email_queue 
              SET status = $1, error_message = $2, retry_count = retry_count + 1 
              WHERE id = $3`,
@@ -530,7 +535,8 @@ class EmailService {
         JOIN patients p ON c.patient_id = p.id
         WHERE c.id = $1
       `;
-      const { rows } = await pool.query(query, [consultationId]);
+      const db = getDatabase();
+      const { rows } = await db.query(query, [consultationId]);
       
       if (rows.length === 0) return;
       
@@ -553,7 +559,7 @@ class EmailService {
           JOIN medications m ON pi.medication_id = m.id
           WHERE p.consultation_id = $1
         `;
-        const { rows: medications } = await pool.query(prescriptionQuery, [consultationId]);
+        const { rows: medications } = await db.query(prescriptionQuery, [consultationId]);
         
         const totalCost = medications.reduce((sum, med) => sum + parseFloat(med.base_price), 0);
 

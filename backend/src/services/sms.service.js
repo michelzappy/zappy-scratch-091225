@@ -1,5 +1,5 @@
 import twilio from 'twilio';
-import pool from '../config/database.js';
+import { getDatabase } from '../config/database.js';
 
 // Initialize Twilio client
 let twilioClient = null;
@@ -187,7 +187,8 @@ class SMSService {
         FROM sms_opt_outs 
         WHERE phone_number = $1
       `;
-      const { rows } = await pool.query(query, [phone]);
+      const db = getDatabase();
+      const { rows } = await db.query(query, [phone]);
       return rows.length > 0 && rows[0].opted_out;
     } catch (error) {
       console.error('Error checking opt-out status:', error);
@@ -204,7 +205,8 @@ class SMSService {
         ON CONFLICT (phone_number) 
         DO UPDATE SET opted_out = true, opted_out_at = NOW()
       `;
-      await pool.query(query, [phone]);
+      const db = getDatabase();
+      await db.query(query, [phone]);
       console.log(`User ${phone} opted out of SMS`);
     } catch (error) {
       console.error('Error handling opt-out:', error);
@@ -220,7 +222,8 @@ class SMSService {
         ON CONFLICT (phone_number) 
         DO UPDATE SET opted_out = false, opted_in_at = NOW()
       `;
-      await pool.query(query, [phone]);
+      const db = getDatabase();
+      await db.query(query, [phone]);
       console.log(`User ${phone} opted in to SMS`);
     } catch (error) {
       console.error('Error handling opt-in:', error);
@@ -237,7 +240,8 @@ class SMSService {
         )
         VALUES ($1, $2, $3, $4, $5, $6, NOW())
       `;
-      await pool.query(query, [to, template, content, messageSid, status, error]);
+      const db = getDatabase();
+      await db.query(query, [to, template, content, messageSid, status, error]);
     } catch (err) {
       console.error('Error logging SMS:', err);
     }
@@ -254,7 +258,8 @@ class SMSService {
         VALUES ($1, $2, $3, $4, 'scheduled', NOW())
         RETURNING id
       `;
-      const result = await pool.query(query, [
+      const db = getDatabase();
+      const result = await db.query(query, [
         to, 
         template, 
         JSON.stringify(data), 
@@ -278,7 +283,8 @@ class SMSService {
         LIMIT 10
         FOR UPDATE SKIP LOCKED
       `;
-      const { rows: messages } = await pool.query(query);
+      const db = getDatabase();
+      const { rows: messages } = await db.query(query);
 
       for (const msg of messages) {
         try {
@@ -288,12 +294,13 @@ class SMSService {
             JSON.parse(msg.data || '{}')
           );
 
-          await pool.query(
+          const db = getDatabase();
+      await db.query(
             'UPDATE sms_queue SET status = $1, sent_at = NOW() WHERE id = $2',
             ['sent', msg.id]
           );
         } catch (error) {
-          await pool.query(
+          await db.query(
             `UPDATE sms_queue 
              SET status = $1, error_message = $2, retry_count = retry_count + 1 
              WHERE id = $3`,
@@ -334,7 +341,8 @@ class SMSService {
         )
       `;
 
-      const { rows } = await pool.query(query);
+      const db = getDatabase();
+      const { rows } = await db.query(query);
 
       for (const prescription of rows) {
         if (prescription.phone) {
@@ -366,7 +374,8 @@ class SMSService {
         JOIN patients p ON o.patient_id = p.id
         WHERE o.id = $1
       `;
-      const { rows } = await pool.query(query, [orderId]);
+      const db = getDatabase();
+      const { rows } = await db.query(query, [orderId]);
       
       if (rows.length === 0 || !rows[0].phone) return;
       

@@ -22,10 +22,13 @@ import consultationRoutes from './routes/consultations.js';
 import messageRoutes from './routes/messages.js';
 import patientRoutes from './routes/patients.js';
 import providerRoutes from './routes/providers.js';
-// Removed missing provider-consultations import
+import providerConsultationRoutes from './routes/provider-consultations.js';
 import orderRoutes from './routes/orders.js';
+import prescriptionRoutes from './routes/prescriptions.js';
+import medicationRoutes from './routes/medications.js';
 import fileRoutes from './routes/files.js';
 import adminRoutes from './routes/admin.js';
+import adminPatientsRoutes from './routes/admin-patients.js';
 import webhookRoutes from './routes/webhooks.js';
 import treatmentPlanRoutes from './routes/treatment-plans.js';
 
@@ -105,11 +108,13 @@ app.use('/api/consultations', consultationRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/patients', patientRoutes);
 app.use('/api/providers', providerRoutes);
-// Removed missing provider-consultations route
-// Provider consultation functionality is handled in consultations route
+app.use('/api/provider/consultations', providerConsultationRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/prescriptions', prescriptionRoutes);
+app.use('/api/medications', medicationRoutes);
 app.use('/api/files', fileRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/admin/patients', adminPatientsRoutes);
 app.use('/api/treatment-plans', treatmentPlanRoutes);
 
 // 404 handler

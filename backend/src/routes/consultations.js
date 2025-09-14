@@ -2,7 +2,7 @@ import express from 'express';
 import { body, param, query, validationResult } from 'express-validator';
 import { asyncHandler } from '../middleware/errorHandler.js';
 import { getDatabase } from '../config/database.js';
-import { consultations, messages, orders } from '../models/index.js';
+import { consultations, messages } from '../models/index.js';
 import { eq } from 'drizzle-orm';
 import { requireAuth, requireRole, optionalAuth } from '../middleware/auth.js';
 import multer from 'multer';
@@ -345,18 +345,24 @@ router.post('/:id/approve-prescription',
       .where(eq(consultations.id, req.params.id))
       .returning();
 
-    // Create order record
-    await db.insert(orders).values({
-      consultationId: consultation.id,
-      patientId: consultation.patientId,
-      providerId: req.user.id,
-      pharmacyOrderId: pharmacyResult.pharmacyOrderId,
-      trackingNumber: pharmacyResult.trackingNumber,
-      medications: JSON.stringify(req.body.medications),
-      status: 'processing',
-      estimatedDelivery: pharmacyResult.estimatedDelivery,
-      createdAt: new Date()
-    });
+    // Create order record (using raw SQL since orders table isn't in models)
+    await db.query(`
+      INSERT INTO orders (
+        consultation_id, patient_id, provider_id, 
+        pharmacy_order_id, tracking_number, medications,
+        status, estimated_delivery, created_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+    `, [
+      consultation.id,
+      consultation.patientId,
+      req.user.id,
+      pharmacyResult.pharmacyOrderId,
+      pharmacyResult.trackingNumber,
+      JSON.stringify(req.body.medications),
+      'processing',
+      pharmacyResult.estimatedDelivery,
+      new Date()
+    ]);
 
     res.json({
       success: true,

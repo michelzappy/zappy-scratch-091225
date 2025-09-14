@@ -1,5 +1,5 @@
 import express from 'express';
-import pool from '../config/database.js';
+import { getDatabase } from '../config/database.js';
 import emailService from '../services/email.service.js';
 import smsService from '../services/sms.service.js';
 
@@ -17,7 +17,8 @@ router.post('/sendgrid/events', express.raw({ type: 'application/json' }), async
     
     for (const event of events) {
       // Log webhook event
-      await pool.query(
+      const db = getDatabase();
+      await db.query(
         `INSERT INTO webhook_logs (service, event_type, payload, processed) 
          VALUES ($1, $2, $3, true)`,
         ['sendgrid', event.event, JSON.stringify(event)]
@@ -26,7 +27,7 @@ router.post('/sendgrid/events', express.raw({ type: 'application/json' }), async
       // Update email log based on event
       switch (event.event) {
         case 'delivered':
-          await pool.query(
+          await db.query(
             `UPDATE email_logs 
              SET status = 'delivered', delivered_at = NOW() 
              WHERE message_id = $1`,
@@ -35,7 +36,7 @@ router.post('/sendgrid/events', express.raw({ type: 'application/json' }), async
           break;
           
         case 'open':
-          await pool.query(
+          await db.query(
             `UPDATE email_logs 
              SET status = 'opened', opened_at = NOW() 
              WHERE message_id = $1`,
@@ -44,7 +45,7 @@ router.post('/sendgrid/events', express.raw({ type: 'application/json' }), async
           break;
           
         case 'click':
-          await pool.query(
+          await db.query(
             `UPDATE email_logs 
              SET status = 'clicked', clicked_at = NOW() 
              WHERE message_id = $1`,
@@ -54,7 +55,7 @@ router.post('/sendgrid/events', express.raw({ type: 'application/json' }), async
           
         case 'bounce':
         case 'dropped':
-          await pool.query(
+          await db.query(
             `UPDATE email_logs 
              SET status = 'bounced', error_message = $2 
              WHERE message_id = $1`,
@@ -65,7 +66,7 @@ router.post('/sendgrid/events', express.raw({ type: 'application/json' }), async
         case 'unsubscribe':
         case 'spamreport':
           // Update user preferences
-          await pool.query(
+          await db.query(
             `UPDATE notification_preferences 
              SET email_marketing = false 
              WHERE patient_id = (
@@ -91,7 +92,8 @@ router.post('/twilio/status', express.urlencoded({ extended: false }), async (re
     const { MessageSid, MessageStatus, ErrorCode, ErrorMessage, To, From } = req.body;
     
     // Log webhook event
-    await pool.query(
+    const db = getDatabase();
+    await db.query(
       `INSERT INTO webhook_logs (service, event_type, payload, processed) 
        VALUES ($1, $2, $3, true)`,
       ['twilio', MessageStatus, JSON.stringify(req.body)]
@@ -100,7 +102,7 @@ router.post('/twilio/status', express.urlencoded({ extended: false }), async (re
     // Update SMS log
     switch (MessageStatus) {
       case 'delivered':
-        await pool.query(
+        await db.query(
           `UPDATE sms_logs 
            SET status = 'delivered', delivered_at = NOW() 
            WHERE message_sid = $1`,
@@ -110,7 +112,7 @@ router.post('/twilio/status', express.urlencoded({ extended: false }), async (re
         
       case 'failed':
       case 'undelivered':
-        await pool.query(
+        await db.query(
           `UPDATE sms_logs 
            SET status = $1, error_message = $2 
            WHERE message_sid = $3`,
@@ -157,7 +159,8 @@ router.post('/twilio/incoming', express.urlencoded({ extended: false }), async (
     }
     // For other messages, log but don't respond
     else {
-      await pool.query(
+      const db = getDatabase();
+      await db.query(
         `INSERT INTO webhook_logs (service, event_type, payload) 
          VALUES ($1, $2, $3)`,
         ['twilio', 'incoming_sms', JSON.stringify(req.body)]
@@ -190,7 +193,8 @@ router.post('/stripe/events', express.raw({ type: 'application/json' }), async (
     }
     
     // Log webhook event
-    await pool.query(
+    const db = getDatabase();
+    await db.query(
       `INSERT INTO webhook_logs (service, event_type, payload, processed) 
        VALUES ($1, $2, $3, true)`,
       ['stripe', event.type, JSON.stringify(event)]
@@ -202,7 +206,7 @@ router.post('/stripe/events', express.raw({ type: 'application/json' }), async (
         const paymentIntent = event.data.object;
         
         // Update order status
-        await pool.query(
+        await db.query(
           `UPDATE orders 
            SET payment_status = 'paid', paid_at = NOW() 
            WHERE payment_intent_id = $1`,
@@ -210,7 +214,7 @@ router.post('/stripe/events', express.raw({ type: 'application/json' }), async (
         );
         
         // Send order confirmation email
-        const orderResult = await pool.query(
+        const orderResult = await db.query(
           `SELECT o.*, p.email, p.first_name 
            FROM orders o 
            JOIN patients p ON o.patient_id = p.id 
@@ -233,7 +237,7 @@ router.post('/stripe/events', express.raw({ type: 'application/json' }), async (
         const failedPayment = event.data.object;
         
         // Update order status
-        await pool.query(
+        await db.query(
           `UPDATE orders 
            SET payment_status = 'failed' 
            WHERE payment_intent_id = $1`,
@@ -241,7 +245,7 @@ router.post('/stripe/events', express.raw({ type: 'application/json' }), async (
         );
         
         // Send payment failed notification
-        const failedOrderResult = await pool.query(
+        const failedOrderResult = await db.query(
           `SELECT o.*, p.phone, p.first_name 
            FROM orders o 
            JOIN patients p ON o.patient_id = p.id 
@@ -264,7 +268,7 @@ router.post('/stripe/events', express.raw({ type: 'application/json' }), async (
         const subscription = event.data.object;
         
         // Update patient subscription status
-        await pool.query(
+        await db.query(
           `UPDATE patients 
            SET subscription_status = $1, subscription_id = $2 
            WHERE stripe_customer_id = $3`,
