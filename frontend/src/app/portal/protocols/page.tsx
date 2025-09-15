@@ -30,12 +30,20 @@ export default function ProtocolsPage() {
       return;
     }
     
+    // Check if user has admin access
     if (role === 'provider') {
+      // Regular providers don't have access to protocols management
       router.push('/portal/dashboard');
       return;
     }
-
-    setLoading(false);
+    
+    // Admin, provider-admin, and super-admin can access
+    if (role === 'admin' || role === 'provider-admin' || role === 'super-admin') {
+      setLoading(false);
+    } else {
+      // Default redirect if no valid role
+      router.push('/portal/dashboard');
+    }
   }, [router]);
 
   const handleEditProtocol = (condition: string, protocolKey: string, protocol: any) => {

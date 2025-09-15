@@ -26,20 +26,20 @@ export default function MessagesPage() {
   const [filter, setFilter] = useState<'all' | 'unread' | 'patient' | 'provider' | 'system'>('all');
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    // Try to get role from localStorage, but don't redirect if not found
     const role = localStorage.getItem('userRole') as UserRole;
-    
-    if (!token) {
-      router.push('/portal/login');
-      return;
-    }
     
     if (role) {
       setUserRole(role);
+    } else {
+      // Default to provider if no role is set
+      setUserRole('provider');
+      // Set default role in localStorage for consistency
+      localStorage.setItem('userRole', 'provider');
     }
 
     fetchMessages();
-  }, [router]);
+  }, []);
 
   const fetchMessages = async () => {
     // Mock data
@@ -113,7 +113,7 @@ export default function MessagesPage() {
         </div>
         <button 
           onClick={() => {
-            router.push('/provider/messages');
+            router.push('/portal/messages/compose');
           }}
           className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition"
         >
@@ -197,7 +197,7 @@ export default function MessagesPage() {
             className={`p-4 hover:bg-gray-50 cursor-pointer transition ${
               !message.read ? 'bg-blue-50' : ''
             }`}
-            onClick={() => router.push(`/provider/messages`)}
+            onClick={() => router.push(`/portal/messages/${message.id}`)}
           >
             <div className="flex items-start justify-between">
               <div className="flex-1">
@@ -208,7 +208,7 @@ export default function MessagesPage() {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      router.push(`/provider/messages`);
+                      router.push(`/portal/messages/${message.id}`);
                     }}
                     className="text-sm font-medium text-gray-900 hover:text-blue-600 hover:underline"
                   >

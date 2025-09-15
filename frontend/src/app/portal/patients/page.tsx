@@ -30,20 +30,20 @@ export default function PatientsPage() {
   const [dateRange, setDateRange] = useState('7d');
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    // Try to get role from localStorage, but don't redirect if not found
     const role = localStorage.getItem('userRole') as UserRole;
-    
-    if (!token) {
-      router.push('/portal/login');
-      return;
-    }
     
     if (role) {
       setUserRole(role);
+    } else {
+      // Default to provider if no role is set
+      setUserRole('provider');
+      // Set default role in localStorage for consistency
+      localStorage.setItem('userRole', 'provider');
     }
 
     fetchPatients();
-  }, [router]);
+  }, []);
 
   const fetchPatients = async () => {
     // Mock data - add more patients for better demo

@@ -46,9 +46,19 @@ export default function FormsPage() {
       return;
     }
     
+    // Check if user has admin access
     if (role === 'provider') {
+      // Regular providers don't have access to forms management
       router.push('/portal/dashboard');
       return;
+    }
+    
+    // Admin, provider-admin, and super-admin can access
+    if (role === 'admin' || role === 'provider-admin' || role === 'super-admin') {
+      // User has access, continue with page logic
+    } else {
+      // Default redirect if no valid role
+      router.push('/portal/dashboard');
     }
   }, [router]);
 

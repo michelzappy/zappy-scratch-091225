@@ -28,20 +28,20 @@ export default function ConsultationsPage() {
   const [dateRange, setDateRange] = useState('today');
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    // Try to get role from localStorage, but don't redirect if not found
     const role = localStorage.getItem('userRole') as UserRole;
-    
-    if (!token) {
-      router.push('/portal/login');
-      return;
-    }
     
     if (role) {
       setUserRole(role);
+    } else {
+      // Default to provider if no role is set
+      setUserRole('provider');
+      // Set default role in localStorage for consistency
+      localStorage.setItem('userRole', 'provider');
     }
 
     fetchConsultations();
-  }, [router]);
+  }, []);
 
   const fetchConsultations = async () => {
     const mockConsultations: Consultation[] = [

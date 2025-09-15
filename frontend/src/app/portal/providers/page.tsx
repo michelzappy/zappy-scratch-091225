@@ -39,15 +39,21 @@ export default function ProvidersPage() {
       return;
     }
     
-    if (role) {
-      setUserRole(role);
-      if (role === 'provider') {
-        router.push('/portal/dashboard');
-        return;
-      }
+    // Check if user has admin access
+    if (role === 'provider') {
+      // Regular providers don't have access to providers management
+      router.push('/portal/dashboard');
+      return;
     }
-
-    fetchProviders();
+    
+    // Admin, provider-admin, and super-admin can access
+    if (role === 'admin' || role === 'provider-admin' || role === 'super-admin') {
+      setUserRole(role);
+      fetchProviders();
+    } else {
+      // Default redirect if no valid role
+      router.push('/portal/dashboard');
+    }
   }, [router]);
 
   const fetchProviders = async () => {

@@ -239,15 +239,21 @@ export default function MedicationsPage() {
       return;
     }
     
-    if (role) {
-      setUserRole(role);
-      if (role === 'provider') {
-        router.push('/portal/dashboard');
-        return;
-      }
+    // Check if user has admin access
+    if (role === 'provider') {
+      // Regular providers don't have access to medications database
+      router.push('/portal/dashboard');
+      return;
     }
-
-    setLoading(false);
+    
+    // Admin, provider-admin, and super-admin can access
+    if (role === 'admin' || role === 'provider-admin' || role === 'super-admin') {
+      setUserRole(role);
+      setLoading(false);
+    } else {
+      // Default redirect if no valid role
+      router.push('/portal/dashboard');
+    }
   }, [router]);
 
   // Apply filters

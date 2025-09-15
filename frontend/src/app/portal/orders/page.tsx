@@ -49,16 +49,21 @@ export default function OrdersPage() {
       return;
     }
     
-    if (role) {
-      setUserRole(role);
-      if (role === 'provider') {
-        // Regular providers might not have access
-        router.push('/portal/dashboard');
-        return;
-      }
+    // Check if user has admin access
+    if (role === 'provider') {
+      // Regular providers don't have access to orders
+      router.push('/portal/dashboard');
+      return;
     }
-
-    fetchOrders();
+    
+    // Admin, provider-admin, and super-admin can access
+    if (role === 'admin' || role === 'provider-admin' || role === 'super-admin') {
+      setUserRole(role);
+      fetchOrders();
+    } else {
+      // Default redirect if no valid role
+      router.push('/portal/dashboard');
+    }
   }, [router]);
 
   const fetchOrders = async () => {

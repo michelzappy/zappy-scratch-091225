@@ -30,14 +30,20 @@ export default function UnifiedPortalLayout({ children }: { children: React.Reac
     
     if (storedRole) {
       setUserRole(storedRole);
+    } else {
+      // If no role is set, default to provider
+      setUserRole('provider');
     }
     
     if (storedUserData) {
       const userData = JSON.parse(storedUserData);
       setUserName(userData.name || 'User');
       setUserTitle(userData.title || '');
+    } else {
+      setUserName('User');
+      setUserTitle('');
     }
-  }, []);
+  }, [pathname]); // Re-run when pathname changes to catch navigation from login
 
   // Skip layout for login pages
   if (pathname?.includes('/login')) {
@@ -46,7 +52,7 @@ export default function UnifiedPortalLayout({ children }: { children: React.Reac
 
   // Define all navigation items with role-based access
   const allNavigation: NavigationItem[] = [
-    // Core features available to all roles
+    // Dashboard - available to all
     {
       name: 'Dashboard',
       href: '/portal/dashboard',
@@ -56,13 +62,13 @@ export default function UnifiedPortalLayout({ children }: { children: React.Reac
       section: 'both'
     },
     
-    // Clinical features (Provider-focused)
+    // Clinical-only features (Provider access)
     {
       name: 'Consultations',
       href: '/portal/consultations',
       icon: '◐',
       badge: 12,
-      roles: ['provider', 'provider-admin', 'super-admin'],
+      roles: ['provider', 'provider-admin', 'super-admin'], // No admin access
       section: 'clinical'
     },
     {
@@ -70,7 +76,7 @@ export default function UnifiedPortalLayout({ children }: { children: React.Reac
       href: '/portal/patients',
       icon: '◑',
       badge: null,
-      roles: ['provider', 'admin', 'provider-admin', 'super-admin'],
+      roles: ['provider', 'admin', 'provider-admin', 'super-admin'], // All roles (but admin sees limited view)
       section: 'both'
     },
     {
@@ -78,27 +84,11 @@ export default function UnifiedPortalLayout({ children }: { children: React.Reac
       href: '/portal/messages',
       icon: '◒',
       badge: 3,
-      roles: ['provider', 'admin', 'provider-admin', 'super-admin'],
+      roles: ['provider', 'admin', 'provider-admin', 'super-admin'], // All roles
       section: 'both'
     },
-    {
-      name: 'Check-in Reviews',
-      href: '/portal/checkin-reviews',
-      icon: '✓',
-      badge: null,
-      roles: ['provider', 'provider-admin', 'super-admin'],
-      section: 'clinical'
-    },
-    {
-      name: 'Prescriptions',
-      href: '/portal/prescriptions',
-      icon: '◓',
-      badge: null,
-      roles: ['provider', 'provider-admin', 'super-admin'],
-      section: 'clinical'
-    },
     
-    // Administrative features
+    // Admin-only features
     {
       name: 'Orders',
       href: '/portal/orders',
@@ -108,7 +98,7 @@ export default function UnifiedPortalLayout({ children }: { children: React.Reac
         </svg>
       ),
       badge: null,
-      roles: ['admin', 'provider-admin', 'super-admin'],
+      roles: ['admin', 'provider-admin', 'super-admin'], // No provider access
       section: 'admin'
     },
     {
@@ -120,7 +110,7 @@ export default function UnifiedPortalLayout({ children }: { children: React.Reac
         </svg>
       ),
       badge: null,
-      roles: ['admin', 'provider-admin', 'super-admin'],
+      roles: ['admin', 'provider-admin', 'super-admin'], // No provider access
       section: 'admin'
     },
     {
@@ -132,7 +122,7 @@ export default function UnifiedPortalLayout({ children }: { children: React.Reac
         </svg>
       ),
       badge: null,
-      roles: ['admin', 'provider-admin', 'super-admin'],
+      roles: ['admin', 'provider-admin', 'super-admin'], // No provider access
       section: 'admin'
     },
     {
@@ -144,7 +134,7 @@ export default function UnifiedPortalLayout({ children }: { children: React.Reac
         </svg>
       ),
       badge: null,
-      roles: ['admin', 'provider-admin', 'super-admin'],
+      roles: ['admin', 'provider-admin', 'super-admin'], // No provider access
       section: 'admin'
     },
     {
@@ -156,7 +146,7 @@ export default function UnifiedPortalLayout({ children }: { children: React.Reac
         </svg>
       ),
       badge: null,
-      roles: ['admin', 'provider-admin', 'super-admin'],
+      roles: ['admin', 'provider-admin', 'super-admin'], // No provider access
       section: 'admin'
     },
     {
@@ -168,7 +158,7 @@ export default function UnifiedPortalLayout({ children }: { children: React.Reac
         </svg>
       ),
       badge: null,
-      roles: ['admin', 'provider-admin', 'super-admin'],
+      roles: ['admin', 'provider-admin', 'super-admin'], // No provider access
       section: 'admin'
     },
     {
@@ -180,7 +170,7 @@ export default function UnifiedPortalLayout({ children }: { children: React.Reac
         </svg>
       ),
       badge: null,
-      roles: ['admin', 'provider-admin', 'super-admin'],
+      roles: ['admin', 'provider-admin', 'super-admin'], // No provider access
       section: 'admin'
     },
     {
@@ -188,7 +178,7 @@ export default function UnifiedPortalLayout({ children }: { children: React.Reac
       href: '/portal/analytics',
       icon: '◔',
       badge: null,
-      roles: ['admin', 'provider-admin', 'super-admin'],
+      roles: ['admin', 'provider-admin', 'super-admin'], // No provider access
       section: 'admin'
     },
     {
@@ -201,7 +191,7 @@ export default function UnifiedPortalLayout({ children }: { children: React.Reac
         </svg>
       ),
       badge: null,
-      roles: ['admin', 'provider-admin', 'super-admin'],
+      roles: ['admin', 'provider-admin', 'super-admin'], // No provider access
       section: 'admin'
     }
   ];
@@ -261,15 +251,10 @@ export default function UnifiedPortalLayout({ children }: { children: React.Reac
 
         {/* Navigation */}
         <nav className="flex-1 px-3 py-4 overflow-y-auto">
-          {/* Clinical Section */}
-          {clinicalNav.length > 0 && (
+          {/* For Provider role - just show items without section headers */}
+          {userRole === 'provider' && (
             <div className="space-y-1">
-              {!sidebarCollapsed && (userRole === 'provider-admin' || userRole === 'super-admin') && (
-                <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 pb-2">
-                  Clinical
-                </div>
-              )}
-              {clinicalNav.map((item) => {
+              {filteredNavigation.map((item) => {
                 const isActive = pathname === item.href;
                 return (
                   <Link
@@ -304,20 +289,10 @@ export default function UnifiedPortalLayout({ children }: { children: React.Reac
             </div>
           )}
 
-          {/* Divider for users with both roles */}
-          {clinicalNav.length > 0 && adminNav.length > 0 && !sidebarCollapsed && (
-            <div className="my-6 border-t border-gray-200"></div>
-          )}
-
-          {/* Admin Section */}
-          {adminNav.length > 0 && (
+          {/* For Admin role - just show items without section headers */}
+          {userRole === 'admin' && (
             <div className="space-y-1">
-              {!sidebarCollapsed && (userRole === 'provider-admin' || userRole === 'super-admin') && (
-                <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 pb-2">
-                  Administration
-                </div>
-              )}
-              {adminNav.map((item) => {
+              {filteredNavigation.map((item) => {
                 const isActive = pathname === item.href;
                 return (
                   <Link
@@ -350,6 +325,102 @@ export default function UnifiedPortalLayout({ children }: { children: React.Reac
                 );
               })}
             </div>
+          )}
+
+          {/* For Provider-Admin and Super-Admin - show with section headers */}
+          {(userRole === 'provider-admin' || userRole === 'super-admin') && (
+            <>
+              {/* Clinical Section */}
+              {clinicalNav.length > 0 && (
+                <div className="space-y-1">
+                  {!sidebarCollapsed && (
+                    <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 pb-2">
+                      Clinical
+                    </div>
+                  )}
+                  {clinicalNav.map((item) => {
+                    const isActive = pathname === item.href;
+                    return (
+                      <Link
+                        key={item.name}
+                        href={item.href}
+                        className={`
+                          flex items-center justify-between px-3 py-2 rounded-lg transition-all text-sm
+                          ${isActive 
+                            ? 'bg-gray-900 text-white' 
+                            : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                          }
+                        `}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <span className={`${typeof item.icon === 'string' ? 'text-lg' : ''} ${isActive ? 'text-white' : 'text-gray-400'}`}>
+                            {item.icon}
+                          </span>
+                          {!sidebarCollapsed && (
+                            <span className="font-medium">{item.name}</span>
+                          )}
+                        </div>
+                        {!sidebarCollapsed && item.badge && (
+                          <span className={`inline-flex items-center justify-center px-2 py-0.5 text-xs font-medium rounded-full ${
+                            isActive ? 'bg-white text-gray-900' : 'bg-red-100 text-red-700'
+                          }`}>
+                            {item.badge}
+                          </span>
+                        )}
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Divider */}
+              {clinicalNav.length > 0 && adminNav.length > 0 && !sidebarCollapsed && (
+                <div className="my-6 border-t border-gray-200"></div>
+              )}
+
+              {/* Admin Section */}
+              {adminNav.length > 0 && (
+                <div className="space-y-1">
+                  {!sidebarCollapsed && (
+                    <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 pb-2">
+                      Administration
+                    </div>
+                  )}
+                  {adminNav.map((item) => {
+                    const isActive = pathname === item.href;
+                    return (
+                      <Link
+                        key={item.name}
+                        href={item.href}
+                        className={`
+                          flex items-center justify-between px-3 py-2 rounded-lg transition-all text-sm
+                          ${isActive 
+                            ? 'bg-gray-900 text-white' 
+                            : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                          }
+                        `}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <span className={`${typeof item.icon === 'string' ? 'text-lg' : ''} ${isActive ? 'text-white' : 'text-gray-400'}`}>
+                            {item.icon}
+                          </span>
+                          {!sidebarCollapsed && (
+                            <span className="font-medium">{item.name}</span>
+                          )}
+                        </div>
+                        {!sidebarCollapsed && item.badge && (
+                          <span className={`inline-flex items-center justify-center px-2 py-0.5 text-xs font-medium rounded-full ${
+                            isActive ? 'bg-white text-gray-900' : 'bg-blue-100 text-blue-700'
+                          }`}>
+                            {item.badge}
+                          </span>
+                        )}
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </>
           )}
         </nav>
 
@@ -405,7 +476,11 @@ export default function UnifiedPortalLayout({ children }: { children: React.Reac
                 userRole === 'provider-admin' ? 'bg-green-100 text-green-800' :
                 'bg-gray-100 text-gray-800'
               }`}>
-                {userRole === 'provider-admin' ? 'Provider + Admin' : userRole}
+                {userRole === 'provider' ? 'Provider' : 
+                 userRole === 'admin' ? 'Admin' :
+                 userRole === 'provider-admin' ? 'Provider + Admin' : 
+                 userRole === 'super-admin' ? 'Super Admin' : 
+                 userRole}
               </span>
             </div>
             
