@@ -75,7 +75,7 @@ export default function MessageChat({
     // Subscribe to real-time updates via Supabase
     const channel = subscribeToTable(
       'consultation_messages',
-      (payload) => {
+      (payload: any) => {
         if (payload.eventType === 'INSERT' && payload.new.consultation_id === consultationId) {
           const newMsg = payload.new as Message;
           if (newMsg.sender_id !== currentUserId) {
@@ -84,7 +84,7 @@ export default function MessageChat({
           }
         }
       },
-      `consultation_id=eq.${consultationId}`
+      { column: 'consultation_id', eq: consultationId }
     );
 
     return () => {
