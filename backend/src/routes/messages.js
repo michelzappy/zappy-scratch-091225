@@ -1,6 +1,7 @@
 import express from 'express';
 import { body, param, validationResult } from 'express-validator';
 import { asyncHandler } from '../middleware/errorHandler.js';
+import { requireAuth, requireRole } from '../middleware/auth.js';
 import { getDatabase } from '../config/database.js';
 import { messages } from '../models/index.js';
 import { eq } from 'drizzle-orm';
@@ -20,6 +21,7 @@ const handleValidationErrors = (req, res, next) => {
 
 // Send message
 router.post('/',
+  requireAuth,
   [
     body('consultationId').isUUID().withMessage('Invalid consultation ID'),
     body('content').optional().isString().withMessage('Content must be a string')
@@ -61,6 +63,7 @@ router.post('/',
 
 // Get messages for consultation
 router.get('/consultation/:consultationId',
+  requireAuth,
   [
     param('consultationId').isUUID().withMessage('Invalid consultation ID')
   ],

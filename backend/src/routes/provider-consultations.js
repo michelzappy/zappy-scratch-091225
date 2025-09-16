@@ -2,22 +2,12 @@ import express from 'express';
 import { body, validationResult } from 'express-validator';
 import { getDatabase } from '../config/database.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
+import { requireAuth, requireRole } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Middleware to verify provider (simplified for now)
-const requireProvider = async (req, res, next) => {
-  // In production, verify JWT token
-  const providerId = req.headers['x-provider-id'];
-  if (!providerId) {
-    return res.status(401).json({ error: 'Provider authentication required' });
-  }
-  req.providerId = providerId;
-  next();
-};
-
 // Get consultation queue
-router.get('/queue', requireProvider, asyncHandler(async (req, res) => {
+router.get('/queue', requireAuth, requireRole(['provider', 'admin']), asyncHandler(async (req, res) => {
   const { status = 'pending', limit = 20 } = req.query;
   const db = getDatabase();
   
@@ -51,7 +41,7 @@ router.get('/queue', requireProvider, asyncHandler(async (req, res) => {
 }));
 
 // Get single consultation details
-router.get('/:id', requireProvider, asyncHandler(async (req, res) => {
+router.get('/:id', requireAuth, requireRole(['provider', 'admin']), asyncHandler(async (req, res) => {
   const { id } = req.params;
   const db = getDatabase();
   
@@ -99,9 +89,9 @@ router.get('/:id', requireProvider, asyncHandler(async (req, res) => {
 }));
 
 // Accept consultation for review
-router.post('/:id/accept', requireProvider, asyncHandler(async (req, res) => {
+router.post('/:id/accept', requireAuth, requireRole(['provider']), asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const providerId = req.providerId;
+  const providerId = req.user.id;
   const db = getDatabase();
   
   const result = await db.query(`
@@ -126,14 +116,15 @@ router.post('/:id/accept', requireProvider, asyncHandler(async (req, res) => {
 
 // Submit treatment plan
 router.post('/:id/treatment-plan',
-  requireProvider,
+  requireAuth,
+  requireRole(['provider']),
   [
     body('diagnosis').notEmpty().withMessage('Diagnosis is required'),
     body('treatmentPlan').notEmpty().withMessage('Treatment plan is required')
   ],
   asyncHandler(async (req, res) => {
     const { id } = req.params;
-    const providerId = req.providerId;
+    const providerId = req.user.id;
     const { 
       diagnosis, 
       treatmentPlan, 
@@ -236,8 +227,8 @@ router.post('/:id/treatment-plan',
 );
 
 // Get provider stats
-router.get('/stats/overview', requireProvider, asyncHandler(async (req, res) => {
-  const providerId = req.providerId;
+router.get('/stats/overview', requireAuth, requireRole(['provider', 'admin']), asyncHandler(async (req, res) => {
+  const providerId = req.user.id;
   const db = getDatabase();
   
   const stats = await db.query(`

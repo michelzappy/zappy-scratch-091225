@@ -1,5 +1,6 @@
 import express from 'express';
 import { getDatabase } from '../config/database.js';
+import { requireAuth, requireRole } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -7,7 +8,7 @@ const router = express.Router();
  * GET /api/treatment-plans/:condition
  * Get available treatment plans for a specific condition
  */
-router.get('/:condition', async (req, res, next) => {
+router.get('/:condition', requireAuth, async (req, res, next) => {
   try {
     const { condition } = req.params;
     const db = getDatabase();
@@ -44,7 +45,7 @@ router.get('/:condition', async (req, res, next) => {
  * GET /api/treatment-plans/plan/:planId
  * Get details for a specific treatment plan
  */
-router.get('/plan/:planId', async (req, res, next) => {
+router.get('/plan/:planId', requireAuth, async (req, res, next) => {
   try {
     const { planId } = req.params;
     const db = getDatabase();
@@ -87,7 +88,7 @@ router.get('/plan/:planId', async (req, res, next) => {
  * GET /api/treatment-plans
  * Get all available treatment plans (admin view)
  */
-router.get('/', async (req, res, next) => {
+router.get('/', requireAuth, requireRole(['admin']), async (req, res, next) => {
   try {
     const db = getDatabase();
 

@@ -3,6 +3,7 @@ import { body, validationResult } from 'express-validator';
 import Stripe from 'stripe';
 import { getDatabase } from '../config/database.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
+import { requireAuth, requireRole } from '../middleware/auth.js';
 
 const router = express.Router();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_dummy');
@@ -18,7 +19,7 @@ function generateOrderNumber() {
 }
 
 // Get patient's treatment plan and prescriptions
-router.get('/consultation/:consultationId/treatment', asyncHandler(async (req, res) => {
+router.get('/consultation/:consultationId/treatment', requireAuth, asyncHandler(async (req, res) => {
   const { consultationId } = req.params;
   const db = getDatabase();
   
@@ -67,6 +68,7 @@ router.get('/consultation/:consultationId/treatment', asyncHandler(async (req, r
 
 // Create order and process payment
 router.post('/create',
+  requireAuth,
   [
     body('consultationId').notEmpty().withMessage('Consultation ID required'),
     body('prescriptionIds').isArray().withMessage('Prescription IDs required'),
@@ -224,6 +226,7 @@ router.post('/create',
 
 // Confirm payment (after 3D Secure if needed)
 router.post('/confirm-payment',
+  requireAuth,
   [
     body('paymentIntentId').notEmpty().withMessage('Payment intent ID required')
   ],
@@ -291,7 +294,7 @@ router.post('/confirm-payment',
 );
 
 // Get order status
-router.get('/:orderId/status', asyncHandler(async (req, res) => {
+router.get('/:orderId/status', requireAuth, asyncHandler(async (req, res) => {
   const { orderId } = req.params;
   const db = getDatabase();
   
@@ -329,6 +332,8 @@ router.get('/:orderId/status', asyncHandler(async (req, res) => {
 
 // Update fulfillment status (for admin/fulfillment team)
 router.put('/:orderId/fulfillment',
+  requireAuth,
+  requireRole(['admin']),
   [
     body('status').isIn(['processing', 'shipped', 'delivered']).withMessage('Invalid status'),
     body('trackingNumber').optional(),

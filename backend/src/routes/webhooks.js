@@ -12,8 +12,8 @@ router.post('/sendgrid/events', express.raw({ type: 'application/json' }), async
     const signature = req.headers['x-twilio-email-event-webhook-signature'];
     const timestamp = req.headers['x-twilio-email-event-webhook-timestamp'];
     
-    // Parse events
-    const events = JSON.parse(req.body);
+    // Parse events (convert Buffer to string first)
+    const events = JSON.parse(req.body.toString());
     
     for (const event of events) {
       // Log webhook event
