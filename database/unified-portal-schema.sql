@@ -1,0 +1,140 @@
+-- Unified Portal Database Schema Updates
+-- This file contains the schema updates for the unified portal system
+
+-- Add role-based permissions for unified portal
+ALTER TABLE users ADD COLUMN IF NOT EXISTS portal_role VARCHAR(50) DEFAULT 'provider';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS portal_permissions JSONB DEFAULT '{}';
+
+-- Update role constraints
+ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;
+ALTER TABLE users ADD CONSTRAINT users_role_check 
+  CHECK (role IN ('patient', 'provider', 'admin', 'provider_admin', 'super_admin'));
+
+-- Add portal-specific settings
+ALTER TABLE users ADD COLUMN IF NOT EXISTS portal_settings JSONB DEFAULT '{
+  "dashboard_layout": "default",
+  "notifications": {
+    "email": true,
+    "sms": false,
+    "in_app": true
+  },
+  "preferences": {
+    "theme": "light",
+    "language": "en"
+  }
+}';
+
+-- Create portal access log table
+CREATE TABLE IF NOT EXISTS portal_access_logs (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id),
+  portal_role VARCHAR(50),
+  access_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  ip_address INET,
+  user_agent TEXT,
+  action VARCHAR(100),
+  resource VARCHAR(255),
+  success BOOLEAN DEFAULT true
+);
+
+-- Index for faster queries
+CREATE INDEX IF NOT EXISTS idx_portal_access_user_time ON portal_access_logs(user_id, access_time DESC);
+CREATE INDEX IF NOT EXISTS idx_portal_access_role ON portal_access_logs(portal_role);
+
+-- Create unified permissions table
+CREATE TABLE IF NOT EXISTS portal_permissions (
+  id SERIAL PRIMARY KEY,
+  role VARCHAR(50) NOT NULL,
+  resource VARCHAR(255) NOT NULL,
+  can_view BOOLEAN DEFAULT false,
+  can_create BOOLEAN DEFAULT false,
+  can_edit BOOLEAN DEFAULT false,
+  can_delete BOOLEAN DEFAULT false,
+  conditions JSONB DEFAULT '{}',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(role, resource)
+);
+
+-- Insert default permissions for each role
+INSERT INTO portal_permissions (role, resource, can_view, can_create, can_edit, can_delete) VALUES
+-- Provider permissions
+('provider', 'consultations', true, false, true, false),
+('provider', 'patients', true, false, false, false),
+('provider', 'prescriptions', true, true, true, false),
+('provider', 'messages', true, true, false, false),
+('provider', 'protocols', true, false, false, false),
+
+-- Admin permissions
+('admin', 'consultations', true, true, true, true),
+('admin', 'patients', true, true, true, true),
+('admin', 'prescriptions', true, true, true, true),
+('admin', 'messages', true, true, true, true),
+('admin', 'protocols', true, true, true, true),
+('admin', 'medications', true, true, true, true),
+('admin', 'forms', true, true, true, true),
+('admin', 'analytics', true, false, false, false),
+('admin', 'settings', true, false, true, false),
+('admin', 'providers', true, true, true, true),
+
+-- Provider-Admin (hybrid role)
+('provider_admin', 'consultations', true, true, true, false),
+('provider_admin', 'patients', true, true, true, false),
+('provider_admin', 'prescriptions', true, true, true, true),
+('provider_admin', 'messages', true, true, true, false),
+('provider_admin', 'protocols', true, true, true, false),
+('provider_admin', 'medications', true, false, true, false),
+('provider_admin', 'forms', true, false, true, false),
+('provider_admin', 'analytics', true, false, false, false),
+
+-- Super Admin (full access)
+('super_admin', 'consultations', true, true, true, true),
+('super_admin', 'patients', true, true, true, true),
+('super_admin', 'prescriptions', true, true, true, true),
+('super_admin', 'messages', true, true, true, true),
+('super_admin', 'protocols', true, true, true, true),
+('super_admin', 'medications', true, true, true, true),
+('super_admin', 'forms', true, true, true, true),
+('super_admin', 'analytics', true, true, true, true),
+('super_admin', 'settings', true, true, true, true),
+('super_admin', 'providers', true, true, true, true)
+ON CONFLICT (role, resource) DO NOTHING;
+
+-- Update existing users to use new role system
+UPDATE users 
+SET portal_role = CASE 
+  WHEN role = 'admin' THEN 'admin'
+  WHEN role = 'provider' THEN 'provider'
+  ELSE 'provider'
+END
+WHERE role IN ('admin', 'provider');
+
+-- Add protocol pricing flexibility columns
+ALTER TABLE treatment_protocols ADD COLUMN IF NOT EXISTS custom_pricing JSONB DEFAULT '{}';
+ALTER TABLE treatment_protocols ADD COLUMN IF NOT EXISTS pricing_tiers JSONB DEFAULT '[]';
+ALTER TABLE treatment_protocols ADD COLUMN IF NOT EXISTS last_price_update TIMESTAMP;
+ALTER TABLE treatment_protocols ADD COLUMN IF NOT EXISTS updated_by INTEGER REFERENCES users(id);
+
+-- Add intake forms metadata
+ALTER TABLE intake_forms ADD COLUMN IF NOT EXISTS form_version VARCHAR(20) DEFAULT '1.0.0';
+ALTER TABLE intake_forms ADD COLUMN IF NOT EXISTS is_library_form BOOLEAN DEFAULT false;
+ALTER TABLE intake_forms ADD COLUMN IF NOT EXISTS condition_type VARCHAR(100);
+ALTER TABLE intake_forms ADD COLUMN IF NOT EXISTS estimated_time INTEGER; -- in minutes
+ALTER TABLE intake_forms ADD COLUMN IF NOT EXISTS question_count INTEGER;
+
+-- Clean up deprecated tables/columns (optional - review before running)
+-- DROP TABLE IF EXISTS admin_sessions CASCADE;
+-- DROP TABLE IF EXISTS provider_sessions CASCADE;
+-- ALTER TABLE users DROP COLUMN IF EXISTS old_admin_flag;
+-- ALTER TABLE users DROP COLUMN IF EXISTS old_provider_flag;
+
+-- Add migration tracking
+CREATE TABLE IF NOT EXISTS schema_migrations (
+  version VARCHAR(20) PRIMARY KEY,
+  executed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  description TEXT
+);
+
+INSERT INTO schema_migrations (version, description) VALUES 
+('2025.01.13.001', 'Unified portal schema - role-based permissions and portal features')
+ON CONFLICT (version) DO NOTHING;

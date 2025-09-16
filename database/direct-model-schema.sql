@@ -1,0 +1,277 @@
+-- Direct Telehealth Model Database Schema
+-- For free consultations with paid medication fulfillment
+
+-- Enable UUID extension
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- Drop existing tables if needed (for clean setup)
+DROP TABLE IF EXISTS order_items CASCADE;
+DROP TABLE IF EXISTS orders CASCADE;
+DROP TABLE IF EXISTS inventory CASCADE;
+DROP TABLE IF EXISTS prescriptions CASCADE;
+DROP TABLE IF EXISTS consultation_messages CASCADE;
+DROP TABLE IF EXISTS consultations CASCADE;
+DROP TABLE IF EXISTS providers CASCADE;
+DROP TABLE IF EXISTS patients CASCADE;
+
+-- Patients table (simplified intake)
+CREATE TABLE patients (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255),
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100) NOT NULL,
+    phone VARCHAR(20),
+    date_of_birth DATE NOT NULL,
+    
+    -- Shipping address
+    shipping_address TEXT,
+    shipping_city VARCHAR(100),
+    shipping_state VARCHAR(2),
+    shipping_zip VARCHAR(10),
+    
+    -- Medical information from intake
+    allergies TEXT,
+    current_medications TEXT,
+    medical_conditions TEXT,
+    
+    -- Account tracking
+    total_spent DECIMAL(10,2) DEFAULT 0,
+    total_orders INTEGER DEFAULT 0,
+    subscription_active BOOLEAN DEFAULT false,
+    stripe_customer_id VARCHAR(255),
+    
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    last_login TIMESTAMP WITH TIME ZONE
+);
+
+-- Providers table
+CREATE TABLE providers (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255),
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100) NOT NULL,
+    license_number VARCHAR(100),
+    license_state VARCHAR(2),
+    specialties TEXT[],
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Consultations (FREE)
+CREATE TABLE consultations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    patient_id UUID NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
+    provider_id UUID REFERENCES providers(id),
+    
+    -- Intake data
+    chief_complaint TEXT NOT NULL,
+    symptoms TEXT,
+    symptom_duration VARCHAR(100),
+    severity INTEGER CHECK (severity >= 1 AND severity <= 10),
+    photos_urls TEXT[],
+    
+    -- Provider assessment
+    diagnosis TEXT,
+    treatment_plan TEXT,
+    internal_notes TEXT, -- Provider notes not shared with patient
+    
+    -- Status tracking
+    status VARCHAR(50) DEFAULT 'pending', -- pending, in_review, plan_sent, medication_ordered, completed
+    submitted_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    reviewed_at TIMESTAMP WITH TIME ZONE,
+    plan_sent_at TIMESTAMP WITH TIME ZONE,
+    completed_at TIMESTAMP WITH TIME ZONE,
+    
+    -- Conversion tracking
+    medication_offered BOOLEAN DEFAULT false,
+    medication_ordered BOOLEAN DEFAULT false,
+    order_id UUID,
+    
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Prescriptions (what provider prescribes)
+CREATE TABLE prescriptions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    consultation_id UUID NOT NULL REFERENCES consultations(id) ON DELETE CASCADE,
+    provider_id UUID NOT NULL REFERENCES providers(id),
+    patient_id UUID NOT NULL REFERENCES patients(id),
+    
+    medication_name VARCHAR(255) NOT NULL,
+    generic_name VARCHAR(255),
+    dosage VARCHAR(100),
+    quantity INTEGER,
+    frequency VARCHAR(100),
+    duration VARCHAR(100),
+    instructions TEXT,
+    refills INTEGER DEFAULT 0,
+    
+    -- Pricing
+    price DECIMAL(10,2),
+    subscription_price DECIMAL(10,2),
+    
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Inventory management
+CREATE TABLE inventory (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    sku VARCHAR(100) UNIQUE NOT NULL,
+    medication_name VARCHAR(255) NOT NULL,
+    generic_name VARCHAR(255),
+    strength VARCHAR(50),
+    form VARCHAR(50), -- tablet, capsule, cream, etc
+    
+    -- Stock levels
+    quantity_on_hand INTEGER DEFAULT 0,
+    quantity_reserved INTEGER DEFAULT 0,
+    reorder_point INTEGER DEFAULT 10,
+    reorder_quantity INTEGER DEFAULT 100,
+    
+    -- Pricing
+    cost_per_unit DECIMAL(10,2),
+    retail_price DECIMAL(10,2),
+    subscription_price DECIMAL(10,2),
+    
+    -- Supplier info
+    supplier_name VARCHAR(200),
+    supplier_sku VARCHAR(100),
+    lead_time_days INTEGER DEFAULT 7,
+    
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Orders (when patient pays)
+CREATE TABLE orders (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    order_number VARCHAR(50) UNIQUE,
+    patient_id UUID NOT NULL REFERENCES patients(id),
+    consultation_id UUID REFERENCES consultations(id),
+    
+    -- Totals
+    subtotal DECIMAL(10,2),
+    shipping_cost DECIMAL(10,2) DEFAULT 0,
+    tax_amount DECIMAL(10,2) DEFAULT 0,
+    total_amount DECIMAL(10,2),
+    
+    -- Payment
+    payment_status VARCHAR(50) DEFAULT 'pending', -- pending, processing, completed, failed, refunded
+    stripe_payment_intent_id VARCHAR(255),
+    paid_at TIMESTAMP WITH TIME ZONE,
+    
+    -- Shipping
+    shipping_address TEXT,
+    shipping_city VARCHAR(100),
+    shipping_state VARCHAR(2),
+    shipping_zip VARCHAR(10),
+    
+    -- Fulfillment
+    fulfillment_status VARCHAR(50) DEFAULT 'pending', -- pending, processing, shipped, delivered, returned
+    tracking_number VARCHAR(100),
+    carrier VARCHAR(50),
+    shipped_at TIMESTAMP WITH TIME ZONE,
+    delivered_at TIMESTAMP WITH TIME ZONE,
+    
+    -- Subscription
+    is_subscription BOOLEAN DEFAULT false,
+    subscription_frequency VARCHAR(50), -- monthly, bimonthly, quarterly
+    next_refill_date DATE,
+    
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Order line items
+CREATE TABLE order_items (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+    inventory_id UUID REFERENCES inventory(id),
+    prescription_id UUID REFERENCES prescriptions(id),
+    
+    medication_name VARCHAR(255),
+    quantity INTEGER NOT NULL,
+    unit_price DECIMAL(10,2),
+    total_price DECIMAL(10,2),
+    
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Messages between patient and provider
+CREATE TABLE consultation_messages (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    consultation_id UUID NOT NULL REFERENCES consultations(id) ON DELETE CASCADE,
+    sender_id UUID NOT NULL,
+    sender_type VARCHAR(20) NOT NULL, -- 'patient' or 'provider'
+    
+    message_type VARCHAR(50), -- 'question', 'response', 'treatment_plan', 'prescription'
+    content TEXT NOT NULL,
+    attachments JSONB,
+    
+    is_read BOOLEAN DEFAULT false,
+    read_at TIMESTAMP WITH TIME ZONE,
+    
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create indexes for performance
+CREATE INDEX idx_consultations_patient_id ON consultations(patient_id);
+CREATE INDEX idx_consultations_provider_id ON consultations(provider_id);
+CREATE INDEX idx_consultations_status ON consultations(status);
+CREATE INDEX idx_consultations_submitted_at ON consultations(submitted_at DESC);
+
+CREATE INDEX idx_orders_patient_id ON orders(patient_id);
+CREATE INDEX idx_orders_consultation_id ON orders(consultation_id);
+CREATE INDEX idx_orders_payment_status ON orders(payment_status);
+CREATE INDEX idx_orders_fulfillment_status ON orders(fulfillment_status);
+
+CREATE INDEX idx_prescriptions_consultation_id ON prescriptions(consultation_id);
+CREATE INDEX idx_inventory_sku ON inventory(sku);
+CREATE INDEX idx_inventory_medication_name ON inventory(medication_name);
+
+CREATE INDEX idx_messages_consultation_id ON consultation_messages(consultation_id);
+CREATE INDEX idx_messages_created_at ON consultation_messages(created_at DESC);
+
+-- Update timestamp trigger
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+-- Apply update triggers
+CREATE TRIGGER update_patients_updated_at BEFORE UPDATE ON patients
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_consultations_updated_at BEFORE UPDATE ON consultations
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_orders_updated_at BEFORE UPDATE ON orders
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_inventory_updated_at BEFORE UPDATE ON inventory
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Sample inventory data (common medications)
+INSERT INTO inventory (sku, medication_name, generic_name, strength, form, quantity_on_hand, cost_per_unit, retail_price, subscription_price) VALUES
+    ('TRE-025-CR', 'Tretinoin Cream', 'Tretinoin', '0.025%', 'cream', 100, 8.00, 59.00, 49.00),
+    ('TRE-050-CR', 'Tretinoin Cream', 'Tretinoin', '0.05%', 'cream', 100, 10.00, 69.00, 59.00),
+    ('SIL-50-TAB', 'Sildenafil', 'Sildenafil', '50mg', 'tablet', 500, 2.00, 10.00, 8.00),
+    ('SIL-100-TAB', 'Sildenafil', 'Sildenafil', '100mg', 'tablet', 500, 3.00, 15.00, 12.00),
+    ('FIN-1-TAB', 'Finasteride', 'Finasteride', '1mg', 'tablet', 300, 0.50, 2.00, 1.50),
+    ('MIN-5-SOL', 'Minoxidil Solution', 'Minoxidil', '5%', 'solution', 200, 5.00, 29.00, 24.00),
+    ('DOX-100-CAP', 'Doxycycline', 'Doxycycline', '100mg', 'capsule', 400, 0.40, 4.00, 3.50),
+    ('PHE-375-TAB', 'Phentermine', 'Phentermine', '37.5mg', 'tablet', 200, 8.00, 89.00, 79.00),
+    ('MET-500-TAB', 'Metformin', 'Metformin', '500mg', 'tablet', 600, 0.30, 3.00, 2.50);
+
+-- Sample provider (for testing)
+INSERT INTO providers (email, password_hash, first_name, last_name, license_number, license_state, specialties) VALUES
+    ('provider@clinic.com', '$2a$10$xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', 'Dr. Jane', 'Smith', 'MD123456', 'CA', ARRAY['General Medicine', 'Dermatology']);
