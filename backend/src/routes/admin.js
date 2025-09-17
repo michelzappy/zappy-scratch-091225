@@ -1,18 +1,24 @@
 import express from 'express';
 import { body, param, query, validationResult } from 'express-validator';
 import { asyncHandler } from '../middleware/errorHandler.js';
-import { getDatabase } from '../config/database.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import AdminService from '../services/admin.service.js';
+import AnalyticsService from '../services/analytics.service.js';
+import AuthService from '../services/auth.service.js';
 
 const router = express.Router();
+
+// Initialize services
+const adminService = new AdminService();
+const analyticsService = new AnalyticsService();
+const authService = new AuthService();
 
 // Validation middleware
 const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({
+      success: false,
       error: 'Validation failed',
       details: errors.array()
     });
@@ -20,69 +26,95 @@ const handleValidationErrors = (req, res, next) => {
   next();
 };
 
+// Admin login - delegated to auth service
+router.post('/login',
+  [
+    body('email').isEmail().normalizeEmail(),
+    body('password').isString().notEmpty()
+  ],
+  handleValidationErrors,
+  asyncHandler(async (req, res) => {
+    const { email, password } = req.body;
+    
+    try {
+      const result = await authService.adminLogin(email, password);
+      res.json(result);
+    } catch (error) {
+      res.status(error.statusCode || 500).json({
+        success: false,
+        error: error.message || 'Login failed'
+      });
+    }
+  })
+);
+
 // Get admin dashboard metrics
 router.get('/metrics',
   requireAuth,
   requireRole('admin'),
   asyncHandler(async (req, res) => {
-    const db = getDatabase();
-    
-    const metrics = await db.raw(`
-      SELECT 
-        (SELECT COUNT(*) FROM patients WHERE is_active = true) as active_patients,
-        (SELECT COUNT(*) FROM consultations WHERE status = 'pending') as open_consultations,
-        (SELECT COUNT(*) FROM prescriptions WHERE status = 'active') as active_prescriptions,
-        (SELECT COUNT(*) FROM orders WHERE payment_status = 'pending') as pending_payments,
-        (SELECT COUNT(*) FROM orders WHERE fulfillment_status = 'pending') as pending_fulfillment,
-        (SELECT COUNT(*) FROM providers WHERE is_available = true) as available_providers,
-        (SELECT SUM(total_amount) FROM orders WHERE DATE(created_at) = CURRENT_DATE) as today_revenue,
-        (SELECT COUNT(*) FROM consultations WHERE DATE(created_at) = CURRENT_DATE) as today_consultations,
-        (SELECT COUNT(*) FROM patients WHERE DATE(created_at) = CURRENT_DATE) as today_new_patients
-    `);
-
-    res.json({
-      success: true,
-      data: metrics.rows[0] || {}
-    });
+    try {
+      const metrics = await adminService.getDashboardMetrics();
+      res.json({
+        success: true,
+        data: metrics
+      });
+    } catch (error) {
+      console.error('Metrics error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to load metrics'
+      });
+    }
   })
 );
 
+// Get dashboard data
+router.get('/dashboard',
+  requireAuth,
+  requireRole('admin'),
+  asyncHandler(async (req, res) => {
+    try {
+      const dashboardData = await adminService.getDashboardData();
+      res.json({
+        success: true,
+        data: dashboardData
+      });
+    } catch (error) {
+      console.error('Dashboard error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to load dashboard data'
+      });
+    }
+  })
+);
 
 // Get pending consultations for admin review
 router.get('/consultations/pending',
   requireAuth,
   requireRole('admin'),
   [
-    query('limit').optional().isInt({ min: 1, max: 100 })
+    query('limit').optional().isInt({ min: 1, max: 100 }).toInt(),
+    query('offset').optional().isInt({ min: 0 }).toInt()
   ],
   handleValidationErrors,
   asyncHandler(async (req, res) => {
-    const db = getDatabase();
-    const { limit = 20 } = req.query;
-
-    const consultations = await db.raw(`
-      SELECT 
-        c.*,
-        p.first_name || ' ' || p.last_name as patient_name,
-        p.subscription_tier,
-        EXTRACT(EPOCH FROM (NOW() - c.submitted_at))/60 as wait_time_minutes,
-        CASE 
-          WHEN c.provider_id IS NOT NULL THEN pr.first_name || ' ' || pr.last_name
-          ELSE 'Unassigned'
-        END as provider_name,
-        pr.id as provider_id
-      FROM consultations c
-      JOIN patients p ON c.patient_id = p.id
-      LEFT JOIN providers pr ON c.provider_id = pr.id
-      WHERE c.status IN ('pending', 'assigned')
-      ORDER BY c.submitted_at ASC
-      LIMIT ?
-    `, [limit]);
-
-    res.json({
-      success: true,
-      data: consultations.rows || []
-    });
+    try {
+      const { limit = 20, offset = 0 } = req.query;
+      const consultations = await adminService.getPendingConsultations(limit, offset);
+      
+      res.json({
+        success: true,
+        data: consultations
+      });
+    } catch (error) {
+      console.error('Pending consultations error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to load pending consultations'
+      });
+    }
   })
 );
 
@@ -96,24 +128,24 @@ router.post('/consultations/:id/assign',
   ],
   handleValidationErrors,
   asyncHandler(async (req, res) => {
-    const db = getDatabase();
-    
-    const [updated] = await db
-      .update('consultations')
-      .set({
-        provider_id: req.body.provider_id,
-        status: 'assigned',
-        assigned_at: new Date(),
-        updated_at: new Date()
-      })
-      .where({ id: req.params.id })
-      .returning();
-
-    res.json({
-      success: true,
-      data: updated,
-      message: 'Consultation assigned successfully'
-    });
+    try {
+      const { id } = req.params;
+      const { provider_id } = req.body;
+      
+      const result = await adminService.assignConsultation(id, provider_id);
+      
+      res.json({
+        success: true,
+        data: result,
+        message: 'Consultation assigned successfully'
+      });
+    } catch (error) {
+      console.error('Consultation assignment error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to assign consultation'
+      });
+    }
   })
 );
 
@@ -122,54 +154,27 @@ router.get('/patients',
   requireAuth,
   requireRole('admin'),
   [
-    query('search').optional().isString(),
+    query('search').optional().isString().trim(),
     query('subscription_tier').optional().isString(),
-    query('limit').optional().isInt({ min: 1, max: 100 }),
-    query('offset').optional().isInt({ min: 0 })
+    query('limit').optional().isInt({ min: 1, max: 100 }).toInt(),
+    query('offset').optional().isInt({ min: 0 }).toInt()
   ],
   handleValidationErrors,
   asyncHandler(async (req, res) => {
-    const db = getDatabase();
-    const { search, subscription_tier, limit = 50, offset = 0 } = req.query;
-
-    let whereConditions = [];
-    let params = [];
-    let paramIndex = 1;
-
-    if (search) {
-      whereConditions.push(`(p.first_name ILIKE $${paramIndex} OR p.last_name ILIKE $${paramIndex} OR p.email ILIKE $${paramIndex})`);
-      params.push(`%${search}%`);
-      paramIndex++;
+    try {
+      const patients = await adminService.getPatients(req.query);
+      
+      res.json({
+        success: true,
+        data: patients
+      });
+    } catch (error) {
+      console.error('Get patients error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to load patients'
+      });
     }
-
-    if (subscription_tier) {
-      whereConditions.push(`p.subscription_tier = $${paramIndex}`);
-      params.push(subscription_tier);
-      paramIndex++;
-    }
-
-    const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
-
-    const patients = await db.raw(`
-      SELECT 
-        p.*,
-        COUNT(DISTINCT c.id) as total_consultations,
-        COUNT(DISTINCT o.id) as total_orders,
-        SUM(o.total_amount) as total_spent,
-        MAX(c.created_at) as last_consultation_date
-      FROM patients p
-      LEFT JOIN consultations c ON c.patient_id = p.id
-      LEFT JOIN orders o ON o.patient_id = p.id
-      ${whereClause}
-      GROUP BY p.id
-      ORDER BY p.created_at DESC
-      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
-    `, [...params, limit, offset]);
-
-    res.json({
-      success: true,
-      data: patients.rows || []
-    });
   })
 );
 
@@ -178,138 +183,54 @@ router.get('/providers',
   requireAuth,
   requireRole('admin'),
   [
-    query('is_active').optional().isBoolean(),
-    query('is_available').optional().isBoolean(),
-    query('limit').optional().isInt({ min: 1, max: 100 })
+    query('is_active').optional().isBoolean().toBoolean(),
+    query('is_available').optional().isBoolean().toBoolean(),
+    query('limit').optional().isInt({ min: 1, max: 100 }).toInt(),
+    query('offset').optional().isInt({ min: 0 }).toInt()
   ],
   handleValidationErrors,
   asyncHandler(async (req, res) => {
-    const db = getDatabase();
-    const { is_active, is_available, limit = 50 } = req.query;
-
-    let whereConditions = [];
-    if (is_active !== undefined) {
-      whereConditions.push(`is_active = ${is_active}`);
+    try {
+      const providers = await adminService.getProviders(req.query);
+      
+      res.json({
+        success: true,
+        data: providers
+      });
+    } catch (error) {
+      console.error('Get providers error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to load providers'
+      });
     }
-    if (is_available !== undefined) {
-      whereConditions.push(`is_available = ${is_available}`);
-    }
-
-    const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
-
-    const providers = await db.raw(`
-      SELECT 
-        p.*,
-        COUNT(c.id) as total_consultations_today,
-        AVG(EXTRACT(EPOCH FROM (c.completed_at - c.assigned_at))/60) as avg_response_time
-      FROM providers p
-      LEFT JOIN consultations c ON c.provider_id = p.id AND DATE(c.created_at) = CURRENT_DATE
-      ${whereClause}
-      GROUP BY p.id
-      ORDER BY p.created_at DESC
-      LIMIT ?
-    `, [limit]);
-
-    // Remove password hashes
-    providers.rows?.forEach(p => delete p.password_hash);
-
-    res.json({
-      success: true,
-      data: providers.rows || []
-    });
   })
 );
-
 
 // Get order statistics
 router.get('/orders/stats',
   requireAuth,
   requireRole('admin'),
-  asyncHandler(async (req, res) => {
-    const db = getDatabase();
-    
-    const stats = await db.raw(`
-      SELECT 
-        COUNT(*) as total_orders,
-        COUNT(CASE WHEN payment_status = 'completed' THEN 1 END) as paid_orders,
-        COUNT(CASE WHEN fulfillment_status = 'pending' THEN 1 END) as pending_fulfillment,
-        COUNT(CASE WHEN fulfillment_status = 'shipped' THEN 1 END) as shipped_orders,
-        SUM(total_amount) as total_revenue,
-        AVG(total_amount) as average_order_value,
-        COUNT(CASE WHEN is_subscription = true THEN 1 END) as subscription_orders
-      FROM orders
-      WHERE created_at >= NOW() - INTERVAL '30 days'
-    `);
-
-    res.json({
-      success: true,
-      data: stats.rows[0] || {}
-    });
-  })
-);
-
-
-// Admin login
-router.post('/login',
   [
-    body('email').isEmail().normalizeEmail(),
-    body('password').isString()
+    query('period').optional().isIn(['today', 'week', 'month', 'year'])
   ],
   handleValidationErrors,
   asyncHandler(async (req, res) => {
-    const db = getDatabase();
-    const { email, password } = req.body;
-
-    // Find admin user
-    const [admin] = await db
-      .select()
-      .from('admins')
-      .where({ email })
-      .limit(1);
-
-    if (!admin) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+    try {
+      const { period = 'month' } = req.query;
+      const stats = await adminService.getOrderStatistics(period);
+      
+      res.json({
+        success: true,
+        data: stats
+      });
+    } catch (error) {
+      console.error('Order stats error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to load order statistics'
+      });
     }
-
-    // Check password
-    const isValid = await bcrypt.compare(password, admin.password_hash);
-    if (!isValid) {
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-
-    // Check if active
-    if (!admin.is_active) {
-      return res.status(403).json({ error: 'Account is inactive' });
-    }
-
-    // Update last login
-    await db
-      .update('admins')
-      .set({ last_login: new Date() })
-      .where({ id: admin.id });
-
-    // Generate JWT token
-    const token = jwt.sign(
-      { 
-        id: admin.id, 
-        email: admin.email,
-        role: 'admin',
-        permissions: admin.permissions
-      },
-      process.env.JWT_SECRET || 'secret',
-      { expiresIn: '8h' }
-    );
-
-    delete admin.password_hash;
-
-    res.json({
-      success: true,
-      data: {
-        user: admin,
-        token
-      },
-      message: 'Login successful'
-    });
   })
 );
 
@@ -326,24 +247,26 @@ router.post('/analytics/events',
   ],
   handleValidationErrors,
   asyncHandler(async (req, res) => {
-    const db = getDatabase();
-    
-    const eventData = {
-      ...req.body,
-      user_id: req.user.id,
-      user_type: req.user.role,
-      created_at: new Date()
-    };
-
-    const [event] = await db
-      .insert('analytics_events')
-      .values(eventData)
-      .returning();
-
-    res.status(201).json({
-      success: true,
-      data: event
-    });
+    try {
+      const eventData = {
+        ...req.body,
+        user_id: req.user.id,
+        user_type: req.user.role
+      };
+      
+      const event = await analyticsService.trackEvent(eventData);
+      
+      res.status(201).json({
+        success: true,
+        data: event
+      });
+    } catch (error) {
+      console.error('Analytics event error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to track event'
+      });
+    }
   })
 );
 
@@ -356,94 +279,20 @@ router.get('/analytics/summary',
   ],
   handleValidationErrors,
   asyncHandler(async (req, res) => {
-    const db = getDatabase();
-    const { period = 'month' } = req.query;
-
-    let dateFilter = '';
-    switch(period) {
-      case 'today':
-        dateFilter = "DATE(created_at) = CURRENT_DATE";
-        break;
-      case 'week':
-        dateFilter = "created_at >= NOW() - INTERVAL '7 days'";
-        break;
-      case 'month':
-        dateFilter = "created_at >= NOW() - INTERVAL '30 days'";
-        break;
-      case 'year':
-        dateFilter = "created_at >= NOW() - INTERVAL '1 year'";
-        break;
-    }
-
-    const summary = await db.raw(`
-      SELECT 
-        COUNT(DISTINCT CASE WHEN event_type = 'page_view' THEN user_id END) as unique_visitors,
-        COUNT(CASE WHEN event_type = 'page_view' THEN 1 END) as page_views,
-        COUNT(CASE WHEN event_type = 'consultation_started' THEN 1 END) as consultations_started,
-        COUNT(CASE WHEN event_type = 'consultation_completed' THEN 1 END) as consultations_completed,
-        COUNT(CASE WHEN event_type = 'order_placed' THEN 1 END) as orders_placed,
-        SUM(CASE WHEN event_type = 'order_placed' THEN event_value ELSE 0 END) as total_revenue
-      FROM analytics_events
-      WHERE ${dateFilter}
-    `);
-
-    res.json({
-      success: true,
-      data: summary.rows[0] || {},
-      period
-    });
-  })
-);
-
-// Dashboard endpoint for admin overview
-router.get('/dashboard',
-  requireAuth,
-  requireRole('admin'),
-  asyncHandler(async (req, res) => {
-    const db = getDatabase();
-    
     try {
-      // Get dashboard statistics
-      const stats = await db.query(`
-        SELECT 
-          (SELECT COUNT(*) FROM patients) as total_patients,
-          (SELECT COUNT(*) FROM providers WHERE status = 'active') as active_providers,
-          (SELECT COUNT(*) FROM consultations WHERE status = 'pending') as pending_consultations,
-          (SELECT COUNT(*) FROM consultations WHERE DATE(created_at) = CURRENT_DATE) as today_consultations,
-          (SELECT COUNT(*) FROM consultations WHERE status = 'completed' AND DATE(completed_at) >= CURRENT_DATE - INTERVAL '7 days') as weekly_completed,
-          (SELECT SUM(total_amount) FROM orders WHERE status = 'completed' AND DATE(created_at) >= CURRENT_DATE - INTERVAL '30 days') as monthly_revenue,
-          (SELECT COUNT(*) FROM patients WHERE DATE(created_at) >= CURRENT_DATE - INTERVAL '7 days') as new_patients_week,
-          (SELECT COUNT(*) FROM orders WHERE status = 'processing') as pending_orders
-      `);
-
-      const dashboardData = stats.rows[0] || {};
+      const { period = 'month' } = req.query;
+      const summary = await analyticsService.getAnalyticsSummary(period);
       
-      // Get recent activity
-      const recentActivity = await db.query(`
-        SELECT 
-          'consultation' as type,
-          c.id,
-          c.chief_complaint as description,
-          c.created_at,
-          p.first_name || ' ' || p.last_name as patient_name
-        FROM consultations c
-        JOIN patients p ON c.patient_id = p.id
-        ORDER BY c.created_at DESC
-        LIMIT 10
-      `);
-
       res.json({
         success: true,
-        data: {
-          statistics: dashboardData,
-          recentActivity: recentActivity.rows || []
-        }
+        data: summary,
+        period
       });
     } catch (error) {
-      console.error('Dashboard error:', error);
+      console.error('Analytics summary error:', error);
       res.status(500).json({
         success: false,
-        error: 'Failed to load dashboard data'
+        error: 'Failed to load analytics summary'
       });
     }
   })
@@ -454,68 +303,110 @@ router.get('/audit-logs',
   requireAuth,
   requireRole('admin'),
   [
-    query('limit').optional().isInt({ min: 1, max: 100 }),
-    query('offset').optional().isInt({ min: 0 }),
+    query('limit').optional().isInt({ min: 1, max: 100 }).toInt(),
+    query('offset').optional().isInt({ min: 0 }).toInt(),
     query('action').optional().isString(),
     query('userId').optional().isUUID()
   ],
   handleValidationErrors,
   asyncHandler(async (req, res) => {
-    const db = getDatabase();
-    const { limit = 50, offset = 0, action, userId } = req.query;
-    
     try {
-      let whereConditions = [];
-      let params = [];
-      let paramIndex = 1;
-
-      if (action) {
-        whereConditions.push(`action ILIKE $${paramIndex}`);
-        params.push(`%${action}%`);
-        paramIndex++;
-      }
-
-      if (userId) {
-        whereConditions.push(`user_id = $${paramIndex}`);
-        params.push(userId);
-        paramIndex++;
-      }
-
-      const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
-
-      const result = await db.query(`
-        SELECT 
-          al.*,
-          CASE 
-            WHEN al.user_role = 'patient' THEN p.first_name || ' ' || p.last_name
-            WHEN al.user_role = 'provider' THEN pr.first_name || ' ' || pr.last_name
-            WHEN al.user_role = 'admin' THEN a.first_name || ' ' || a.last_name
-            ELSE 'Unknown User'
-          END as user_name
-        FROM audit_logs al
-        LEFT JOIN patients p ON al.user_id = p.id AND al.user_role = 'patient'
-        LEFT JOIN providers pr ON al.user_id = pr.id AND al.user_role = 'provider'
-        LEFT JOIN admins a ON al.user_id = a.id AND al.user_role = 'admin'
-        ${whereClause}
-        ORDER BY al.created_at DESC
-        LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
-      `, [...params, limit, offset]);
-
+      const logs = await adminService.getAuditLogs(req.query);
+      
       res.json({
         success: true,
-        data: result.rows || [],
-        pagination: {
-          limit: parseInt(limit),
-          offset: parseInt(offset),
-          total: result.rows?.length || 0
-        }
+        data: logs.data,
+        pagination: logs.pagination
       });
     } catch (error) {
       console.error('Audit logs error:', error);
       res.json({
         success: true,
-        data: [], // Return empty array if audit_logs table doesn't exist
+        data: [],
         message: 'Audit logs not available'
+      });
+    }
+  })
+);
+
+// Admin user management
+router.get('/users',
+  requireAuth,
+  requireRole('admin'),
+  [
+    query('role').optional().isIn(['admin', 'provider', 'patient']),
+    query('status').optional().isIn(['active', 'inactive', 'suspended']),
+    query('limit').optional().isInt({ min: 1, max: 100 }).toInt(),
+    query('offset').optional().isInt({ min: 0 }).toInt()
+  ],
+  handleValidationErrors,
+  asyncHandler(async (req, res) => {
+    try {
+      const users = await adminService.getAllUsers(req.query);
+      
+      res.json({
+        success: true,
+        data: users
+      });
+    } catch (error) {
+      console.error('Get users error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to load users'
+      });
+    }
+  })
+);
+
+// Update user status
+router.patch('/users/:id/status',
+  requireAuth,
+  requireRole('admin'),
+  [
+    param('id').isUUID(),
+    body('status').isIn(['active', 'inactive', 'suspended']),
+    body('reason').optional().isString()
+  ],
+  handleValidationErrors,
+  asyncHandler(async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { status, reason } = req.body;
+      
+      const result = await adminService.updateUserStatus(id, status, reason);
+      
+      res.json({
+        success: true,
+        data: result,
+        message: 'User status updated successfully'
+      });
+    } catch (error) {
+      console.error('Update user status error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to update user status'
+      });
+    }
+  })
+);
+
+// System health check
+router.get('/health',
+  requireAuth,
+  requireRole('admin'),
+  asyncHandler(async (req, res) => {
+    try {
+      const health = await adminService.getSystemHealth();
+      
+      res.json({
+        success: true,
+        data: health
+      });
+    } catch (error) {
+      console.error('System health error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to check system health'
       });
     }
   })
