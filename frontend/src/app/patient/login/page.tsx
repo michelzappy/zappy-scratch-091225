@@ -43,6 +43,41 @@ export default function PatientLogin() {
     }
   };
 
+  const handleTestMode = async () => {
+    setLoading(true);
+    setError('');
+    
+    try {
+      // Create a test user session
+      const testUser = {
+        id: 'test-patient-123',
+        email: 'test.patient@example.com',
+        firstName: 'Test',
+        lastName: 'Patient',
+        role: UserRole.PATIENT,
+        phone: '555-0100',
+        dateOfBirth: '1990-01-01'
+      };
+
+      // Set test user in localStorage (bypassing actual authentication)
+      localStorage.setItem('user', JSON.stringify(testUser));
+      localStorage.setItem('token', 'test-token-' + Date.now());
+      localStorage.setItem('userRole', UserRole.PATIENT);
+      
+      // Show success message
+      toast.success('Test mode activated! Logging in as Test Patient...');
+      
+      // Small delay for better UX
+      setTimeout(() => {
+        // Redirect to patient dashboard
+        router.push('/patient/dashboard');
+      }, 1000);
+    } catch (err) {
+      setError('Failed to activate test mode. Please try again.');
+      setLoading(false);
+    }
+  };
+
   const handleForgotPassword = async () => {
     if (!email) {
       toast.error('Please enter your email address first');
@@ -194,6 +229,23 @@ export default function PatientLogin() {
               )}
             </button>
           </form>
+
+          {/* Test Mode Button */}
+          <div className="mt-4">
+            <button
+              onClick={handleTestMode}
+              disabled={loading}
+              className="w-full flex justify-center items-center py-3 px-4 border-2 border-dashed border-orange-400 rounded-lg text-sm font-medium text-orange-700 bg-orange-50 hover:bg-orange-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+              Test Mode - Bypass Authentication
+            </button>
+            <p className="mt-2 text-xs text-center text-orange-600">
+              ⚠️ Development only - Instantly access portal as test patient
+            </p>
+          </div>
 
           {/* Divider */}
           <div className="relative my-6">
