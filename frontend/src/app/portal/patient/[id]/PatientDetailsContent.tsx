@@ -1,8 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import Card from '@/components/Card';
 
 // Simple date formatter to avoid date-fns issues on Vercel
 const formatDate = (dateString: string) => {
@@ -108,7 +106,6 @@ interface PatientDetailsContentProps {
 }
 
 export default function PatientDetailsContent({ patientId }: PatientDetailsContentProps) {
-  const router = useRouter();
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
   
