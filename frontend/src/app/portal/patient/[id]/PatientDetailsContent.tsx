@@ -3,7 +3,20 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Card from '@/components/Card';
-import { format } from 'date-fns';
+
+// Simple date formatter to avoid date-fns issues on Vercel
+const formatDate = (dateString: string) => {
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    });
+  } catch {
+    return dateString;
+  }
+};
 
 // Types
 interface Patient {
@@ -318,7 +331,7 @@ export default function PatientDetailsContent({ patientId }: PatientDetailsConte
             <div className="mt-1 flex gap-4 text-xs text-gray-600">
               <span className="font-mono">MRN: {patient.medical_record_number}</span>
               <span>{age}y {patient.gender === 'female' ? 'F' : 'M'}</span>
-              <span>DOB: {format(new Date(patient.date_of_birth), 'MM/dd/yyyy')}</span>
+              <span>DOB: {formatDate(patient.date_of_birth)}</span>
               <span>Blood: {patient.blood_type}</span>
               {/* Subtle allergies display */}
               {allergies.length > 0 && (
@@ -415,7 +428,7 @@ export default function PatientDetailsContent({ patientId }: PatientDetailsConte
                       }`}>
                         {condition.severity}
                       </span>
-                      <span className="text-xs text-gray-500">Since {format(new Date(condition.onset_date), 'MMM yyyy')}</span>
+                      <span className="text-xs text-gray-500">Since {formatDate(condition.onset_date)}</span>
                     </div>
                   </div>
                 ))}
@@ -470,11 +483,11 @@ export default function PatientDetailsContent({ patientId }: PatientDetailsConte
                         </span>
                       </div>
                       <div className="text-xs text-gray-600 mt-1">
-                        ${plan.price}/{plan.billing_cycle} • Started {format(new Date(plan.start_date), 'MMM dd, yyyy')}
+                        ${plan.price}/{plan.billing_cycle} • Started {formatDate(plan.start_date)}
                       </div>
                       {plan.next_billing && (
                         <div className="text-xs text-gray-500 mt-0.5">
-                          Next billing: {format(new Date(plan.next_billing), 'MMM dd, yyyy')}
+                          Next billing: {formatDate(plan.next_billing)}
                         </div>
                       )}
                       {plan.features && (
@@ -525,7 +538,7 @@ export default function PatientDetailsContent({ patientId }: PatientDetailsConte
                         {med.dosage} • {med.frequency} • By {med.prescriber}
                       </div>
                       <div className="text-xs text-gray-500 mt-0.5">
-                        Started {format(new Date(med.start_date), 'MMM dd, yyyy')}
+                        Started {formatDate(med.start_date)}
                       </div>
                     </div>
                     <div className="text-right">
@@ -596,7 +609,7 @@ export default function PatientDetailsContent({ patientId }: PatientDetailsConte
                           id: `new-${Date.now()}`,
                           type: newNote.type.charAt(0).toUpperCase() + newNote.type.slice(1),
                           provider: 'Dr. Smith',
-                          date: format(new Date(), 'yyyy-MM-dd'),
+                          date: new Date().toISOString().split('T')[0],
                           status: 'completed',
                           notes: newNote.content
                         };
@@ -687,7 +700,7 @@ export default function PatientDetailsContent({ patientId }: PatientDetailsConte
                           ? `${(file.size / 1024).toFixed(1)} KB`
                           : `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
                         uploadedBy: 'Dr. Smith',
-                        uploadedAt: format(new Date(), 'yyyy-MM-dd'),
+                        uploadedAt: new Date().toISOString().split('T')[0],
                         category: file.name.toLowerCase().includes('lab') ? 'lab-results' :
                                  file.name.toLowerCase().includes('insurance') ? 'insurance' :
                                  file.name.toLowerCase().includes('consent') ? 'consent' :
