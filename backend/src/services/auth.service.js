@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { getDatabase } from '../config/database.js';
-import AppError from '../errors/AppError.js';
+import { AppError } from '../errors/AppError.js';
 
 class AuthService {
   constructor() {
