@@ -1,0 +1,206 @@
+{
+  "issue_type_analysis": {
+    "missing_element": {
+      "total_count": 41,
+      "primary_agent": "UI Completeness Agent",
+      "severity_distribution": {
+        "critical": 1,
+        "high": 0,
+        "medium": 15,
+        "low": 25
+      },
+      "description": "UI elements that are missing or incomplete, preventing users from completing actions",
+      "common_patterns": [
+        "Buttons without onClick handlers",
+        "Forms without submit mechanisms",
+        "Missing interactive elements",
+        "Incomplete form fields"
+      ],
+      "immediate_fixes_needed": [
+        "Add submit mechanism to portal forms page",
+        "Add onClick handlers to navigation buttons",
+        "Complete form field implementations"
+      ],
+      "impact": "High - Users cannot complete essential actions",
+      "fix_complexity": "Low to Medium - mostly adding missing handlers"
+    },
+    "broken_flow": {
+      "total_count": 86,
+      "primary_agent": "Flow Navigator Agent", 
+      "severity_distribution": {
+        "critical": 0,
+        "high": 17,
+        "medium": 41,
+        "low": 28
+      },
+      "description": "Navigation links pointing to non-existent pages or broken user flows",
+      "common_patterns": [
+        "Links to pages that don't exist",
+        "Broken internal navigation",
+        "Incomplete user journey paths",
+        "Missing route implementations"
+      ],
+      "immediate_fixes_needed": [
+        "Create missing registration pages",
+        "Fix broken anchor links on landing page",
+        "Implement missing portal sub-pages"
+      ],
+      "impact": "High - Users get stuck in navigation flows",
+      "fix_complexity": "Medium to High - requires creating new pages"
+    },
+    "state_issue": {
+      "total_count": 15,
+      "primary_agent": "State Management Agent",
+      "severity_distribution": {
+        "critical": 0,
+        "high": 1,
+        "medium": 6,
+        "low": 8
+      },
+      "description": "React state management and hook-related issues",
+      "common_patterns": [
+        "Controlled inputs without onChange handlers",
+        "useEffect missing dependencies",
+        "State inconsistencies",
+        "React hook violations"
+      ],
+      "immediate_fixes_needed": [
+        "Fix controlled input in forms page",
+        "Add missing useEffect dependencies",
+        "Resolve state management issues"
+      ],
+      "impact": "Medium - Affects component functionality and React best practices",
+      "fix_complexity": "Low to Medium - mostly React hook fixes"
+    },
+    "navigation_issue": {
+      "total_count": 58,
+      "primary_agent": "Route Guardian Agent",
+      "severity_distribution": {
+        "critical": 0,
+        "high": 29,
+        "medium": 19,
+        "low": 10
+      },
+      "description": "Authentication and route protection security issues",
+      "common_patterns": [
+        "Protected routes missing authentication checks",
+        "Unauthorized access to sensitive pages",
+        "Missing role-based access control",
+        "Security vulnerabilities in routing"
+      ],
+      "immediate_fixes_needed": [
+        "Implement authentication middleware",
+        "Add route protection to all patient pages",
+        "Secure portal pages with role checks"
+      ],
+      "impact": "Critical - Major security vulnerability",
+      "fix_complexity": "High - requires authentication system implementation"
+    },
+    "api_connection": {
+      "total_count": 77,
+      "primary_agent": "API Connection Agent",
+      "severity_distribution": {
+        "critical": 0,
+        "high": 0,
+        "medium": 35,
+        "low": 42
+      },
+      "description": "Backend integration issues and mock data that needs API replacement",
+      "common_patterns": [
+        "Hardcoded data instead of API calls",
+        "Mock endpoints that need backend integration",
+        "Missing API service connections",
+        "Placeholder data structures"
+      ],
+      "immediate_fixes_needed": [
+        "Replace mock consultation data with API calls",
+        "Integrate patient data with backend",
+        "Connect forms to backend submission endpoints"
+      ],
+      "impact": "Medium - App works but with fake data",
+      "fix_complexity": "Medium - requires backend API integration"
+    },
+    "inconsistent_ui": {
+      "total_count": 9,
+      "primary_agent": "Component Consistency Agent",
+      "severity_distribution": {
+        "critical": 0,
+        "high": 0,
+        "medium": 4,
+        "low": 5
+      },
+      "description": "UI consistency issues and component standardization problems",
+      "common_patterns": [
+        "Inconsistent button styling",
+        "Mixed design patterns",
+        "Non-standard component usage",
+        "Inconsistent spacing and layout"
+      ],
+      "immediate_fixes_needed": [
+        "Standardize button components",
+        "Create consistent design system",
+        "Unify layout patterns"
+      ],
+      "impact": "Low - Affects user experience consistency",
+      "fix_complexity": "Medium - requires design system work"
+    },
+    "accessibility": {
+      "total_count": 12,
+      "primary_agent": "User Feedback Agent",
+      "severity_distribution": {
+        "critical": 0,
+        "high": 0,
+        "medium": 2,
+        "low": 10
+      },
+      "description": "Accessibility compliance issues affecting users with disabilities",
+      "common_patterns": [
+        "Missing ARIA labels",
+        "Interactive elements without accessible names",
+        "Poor keyboard navigation support",
+        "Screen reader compatibility issues"
+      ],
+      "immediate_fixes_needed": [
+        "Add ARIA labels to interactive elements",
+        "Improve keyboard navigation",
+        "Add screen reader support"
+      ],
+      "impact": "Medium - Important for accessibility compliance",
+      "fix_complexity": "Low to Medium - mostly adding accessibility attributes"
+    }
+  },
+  "priority_matrix": {
+    "immediate_action_required": [
+      "missing_element (1 critical issue)",
+      "navigation_issue (29 high severity security issues)"
+    ],
+    "high_priority": [
+      "broken_flow (17 high severity navigation issues)",
+      "api_connection (35 medium severity integration needs)"
+    ],
+    "medium_priority": [
+      "state_issue (React best practices)",
+      "inconsistent_ui (user experience)"
+    ],
+    "low_priority": [
+      "accessibility (compliance and inclusivity)"
+    ]
+  },
+  "fix_effort_estimation": {
+    "quick_wins": [
+      "Add onClick handlers to buttons (missing_element)",
+      "Add ARIA labels (accessibility)",
+      "Fix useEffect dependencies (state_issue)"
+    ],
+    "medium_effort": [
+      "Create missing pages (broken_flow)",
+      "Replace mock data with APIs (api_connection)",
+      "Implement form validations (missing_element)"
+    ],
+    "major_projects": [
+      "Implement authentication system (navigation_issue)",
+      "Create design system (inconsistent_ui)",
+      "Build complete user flows (broken_flow)"
+    ]
+  }
+}

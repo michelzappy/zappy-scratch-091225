@@ -1,0 +1,63 @@
+{
+  "analysis_metadata": {
+    "total_issues": 378,
+    "critical_issues": 1,
+    "high_severity_issues": 27,
+    "medium_severity_issues": 132,
+    "low_severity_issues": 216,
+    "analysis_duration": "0:00:00.877948",
+    "agents_run": 7,
+    "files_analyzed": 31,
+    "generated_at": "2025-09-17T15:22:47-07:00"
+  },
+  "severity_breakdown": {
+    "critical": 1,
+    "high": 27,
+    "medium": 132,
+    "low": 216
+  },
+  "issue_type_breakdown": {
+    "missing_element": 41,
+    "broken_flow": 86,
+    "state_issue": 15,
+    "navigation_issue": 58,
+    "api_connection": 77,
+    "inconsistent_ui": 9,
+    "accessibility": 12
+  },
+  "agent_breakdown": {
+    "UI Completeness Agent": 126,
+    "Flow Navigator Agent": 45,
+    "State Management Agent": 15,
+    "Route Guardian Agent": 48,
+    "API Connection Agent": 77,
+    "Component Consistency Agent": 9,
+    "User Feedback Agent": 22
+  },
+  "most_affected_files": [
+    "frontend/src/app/page.tsx",
+    "frontend/src/app/patient/messages/page.tsx",
+    "frontend/src/app/patient/checkout/page.tsx",
+    "frontend/src/app/patient/subscription/page.tsx",
+    "frontend/src/app/patient/dashboard/page.tsx",
+    "frontend/src/app/patient/profile/page.tsx",
+    "frontend/src/app/portal/patients/page.tsx",
+    "frontend/src/app/portal/forms/page.tsx",
+    "frontend/src/app/portal/medications/page.tsx",
+    "frontend/src/app/portal/plans/page.tsx"
+  ],
+  "top_issue_categories": [
+    "Broken navigation links",
+    "Protected routes missing authentication",
+    "Mock data that needs API integration", 
+    "Buttons without click handlers",
+    "Missing accessibility labels",
+    "useEffect hooks missing dependencies"
+  ],
+  "statistics": {
+    "files_analyzed": 31,
+    "total_routes": 31,
+    "protected_routes": 15,
+    "backend_endpoints": 118
+  }
+}

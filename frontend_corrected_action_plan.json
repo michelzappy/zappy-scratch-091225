@@ -1,0 +1,293 @@
+{
+  "corrected_frontend_action_plan": {
+    "overview": {
+      "title": "Type 3 Missing Pages Implementation Plan",
+      "description": "Focused action plan for creating the 8 actually missing pages (Type 3 errors only)",
+      "total_pages_to_create": 8,
+      "estimated_total_effort": "68 hours (2-3 weeks with 1 developer)",
+      "excluded_from_scope": [
+        "Type 1 errors (query parameters) - require existing page enhancements only",
+        "Type 2 errors (anchor fragments) - will be replaced with custom landing pages by user"
+      ]
+    },
+    "phase_1_authentication_pages": {
+      "title": "Authentication & Registration Pages",
+      "priority": "IMMEDIATE",
+      "duration": "1 week",
+      "pages_count": 3,
+      "estimated_hours": 20,
+      "pages": [
+        {
+          "route": "/patient/register",
+          "priority": "Critical - Required for user onboarding",
+          "estimated_hours": 8,
+          "dependencies": [
+            "Backend patient registration API",
+            "Email verification service",
+            "Form validation library"
+          ],
+          "implementation_tasks": [
+            "Create registration form component",
+            "Add form validation (email, password strength, required fields)",
+            "Integrate with backend authentication API",
+            "Add email verification flow",
+            "Handle registration success/error states",
+            "Add terms of service checkbox and validation",
+            "Implement redirect to login after successful registration"
+          ]
+        },
+        {
+          "route": "/provider/login",
+          "priority": "High - Required for healthcare provider access",
+          "estimated_hours": 6,
+          "dependencies": [
+            "Backend provider authentication API",
+            "Portal dashboard routing"
+          ],
+          "implementation_tasks": [
+            "Create provider-specific login form",
+            "Add professional credential validation",
+            "Integrate with backend provider auth endpoint",
+            "Handle provider role-based redirection",
+            "Add forgot password functionality",
+            "Implement proper error handling for failed login attempts"
+          ]
+        },
+        {
+          "route": "/admin/login",
+          "priority": "High - Required for administrative access",
+          "estimated_hours": 6,
+          "dependencies": [
+            "Backend admin authentication API",
+            "Admin dashboard routing",
+            "Role-based access control"
+          ],
+          "implementation_tasks": [
+            "Create admin-specific login form",
+            "Add enhanced security features (2FA consideration)",
+            "Integrate with backend admin auth endpoint",
+            "Implement role verification",
+            "Add admin-specific error handling",
+            "Handle admin dashboard redirection"
+          ]
+        }
+      ]
+    },
+    "phase_2_portal_administrative_pages": {
+      "title": "Portal Administrative Functions",
+      "priority": "MEDIUM",
+      "duration": "2 weeks",
+      "pages_count": 5,
+      "estimated_hours": 48,
+      "pages": [
+        {
+          "route": "/portal/patients/new",
+          "priority": "High - Core administrative function",
+          "estimated_hours": 10,
+          "dependencies": [
+            "Backend patient creation API",
+            "File upload service for documents",
+            "Insurance validation service"
+          ],
+          "implementation_tasks": [
+            "Create comprehensive patient intake form",
+            "Add medical history section",
+            "Implement insurance information fields",
+            "Add emergency contact details",
+            "Create photo upload functionality",
+            "Add document upload for insurance cards",
+            "Implement form validation and error handling",
+            "Connect to patient database API",
+            "Add success confirmation and redirect"
+          ]
+        },
+        {
+          "route": "/portal/messages/compose",
+          "priority": "Medium - Communication enhancement",
+          "estimated_hours": 8,
+          "dependencies": [
+            "Backend messaging API",
+            "Rich text editor library",
+            "File attachment service"
+          ],
+          "implementation_tasks": [
+            "Create rich text message composer",
+            "Add patient/provider selection dropdown",
+            "Implement subject and priority fields",
+            "Add file attachment capability",
+            "Create message template selection",
+            "Implement draft save functionality",
+            "Add send confirmation dialog",
+            "Connect to messaging API",
+            "Handle send success/error states"
+          ]
+        },
+        {
+          "route": "/portal/providers/new",
+          "priority": "Medium - Provider management",
+          "estimated_hours": 12,
+          "dependencies": [
+            "Backend provider management API",
+            "License verification service",
+            "Background check integration",
+            "Schedule management system"
+          ],
+          "implementation_tasks": [
+            "Create provider registration form",
+            "Add professional credentials section",
+            "Implement license information and validation",
+            "Add specialty and qualification fields",
+            "Create schedule and availability settings",
+            "Add photo and document upload functionality",
+            "Integrate background check workflow",
+            "Connect to provider database API",
+            "Implement role and permission assignment",
+            "Add provider approval workflow"
+          ]
+        },
+        {
+          "route": "/portal/orders/new",
+          "priority": "Medium - Order management",
+          "estimated_hours": 10,
+          "dependencies": [
+            "Backend ordering system API",
+            "Medication database integration",
+            "Pharmacy network API",
+            "Insurance verification service"
+          ],
+          "implementation_tasks": [
+            "Create patient selection interface",
+            "Implement medication/product search",
+            "Add dosage and quantity specification",
+            "Create pharmacy selection dropdown",
+            "Add insurance verification step",
+            "Implement pricing calculation",
+            "Create order review and confirmation",
+            "Connect to ordering system API",
+            "Add prescription validation",
+            "Handle order processing workflow"
+          ]
+        },
+        {
+          "route": "/portal/checkin-reviews",
+          "priority": "Low - Check-in workflow enhancement",
+          "estimated_hours": 8,
+          "dependencies": [
+            "Backend check-in API",
+            "Review workflow system",
+            "Notification service"
+          ],
+          "implementation_tasks": [
+            "Create check-in reviews list interface",
+            "Add filter and search functionality",
+            "Implement priority-based sorting",
+            "Create quick review interface",
+            "Add approval/rejection workflow",
+            "Implement notes and follow-up actions",
+            "Connect to check-in API",
+            "Add bulk action capabilities",
+            "Create review status tracking"
+          ]
+        }
+      ]
+    },
+    "implementation_schedule": {
+      "week_1": {
+        "focus": "Authentication Pages",
+        "deliverables": [
+          "/patient/register - Patient registration functionality",
+          "/provider/login - Provider authentication",
+          "/admin/login - Administrative access"
+        ],
+        "hours": 20,
+        "milestones": [
+          "User registration flow complete",
+          "All authentication portals functional",
+          "Role-based access working"
+        ]
+      },
+      "week_2": {
+        "focus": "High Priority Portal Pages",
+        "deliverables": [
+          "/portal/patients/new - Patient creation",
+          "/portal/messages/compose - Message composition"
+        ],
+        "hours": 18,
+        "milestones": [
+          "Staff can add new patients",
+          "Internal messaging system functional"
+        ]
+      },
+      "week_3": {
+        "focus": "Remaining Portal Pages",
+        "deliverables": [
+          "/portal/providers/new - Provider management",
+          "/portal/orders/new - Order creation",
+          "/portal/checkin-reviews - Review workflow"
+        ],
+        "hours": 30,
+        "milestones": [
+          "Provider onboarding complete",
+          "Order management functional",
+          "Check-in review workflow complete"
+        ]
+      }
+    },
+    "success_criteria": {
+      "authentication_success": [
+        "Users can register for patient accounts",
+        "Providers can access portal dashboard",
+        "Admins can access administrative functions",
+        "Role-based redirection works correctly"
+      ],
+      "portal_functionality_success": [
+        "Staff can add new patients through portal",
+        "Message composition and sending works",
+        "New providers can be onboarded",
+        "Orders can be created and processed",
+        "Check-in reviews can be managed"
+      ],
+      "integration_success": [
+        "All pages connect to backend APIs",
+        "File uploads work correctly",
+        "Form validation prevents invalid submissions",
+        "Error handling provides clear user feedback"
+      ]
+    },
+    "testing_requirements": {
+      "unit_tests": [
+        "Form validation functions",
+        "API integration functions",
+        "File upload handlers",
+        "Authentication flows"
+      ],
+      "integration_tests": [
+        "End-to-end registration flow",
+        "Complete patient creation workflow",
+        "Provider onboarding process",
+        "Order creation and submission"
+      ],
+      "user_acceptance_tests": [
+        "Patient registration journey",
+        "Staff workflows for patient management",
+        "Provider access and onboarding",
+        "Administrative functions"
+      ]
+    },
+    "post_implementation": {
+      "immediate_fixes_after_pages_created": [
+        "Update navigation links to point to new pages",
+        "Remove any 404 error handling for these routes",
+        "Update site maps and routing configurations",
+        "Test all linking between existing and new pages"
+      ],
+      "future_enhancements": [
+        "Add Type 1 query parameter handling to existing pages",
+        "Implement custom landing pages (Type 2 replacements)",
+        "Add advanced form validation",
+        "Implement real-time notifications",
+        "Add audit logging for administrative actions"
+      ]
+    }
+  }
+}

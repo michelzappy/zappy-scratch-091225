@@ -1,0 +1,740 @@
+{
+  "critical_issues": [
+    {
+      "title": "Form missing submit mechanism",
+      "description": "Form found without submit button or onSubmit handler. Users cannot complete the form.",
+      "severity": "critical",
+      "type": "missing_element",
+      "file_path": "frontend/src/app/portal/forms/page.tsx",
+      "line": 429,
+      "agent": "UI Completeness Agent",
+      "tags": [
+        "form",
+        "submit",
+        "critical"
+      ],
+      "suggested_fix": "Add a submit button: <button type='submit'>Submit</button> or add onSubmit handler to form",
+      "dependencies": [],
+      "code_snippet": "427:               )}\n428:               \n>>> 429:               <form className=\"space-y-6\">\n430:                 {selectedIntakeForm.steps[currentPreviewStep].questions.map((question, index) => (\n431:                   <div key={question.id} className=\"space-y-2\">"
+    }
+  ],
+  "high_priority_issues": [
+    {
+      "title": "Broken navigation link",
+      "description": "Page /patient/new-consultation links to /patient/dashboard?tab=consultations&status=submitted which doesn't exist",
+      "severity": "high",
+      "type": "broken_flow",
+      "file_path": "frontend/src/app/patient/new-consultation/page.tsx",
+      "line": null,
+      "agent": "Flow Navigator Agent",
+      "tags": [
+        "navigation",
+        "broken-link"
+      ],
+      "suggested_fix": "Either create the target page /patient/dashboard?tab=consultations&status=submitted or fix the link",
+      "dependencies": [],
+      "code_snippet": ""
+    },
+    {
+      "title": "Broken navigation link",
+      "description": "Page /patient/login links to /patient/register which doesn't exist",
+      "severity": "high",
+      "type": "broken_flow",
+      "file_path": "frontend/src/app/patient/login/page.tsx",
+      "line": null,
+      "agent": "Flow Navigator Agent",
+      "tags": [
+        "navigation",
+        "broken-link"
+      ],
+      "suggested_fix": "Either create the target page /patient/register or fix the link",
+      "dependencies": [],
+      "code_snippet": ""
+    },
+    {
+      "title": "Broken navigation link",
+      "description": "Page /patient/login links to /provider/login which doesn't exist",
+      "severity": "high",
+      "type": "broken_flow",
+      "file_path": "frontend/src/app/patient/login/page.tsx",
+      "line": null,
+      "agent": "Flow Navigator Agent",
+      "tags": [
+        "navigation",
+        "broken-link"
+      ],
+      "suggested_fix": "Either create the target page /provider/login or fix the link",
+      "dependencies": [],
+      "code_snippet": ""
+    },
+    {
+      "title": "Broken navigation link",
+      "description": "Page /patient/login links to /admin/login which doesn't exist",
+      "severity": "high",
+      "type": "broken_flow",
+      "file_path": "frontend/src/app/patient/login/page.tsx",
+      "line": null,
+      "agent": "Flow Navigator Agent",
+      "tags": [
+        "navigation",
+        "broken-link"
+      ],
+      "suggested_fix": "Either create the target page /admin/login or fix the link",
+      "dependencies": [],
+      "code_snippet": ""
+    },
+    {
+      "title": "Broken navigation link",
+      "description": "Page /patient/refill-checkin links to /patient/new-consultation?type=refill-followup which doesn't exist",
+      "severity": "high",
+      "type": "broken_flow",
+      "file_path": "frontend/src/app/patient/refill-checkin/page.tsx",
+      "line": null,
+      "agent": "Flow Navigator Agent",
+      "tags": [
+        "navigation",
+        "broken-link"
+      ],
+      "suggested_fix": "Either create the target page /patient/new-consultation?type=refill-followup or fix the link",
+      "dependencies": [],
+      "code_snippet": ""
+    },
+    {
+      "title": "Broken navigation link",
+      "description": "Page /patient/refill-checkin links to /patient/dashboard?checkin=complete which doesn't exist",
+      "severity": "high",
+      "type": "broken_flow",
+      "file_path": "frontend/src/app/patient/refill-checkin/page.tsx",
+      "line": null,
+      "agent": "Flow Navigator Agent",
+      "tags": [
+        "navigation",
+        "broken-link"
+      ],
+      "suggested_fix": "Either create the target page /patient/dashboard?checkin=complete or fix the link",
+      "dependencies": [],
+      "code_snippet": ""
+    },
+    {
+      "title": "Broken navigation link",
+      "description": "Page /portal/patients links to /portal/patients/new which doesn't exist",
+      "severity": "high",
+      "type": "broken_flow",
+      "file_path": "frontend/src/app/portal/patients/page.tsx",
+      "line": null,
+      "agent": "Flow Navigator Agent",
+      "tags": [
+        "navigation",
+        "broken-link"
+      ],
+      "suggested_fix": "Either create the target page /portal/patients/new or fix the link",
+      "dependencies": [],
+      "code_snippet": ""
+    },
+    {
+      "title": "Broken navigation link",
+      "description": "Page /portal/messages links to /portal/messages/compose which doesn't exist",
+      "severity": "high",
+      "type": "broken_flow",
+      "file_path": "frontend/src/app/portal/messages/page.tsx",
+      "line": null,
+      "agent": "Flow Navigator Agent",
+      "tags": [
+        "navigation",
+        "broken-link"
+      ],
+      "suggested_fix": "Either create the target page /portal/messages/compose or fix the link",
+      "dependencies": [],
+      "code_snippet": ""
+    },
+    {
+      "title": "Broken navigation link",
+      "description": "Page /portal/providers links to /portal/providers/new which doesn't exist",
+      "severity": "high",
+      "type": "broken_flow",
+      "file_path": "frontend/src/app/portal/providers/page.tsx",
+      "line": null,
+      "agent": "Flow Navigator Agent",
+      "tags": [
+        "navigation",
+        "broken-link"
+      ],
+      "suggested_fix": "Either create the target page /portal/providers/new or fix the link",
+      "dependencies": [],
+      "code_snippet": ""
+    },
+    {
+      "title": "Broken navigation link",
+      "description": "Page /portal/orders links to /portal/orders/new which doesn't exist",
+      "severity": "high",
+      "type": "broken_flow",
+      "file_path": "frontend/src/app/portal/orders/page.tsx",
+      "line": null,
+      "agent": "Flow Navigator Agent",
+      "tags": [
+        "navigation",
+        "broken-link"
+      ],
+      "suggested_fix": "Either create the target page /portal/orders/new or fix the link",
+      "dependencies": [],
+      "code_snippet": ""
+    },
+    {
+      "title": "Broken navigation link",
+      "description": "Page /portal/checkin/[id] links to /portal/checkin-reviews which doesn't exist",
+      "severity": "high",
+      "type": "broken_flow",
+      "file_path": "frontend/src/app/portal/checkin/[id]/page.tsx",
+      "line": null,
+      "agent": "Flow Navigator Agent",
+      "tags": [
+        "navigation",
+        "broken-link"
+      ],
+      "suggested_fix": "Either create the target page /portal/checkin-reviews or fix the link",
+      "dependencies": [],
+      "code_snippet": ""
+    },
+    {
+      "title": "Controlled input missing onChange handler",
+      "description": "Input has value prop but no onChange handler, making it read-only",
+      "severity": "high",
+      "type": "state_issue",
+      "file_path": "frontend/src/app/portal/forms/page.tsx",
+      "line": 114,
+      "agent": "State Management Agent",
+      "tags": [
+        "input",
+        "controlled",
+        "onChange"
+      ],
+      "suggested_fix": "Add onChange handler to make input controllable",
+      "dependencies": [],
+      "code_snippet": "112:             required={question.required}\n113:           >\n>>> 114:             <option value=\"\">Select an option...</option>\n115:             {question.options?.map((option) => (\n116:               <option key={option} value={option}>{option}</option>"
+    },
+    {
+      "title": "Protected route missing authentication check",
+      "description": "Route /patient/messages appears to need protection but has no authentication check",
+      "severity": "high",
+      "type": "navigation_issue",
+      "file_path": "frontend/src/app/patient/messages/page.tsx",
+      "line": null,
+      "agent": "Route Guardian Agent",
+      "tags": [
+        "auth",
+        "protection",
+        "security"
+      ],
+      "suggested_fix": "Add authentication check to protect this route from unauthorized access",
+      "dependencies": [],
+      "code_snippet": ""
+    },
+    {
+      "title": "Protected route missing authentication check",
+      "description": "Route /patient/checkout appears to need protection but has no authentication check",
+      "severity": "high",
+      "type": "navigation_issue",
+      "file_path": "frontend/src/app/patient/checkout/page.tsx",
+      "line": null,
+      "agent": "Route Guardian Agent",
+      "tags": [
+        "auth",
+        "protection",
+        "security"
+      ],
+      "suggested_fix": "Add authentication check to protect this route from unauthorized access",
+      "dependencies": [],
+      "code_snippet": ""
+    },
+    {
+      "title": "Protected route missing authentication check",
+      "description": "Route /patient/subscription appears to need protection but has no authentication check",
+      "severity": "high",
+      "type": "navigation_issue",
+      "file_path": "frontend/src/app/patient/subscription/page.tsx",
+      "line": null,
+      "agent": "Route Guardian Agent",
+      "tags": [
+        "auth",
+        "protection",
+        "security"
+      ],
+      "suggested_fix": "Add authentication check to protect this route from unauthorized access",
+      "dependencies": [],
+      "code_snippet": ""
+    },
+    {
+      "title": "Protected route missing authentication check",
+      "description": "Route /patient/dashboard appears to need protection but has no authentication check",
+      "severity": "high",
+      "type": "navigation_issue",
+      "file_path": "frontend/src/app/patient/dashboard/page.tsx",
+      "line": null,
+      "agent": "Route Guardian Agent",
+      "tags": [
+        "auth",
+        "protection",
+        "security"
+      ],
+      "suggested_fix": "Add authentication check to protect this route from unauthorized access",
+      "dependencies": [],
+      "code_snippet": ""
+    },
+    {
+      "title": "Protected route missing authentication check",
+      "description": "Route /patient/profile appears to need protection but has no authentication check",
+      "severity": "high",
+      "type": "navigation_issue",
+      "file_path": "frontend/src/app/patient/profile/page.tsx",
+      "line": null,
+      "agent": "Route Guardian Agent",
+      "tags": [
+        "auth",
+        "protection",
+        "security"
+      ],
+      "suggested_fix": "Add authentication check to protect this route from unauthorized access",
+      "dependencies": [],
+      "code_snippet": ""
+    },
+    {
+      "title": "Protected route missing authentication check",
+      "description": "Route /patient/medical-records appears to need protection but has no authentication check",
+      "severity": "high",
+      "type": "navigation_issue",
+      "file_path": "frontend/src/app/patient/medical-records/page.tsx",
+      "line": null,
+      "agent": "Route Guardian Agent",
+      "tags": [
+        "auth",
+        "protection",
+        "security"
+      ],
+      "suggested_fix": "Add authentication check to protect this route from unauthorized access",
+      "dependencies": [],
+      "code_snippet": ""
+    },
+    {
+      "title": "Protected route missing authentication check",
+      "description": "Route /patient/health-quiz appears to need protection but has no authentication check",
+      "severity": "high",
+      "type": "navigation_issue",
+      "file_path": "frontend/src/app/patient/health-quiz/page.tsx",
+      "line": null,
+      "agent": "Route Guardian Agent",
+      "tags": [
+        "auth",
+        "protection",
+        "security"
+      ],
+      "suggested_fix": "Add authentication check to protect this route from unauthorized access",
+      "dependencies": [],
+      "code_snippet": ""
+    },
+    {
+      "title": "Protected route missing authentication check",
+      "description": "Route /patient/new-consultation appears to need protection but has no authentication check",
+      "severity": "high",
+      "type": "navigation_issue",
+      "file_path": "frontend/src/app/patient/new-consultation/page.tsx",
+      "line": null,
+      "agent": "Route Guardian Agent",
+      "tags": [
+        "auth",
+        "protection",
+        "security"
+      ],
+      "suggested_fix": "Add authentication check to protect this route from unauthorized access",
+      "dependencies": [],
+      "code_snippet": ""
+    },
+    {
+      "title": "Protected route missing authentication check",
+      "description": "Route /patient/orders appears to need protection but has no authentication check",
+      "severity": "high",
+      "type": "navigation_issue",
+      "file_path": "frontend/src/app/patient/orders/page.tsx",
+      "line": null,
+      "agent": "Route Guardian Agent",
+      "tags": [
+        "auth",
+        "protection",
+        "security"
+      ],
+      "suggested_fix": "Add authentication check to protect this route from unauthorized access",
+      "dependencies": [],
+      "code_snippet": ""
+    },
+    {
+      "title": "Protected route missing authentication check",
+      "description": "Route /patient/login appears to need protection but has no authentication check",
+      "severity": "high",
+      "type": "navigation_issue",
+      "file_path": "frontend/src/app/patient/login/page.tsx",
+      "line": null,
+      "agent": "Route Guardian Agent",
+      "tags": [
+        "auth",
+        "protection",
+        "security"
+      ],
+      "suggested_fix": "Add authentication check to protect this route from unauthorized access",
+      "dependencies": [],
+      "code_snippet": ""
+    },
+    {
+      "title": "Protected route missing authentication check",
+      "description": "Route /patient/help appears to need protection but has no authentication check",
+      "severity": "high",
+      "type": "navigation_issue",
+      "file_path": "frontend/src/app/patient/help/page.tsx",
+      "line": null,
+      "agent": "Route Guardian Agent",
+      "tags": [
+        "auth",
+        "protection",
+        "security"
+      ],
+      "suggested_fix": "Add authentication check to protect this route from unauthorized access",
+      "dependencies": [],
+      "code_snippet": ""
+    },
+    {
+      "title": "Protected route missing authentication check",
+      "description": "Route /patient/refill-checkin appears to need protection but has no authentication check",
+      "severity": "high",
+      "type": "navigation_issue",
+      "file_path": "frontend/src/app/patient/refill-checkin/page.tsx",
+      "line": null,
+      "agent": "Route Guardian Agent",
+      "tags": [
+        "auth",
+        "protection",
+        "security"
+      ],
+      "suggested_fix": "Add authentication check to protect this route from unauthorized access",
+      "dependencies": [],
+      "code_snippet": ""
+    },
+    {
+      "title": "Protected route missing authentication check",
+      "description": "Route /portal/patients appears to need protection but has no authentication check",
+      "severity": "high",
+      "type": "navigation_issue",
+      "file_path": "frontend/src/app/portal/patients/page.tsx",
+      "line": null,
+      "agent": "Route Guardian Agent",
+      "tags": [
+        "auth",
+        "protection",
+        "security"
+      ],
+      "suggested_fix": "Add authentication check to protect this route from unauthorized access",
+      "dependencies": [],
+      "code_snippet": ""
+    },
+    {
+      "title": "Protected route missing authentication check",
+      "description": "Route /portal/settings appears to need protection but has no authentication check",
+      "severity": "high",
+      "type": "navigation_issue",
+      "file_path": "frontend/src/app/portal/settings/page.tsx",
+      "line": null,
+      "agent": "Route Guardian Agent",
+      "tags": [
+        "auth",
+        "protection",
+        "security"
+      ],
+      "suggested_fix": "Add authentication check to protect this route from unauthorized access",
+      "dependencies": [],
+      "code_snippet": ""
+    },
+    {
+      "title": "Protected route missing authentication check",
+      "description": "Route /portal/pharmacy appears to need protection but has no authentication check",
+      "severity": "high",
+      "type": "navigation_issue",
+      "file_path": "frontend/src/app/portal/pharmacy/page.tsx",
+      "line": null,
+      "agent": "Route Guardian Agent",
+      "tags": [
+        "auth",
+        "protection",
+        "security"
+      ],
+      "suggested_fix": "Add authentication check to protect this route from unauthorized access",
+      "dependencies": [],
+      "code_snippet": ""
+    },
+    {
+      "title": "Protected route missing authentication check",
+      "description": "Route /portal/test-roles appears to need protection but has no authentication check",
+      "severity": "high",
+      "type": "navigation_issue",
+      "file_path": "frontend/src/app/portal/test-roles/page.tsx",
+      "line": null,
+      "agent": "Route Guardian Agent",
+      "tags": [
+        "auth",
+        "protection",
+        "security"
+      ],
+      "suggested_fix": "Add authentication check to protect this route from unauthorized access",
+      "dependencies": [],
+      "code_snippet": ""
+    },
+    {
+      "title": "Protected route missing authentication check",
+      "description": "Route /portal/messages appears to need protection but has no authentication check",
+      "severity": "high",
+      "type": "navigation_issue",
+      "file_path": "frontend/src/app/portal/messages/page.tsx",
+      "line": null,
+      "agent": "Route Guardian Agent",
+      "tags": [
+        "auth",
+        "protection",
+        "security"
+      ],
+      "suggested_fix": "Add authentication check to protect this route from unauthorized access",
+      "dependencies": [],
+      "code_snippet": ""
+    },
+    {
+      "title": "Protected route missing authentication check",
+      "description": "Route /portal/forms appears to need protection but has no authentication check",
+      "severity": "high",
+      "type": "navigation_issue",
+      "file_path": "frontend/src/app/portal/forms/page.tsx",
+      "line": null,
+      "agent": "Route Guardian Agent",
+      "tags": [
+        "auth",
+        "protection",
+        "security"
+      ],
+      "suggested_fix": "Add authentication check to protect this route from unauthorized access",
+      "dependencies": [],
+      "code_snippet": ""
+    },
+    {
+      "title": "Protected route missing authentication check",
+      "description": "Route /portal/medications appears to need protection but has no authentication check",
+      "severity": "high",
+      "type": "navigation_issue",
+      "file_path": "frontend/src/app/portal/medications/page.tsx",
+      "line": null,
+      "agent": "Route Guardian Agent",
+      "tags": [
+        "auth",
+        "protection",
+        "security"
+      ],
+      "suggested_fix": "Add authentication check to protect this route from unauthorized access",
+      "dependencies": [],
+      "code_snippet": ""
+    },
+    {
+      "title": "Protected route missing authentication check",
+      "description": "Route /portal/plans appears to need protection but has no authentication check",
+      "severity": "high",
+      "type": "navigation_issue",
+      "file_path": "frontend/src/app/portal/plans/page.tsx",
+      "line": null,
+      "agent": "Route Guardian Agent",
+      "tags": [
+        "auth",
+        "protection",
+        "security"
+      ],
+      "suggested_fix": "Add authentication check to protect this route from unauthorized access",
+      "dependencies": [],
+      "code_snippet": ""
+    },
+    {
+      "title": "Protected route missing authentication check",
+      "description": "Route /portal/providers appears to need protection but has no authentication check",
+      "severity": "high",
+      "type": "navigation_issue",
+      "file_path": "frontend/src/app/portal/providers/page.tsx",
+      "line": null,
+      "agent": "Route Guardian Agent",
+      "tags": [
+        "auth",
+        "protection",
+        "security"
+      ],
+      "suggested_fix": "Add authentication check to protect this route from unauthorized access",
+      "dependencies": [],
+      "code_snippet": ""
+    },
+    {
+      "title": "Protected route missing authentication check",
+      "description": "Route /portal/dashboard appears to need protection but has no authentication check",
+      "severity": "high",
+      "type": "navigation_issue",
+      "file_path": "frontend/src/app/portal/dashboard/page.tsx",
+      "line": null,
+      "agent": "Route Guardian Agent",
+      "tags": [
+        "auth",
+        "protection",
+        "security"
+      ],
+      "suggested_fix": "Add authentication check to protect this route from unauthorized access",
+      "dependencies": [],
+      "code_snippet": ""
+    },
+    {
+      "title": "Protected route missing authentication check",
+      "description": "Route /portal/consultations appears to need protection but has no authentication check",
+      "severity": "high",
+      "type": "navigation_issue",
+      "file_path": "frontend/src/app/portal/consultations/page.tsx",
+      "line": null,
+      "agent": "Route Guardian Agent",
+      "tags": [
+        "auth",
+        "protection",
+        "security"
+      ],
+      "suggested_fix": "Add authentication check to protect this route from unauthorized access",
+      "dependencies": [],
+      "code_snippet": ""
+    },
+    {
+      "title": "Protected route missing authentication check",
+      "description": "Route /portal/orders appears to need protection but has no authentication check",
+      "severity": "high",
+      "type": "navigation_issue",
+      "file_path": "frontend/src/app/portal/orders/page.tsx",
+      "line": null,
+      "agent": "Route Guardian Agent",
+      "tags": [
+        "auth",
+        "protection",
+        "security"
+      ],
+      "suggested_fix": "Add authentication check to protect this route from unauthorized access",
+      "dependencies": [],
+      "code_snippet": ""
+    },
+    {
+      "title": "Protected route missing authentication check",
+      "description": "Route /portal/protocols appears to need protection but has no authentication check",
+      "severity": "high",
+      "type": "navigation_issue",
+      "file_path": "frontend/src/app/portal/protocols/page.tsx",
+      "line": null,
+      "agent": "Route Guardian Agent",
+      "tags": [
+        "auth",
+        "protection",
+        "security"
+      ],
+      "suggested_fix": "Add authentication check to protect this route from unauthorized access",
+      "dependencies": [],
+      "code_snippet": ""
+    },
+    {
+      "title": "Protected route missing authentication check",
+      "description": "Route /portal/login appears to need protection but has no authentication check",
+      "severity": "high",
+      "type": "navigation_issue",
+      "file_path": "frontend/src/app/portal/login/page.tsx",
+      "line": null,
+      "agent": "Route Guardian Agent",
+      "tags": [
+        "auth",
+        "protection",
+        "security"
+      ],
+      "suggested_fix": "Add authentication check to protect this route from unauthorized access",
+      "dependencies": [],
+      "code_snippet": ""
+    },
+    {
+      "title": "Protected route missing authentication check",
+      "description": "Route /portal/analytics appears to need protection but has no authentication check",
+      "severity": "high",
+      "type": "navigation_issue",
+      "file_path": "frontend/src/app/portal/analytics/page.tsx",
+      "line": null,
+      "agent": "Route Guardian Agent",
+      "tags": [
+        "auth",
+        "protection",
+        "security"
+      ],
+      "suggested_fix": "Add authentication check to protect this route from unauthorized access",
+      "dependencies": [],
+      "code_snippet": ""
+    },
+    {
+      "title": "Protected route missing authentication check",
+      "description": "Route /portal/checkin/[id] appears to need protection but has no authentication check",
+      "severity": "high",
+      "type": "navigation_issue",
+      "file_path": "frontend/src/app/portal/checkin/[id]/page.tsx",
+      "line": null,
+      "agent": "Route Guardian Agent",
+      "tags": [
+        "auth",
+        "protection",
+        "security"
+      ],
+      "suggested_fix": "Add authentication check to protect this route from unauthorized access",
+      "dependencies": [],
+      "code_snippet": ""
+    },
+    {
+      "title": "Protected route missing authentication check",
+      "description": "Route /portal/patient/[id] appears to need protection but has no authentication check",
+      "severity": "high",
+      "type": "navigation_issue",
+      "file_path": "frontend/src/app/portal/patient/[id]/page.tsx",
+      "line": null,
+      "agent": "Route Guardian Agent",
+      "tags": [
+        "auth",
+        "protection",
+        "security"
+      ],
+      "suggested_fix": "Add authentication check to protect this route from unauthorized access",
+      "dependencies": [],
+      "code_snippet": ""
+    },
+    {
+      "title": "Protected route missing authentication check",
+      "description": "Route /portal/consultation/[id] appears to need protection but has no authentication check",
+      "severity": "high",
+      "type": "navigation_issue",
+      "file_path": "frontend/src/app/portal/consultation/[id]/page.tsx",
+      "line": null,
+      "agent": "Route Guardian Agent",
+      "tags": [
+        "auth",
+        "protection",
+        "security"
+      ],
+      "suggested_fix": "Add authentication check to protect this route from unauthorized access",
+      "dependencies": [],
+      "code_snippet": ""
+    }
+  ],
+  "impact_summary": {
+    "critical_impact": "1 form is completely non-functional - users cannot submit data",
+    "high_impact": "15 broken navigation links (11 Type 3 missing pages + 4 Type 1 parameter handling), 1 non-functional form input, and 29 routes missing security protection",
+    "total_high_priority_issues": 28,
+    "immediate_action_required": true,
+    "type_breakdown": {
+      "type_1_parameter_handling": 4,
+      "type_3_missing_pages": 11,
+      "authentication_issues": 1,
+      "route_security_issues": 29,
+      "form_functionality_issues": 2
+    },
+    "corrected_analysis_note": "Type 2 errors (anchor fragments /#conditions, /#how-it-works) removed as they will be replaced with custom landing pages"
+  }
+}
