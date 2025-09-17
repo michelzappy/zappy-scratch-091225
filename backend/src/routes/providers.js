@@ -20,6 +20,128 @@ const handleValidationErrors = (req, res, next) => {
   next();
 };
 
+// Public routes (no auth required) - for frontend compatibility
+
+// Get all providers (public list for patient selection)
+router.get('/',
+  [
+    query('limit').optional().isInt({ min: 1, max: 100 }),
+    query('offset').optional().isInt({ min: 0 }),
+    query('specialty').optional().isString(),
+    query('state').optional().isString()
+  ],
+  handleValidationErrors,
+  asyncHandler(async (req, res) => {
+    const db = getDatabase();
+    const { limit = 20, offset = 0, specialty, state } = req.query;
+
+    let whereConditions = ["status = 'active'", "is_available = true"];
+    let params = [];
+    let paramIndex = 1;
+
+    if (specialty) {
+      whereConditions.push(`specialties::text ILIKE $${paramIndex}`);
+      params.push(`%${specialty}%`);
+      paramIndex++;
+    }
+
+    if (state) {
+      whereConditions.push(`states_licensed @> ARRAY[$${paramIndex}]`);
+      params.push(state);
+      paramIndex++;
+    }
+
+    const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+
+    const providers = await db.query(`
+      SELECT 
+        id, first_name, last_name, bio, specialties, states_licensed,
+        years_experience, education, rating, total_reviews,
+        created_at, is_available,
+        CASE WHEN profile_image IS NOT NULL THEN profile_image ELSE NULL END as profile_image
+      FROM providers
+      ${whereClause}
+      ORDER BY rating DESC, total_reviews DESC
+      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+    `, [...params, limit, offset]);
+
+    res.json({
+      success: true,
+      data: providers.rows || []
+    });
+  })
+);
+
+// Get provider by ID (public info)
+router.get('/:id',
+  [
+    param('id').isUUID().withMessage('Valid provider ID required')
+  ],
+  handleValidationErrors,
+  asyncHandler(async (req, res) => {
+    const db = getDatabase();
+    
+    const result = await db.query(`
+      SELECT 
+        id, first_name, last_name, bio, specialties, states_licensed,
+        years_experience, education, rating, total_reviews, created_at,
+        CASE WHEN profile_image IS NOT NULL THEN profile_image ELSE NULL END as profile_image,
+        is_available, status
+      FROM providers
+      WHERE id = $1 AND status = 'active'
+    `, [req.params.id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ 
+        error: 'Provider not found',
+        success: false
+      });
+    }
+
+    res.json({
+      success: true,
+      data: result.rows[0]
+    });
+  })
+);
+
+// Get provider's consultations (public stats)
+router.get('/:id/consultations',
+  [
+    param('id').isUUID().withMessage('Valid provider ID required'),
+    query('limit').optional().isInt({ min: 1, max: 50 })
+  ],
+  handleValidationErrors,
+  asyncHandler(async (req, res) => {
+    const db = getDatabase();
+    const { limit = 10 } = req.query;
+    
+    // Get basic consultation statistics (no sensitive data)
+    const stats = await db.query(`
+      SELECT 
+        COUNT(*) as total_consultations,
+        COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_consultations,
+        AVG(CASE WHEN completed_at IS NOT NULL AND assigned_at IS NOT NULL 
+            THEN EXTRACT(EPOCH FROM (completed_at - assigned_at))/3600 
+            ELSE NULL END) as avg_completion_hours,
+        AVG(rating) as avg_rating,
+        COUNT(CASE WHEN DATE(created_at) >= CURRENT_DATE - INTERVAL '30 days' THEN 1 END) as consultations_last_30_days
+      FROM consultations
+      WHERE provider_id = $1
+    `, [req.params.id]);
+
+    res.json({
+      success: true,
+      data: {
+        statistics: stats.rows[0] || {},
+        message: "Detailed consultation data is private"
+      }
+    });
+  })
+);
+
+// Protected provider routes (require authentication)
+
 // Get current provider profile
 router.get('/me',
   requireAuth,

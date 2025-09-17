@@ -1,4 +1,5 @@
 import express from 'express';
+import crypto from 'crypto';
 import { getDatabase } from '../config/database.js';
 import emailService from '../services/email.service.js';
 import smsService from '../services/sms.service.js';
@@ -8,9 +9,35 @@ const router = express.Router();
 // SendGrid webhook for email events
 router.post('/sendgrid/events', express.raw({ type: 'application/json' }), async (req, res) => {
   try {
-    // Verify webhook signature (optional but recommended)
+    // Verify webhook signature - REQUIRED for security
     const signature = req.headers['x-twilio-email-event-webhook-signature'];
     const timestamp = req.headers['x-twilio-email-event-webhook-timestamp'];
+    const publicKey = process.env.SENDGRID_WEBHOOK_PUBLIC_KEY;
+    
+    if (!signature || !timestamp || !publicKey) {
+      console.error('SendGrid webhook: Missing signature, timestamp, or public key');
+      return res.status(401).send('Unauthorized');
+    }
+    
+    // Verify signature using SendGrid's verification method
+    const payload = timestamp + req.body.toString();
+    const expectedSignature = crypto
+      .createHmac('sha256', publicKey)
+      .update(payload, 'utf8')
+      .digest('base64');
+    
+    if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature))) {
+      console.error('SendGrid webhook: Invalid signature');
+      return res.status(401).send('Unauthorized');
+    }
+    
+    // Check timestamp to prevent replay attacks (within 10 minutes)
+    const now = Math.floor(Date.now() / 1000);
+    const webhookTimestamp = parseInt(timestamp);
+    if (Math.abs(now - webhookTimestamp) > 600) {
+      console.error('SendGrid webhook: Request too old');
+      return res.status(401).send('Request too old');
+    }
     
     // Parse events (convert Buffer to string first)
     const events = JSON.parse(req.body.toString());

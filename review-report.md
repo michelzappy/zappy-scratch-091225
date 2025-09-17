@@ -1,7 +1,7 @@
 # Multi-agent Review Report
 
 ## Summary
-Info: 3 | High: 18 | Medium: 44 | Low: 2
+Info: 3 | Medium: 44 | Low: 2 | High: 12
 
 ### Automation Commands
 - **Backend**: npm run lint, npm run test
@@ -21,20 +21,10 @@ Info: 3 | High: 18 | Medium: 44 | Low: 2
   - npm run lint, npm run test, npm run type-check
 
 ### Backend API Reviewer
-- **HIGH** Route missing authentication guard (`backend/src/routes/messages.js`) [#auth #backend]
-  - The router mounted at `/api/messages` does not reference `requireAuth` or `requireRole`. Attach role-aware middleware so protected resources cannot be accessed anonymously.
-- **HIGH** Route missing authentication guard (`backend/src/routes/provider-consultations.js`) [#auth #backend]
-  - The router mounted at `/api/provider/consultations` does not reference `requireAuth` or `requireRole`. Attach role-aware middleware so protected resources cannot be accessed anonymously.
-- **HIGH** Route missing authentication guard (`backend/src/routes/orders.js`) [#auth #backend]
-  - The router mounted at `/api/orders` does not reference `requireAuth` or `requireRole`. Attach role-aware middleware so protected resources cannot be accessed anonymously.
-- **HIGH** Route missing authentication guard (`backend/src/routes/files.js`) [#auth #backend]
-  - The router mounted at `/api/files` does not reference `requireAuth` or `requireRole`. Attach role-aware middleware so protected resources cannot be accessed anonymously.
-- **MEDIUM** Placeholder implementation in API route (`backend/src/routes/files.js`:12) [#todo #backend]
+- **MEDIUM** Placeholder implementation in API route (`backend/src/routes/files.js`:14) [#todo #backend]
   - Replace the placeholder response with production logic for file uploads and retrieval.
-- **MEDIUM** Placeholder implementation in API route (`backend/src/routes/files.js`:22) [#todo #backend]
+- **MEDIUM** Placeholder implementation in API route (`backend/src/routes/files.js`:25) [#todo #backend]
   - Replace the placeholder response with production logic for file uploads and retrieval.
-- **HIGH** Route missing authentication guard (`backend/src/routes/treatment-plans.js`) [#auth #backend]
-  - The router mounted at `/api/treatment-plans` does not reference `requireAuth` or `requireRole`. Attach role-aware middleware so protected resources cannot be accessed anonymously.
 
 ### Database Integrity
 - **MEDIUM** user_sessions table lacks foreign key constraint (`database/init.sql`:99) [#database #integrity]
@@ -153,7 +143,5 @@ Info: 3 | High: 18 | Medium: 44 | Low: 2
   - Indexed 15 Express router modules, 7 services, 33 SQL tables, and 23 frontend API endpoints for downstream agents.
 
 ### Security & Compliance
-- **HIGH** Raw webhook payload parsed without Buffer conversion (`backend/src/routes/webhooks.js`:16) [#security #webhook]
-  - The handler uses `express.raw` but parses `req.body` without converting the Buffer to a string. Call `JSON.parse(req.body.toString())` to avoid runtime crashes.
 - **MEDIUM** Webhook signature captured but never validated (`backend/src/routes/webhooks.js`:11) [#security #webhook]
   - The SendGrid webhook stores the `signature` header yet never verifies it. Use the official verification helper to prevent forged requests.

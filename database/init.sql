@@ -95,7 +95,7 @@ CREATE TABLE IF NOT EXISTS treatment_plans (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- User sessions table
+-- User sessions table with proper constraints
 CREATE TABLE IF NOT EXISTS user_sessions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL,
@@ -105,7 +105,14 @@ CREATE TABLE IF NOT EXISTS user_sessions (
     user_agent TEXT,
     last_activity TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    
+    -- Add constraint to ensure user_id references the appropriate table based on user_type
+    CONSTRAINT valid_user_session CHECK (
+        (user_type = 'patient' AND EXISTS (SELECT 1 FROM patients WHERE id = user_id)) OR
+        (user_type = 'provider' AND EXISTS (SELECT 1 FROM providers WHERE id = user_id)) OR
+        (user_type = 'admin' AND user_id IS NOT NULL)
+    )
 );
 
 -- Create indexes for better performance
@@ -135,13 +142,5 @@ CREATE TRIGGER update_providers_updated_at BEFORE UPDATE ON providers FOR EACH R
 CREATE TRIGGER update_consultations_updated_at BEFORE UPDATE ON consultations FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_treatment_plans_updated_at BEFORE UPDATE ON treatment_plans FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
--- Insert sample data for testing
-INSERT INTO patients (id, first_name, last_name, email, date_of_birth) VALUES
-    ('11111111-1111-1111-1111-111111111111', 'John', 'Doe', 'john.doe@example.com', '1985-05-15'),
-    ('22222222-2222-2222-2222-222222222222', 'Jane', 'Smith', 'jane.smith@example.com', '1990-08-22')
-ON CONFLICT (id) DO NOTHING;
-
-INSERT INTO providers (id, user_id, first_name, last_name, email, specialties) VALUES
-    ('33333333-3333-3333-3333-333333333333', '44444444-4444-4444-4444-444444444444', 'Dr. Sarah', 'Johnson', 'dr.johnson@example.com', ARRAY['General Medicine', 'Pediatrics']),
-    ('55555555-5555-5555-5555-555555555555', '66666666-6666-6666-6666-666666666666', 'Dr. Michael', 'Brown', 'dr.brown@example.com', ARRAY['General Medicine', 'Dermatology'])
-ON CONFLICT (id) DO NOTHING;
+-- Sample data removed for production security
+-- Use separate seed scripts for development/testing environments if needed

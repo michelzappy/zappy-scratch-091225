@@ -211,6 +211,123 @@ router.get('/:id',
   })
 );
 
+// Get consultations for a specific patient
+router.get('/patient/:patientId',
+  requireAuth,
+  [
+    param('patientId').isUUID().withMessage('Valid patient ID required'),
+    query('status').optional().isIn(['pending', 'assigned', 'completed', 'cancelled']),
+    query('limit').optional().isInt({ min: 1, max: 100 }),
+    query('offset').optional().isInt({ min: 0 })
+  ],
+  handleValidationErrors,
+  asyncHandler(async (req, res) => {
+    const db = getDatabase();
+    const { patientId } = req.params;
+    const { status, limit = 20, offset = 0 } = req.query;
+
+    // Check access permissions
+    if (req.user.role === 'patient' && req.user.id !== patientId) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    let whereConditions = ['c.patient_id = $1'];
+    let params = [patientId];
+    let paramIndex = 2;
+
+    if (status) {
+      whereConditions.push(`c.status = $${paramIndex}`);
+      params.push(status);
+      paramIndex++;
+    }
+
+    const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+
+    const result = await db.query(`
+      SELECT 
+        c.*, 
+        p.first_name as patient_first_name,
+        p.last_name as patient_last_name,
+        pr.first_name as provider_first_name,
+        pr.last_name as provider_last_name
+      FROM consultations c
+      LEFT JOIN patients p ON c.patient_id = p.id
+      LEFT JOIN providers pr ON c.provider_id = pr.id
+      ${whereClause}
+      ORDER BY c.created_at DESC
+      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+    `, [...params, limit, offset]);
+
+    // Parse JSON fields
+    const consultationsList = result.rows.map(consultation => {
+      if (consultation.attachments) {
+        consultation.attachments = JSON.parse(consultation.attachments);
+      }
+      if (consultation.prescription_data) {
+        consultation.prescription_data = JSON.parse(consultation.prescription_data);
+      }
+      return consultation;
+    });
+
+    res.json({
+      success: true,
+      data: consultationsList,
+      total: consultationsList.length
+    });
+  })
+);
+
+// Get provider consultation queue
+router.get('/provider/queue',
+  requireAuth,
+  requireRole('provider'),
+  [
+    query('limit').optional().isInt({ min: 1, max: 50 }),
+    query('offset').optional().isInt({ min: 0 })
+  ],
+  handleValidationErrors,
+  asyncHandler(async (req, res) => {
+    const db = getDatabase();
+    const { limit = 20, offset = 0 } = req.query;
+
+    const result = await db.query(`
+      SELECT 
+        c.*,
+        p.first_name as patient_first_name,
+        p.last_name as patient_last_name,
+        p.date_of_birth as patient_dob,
+        p.gender as patient_gender,
+        EXTRACT(YEAR FROM AGE(p.date_of_birth)) as patient_age,
+        EXTRACT(EPOCH FROM (NOW() - c.created_at))/60 as wait_time_minutes,
+        p.subscription_status,
+        CASE WHEN c.attachments IS NOT NULL AND c.attachments != '[]' THEN true ELSE false END as has_attachments
+      FROM consultations c
+      JOIN patients p ON c.patient_id = p.id
+      WHERE c.status = 'pending'
+      ORDER BY c.created_at ASC
+      LIMIT $1 OFFSET $2
+    `, [limit, offset]);
+
+    // Parse JSON fields
+    const queueList = result.rows.map(consultation => {
+      if (consultation.attachments) {
+        try {
+          consultation.attachments = JSON.parse(consultation.attachments);
+        } catch (e) {
+          consultation.attachments = [];
+        }
+      }
+      return consultation;
+    });
+
+    res.json({
+      success: true,
+      data: queueList,
+      total: queueList.length
+    });
+  })
+);
+
 // List consultations with filters
 router.get('/',
   [

@@ -683,4 +683,133 @@ router.get('/me',
   })
 );
 
+// Alias for frontend compatibility - GET /api/auth/profile
+router.get('/profile', router.stack[router.stack.length - 1].route.stack[0].handle);
+
+// Universal login endpoint for frontend compatibility
+router.post('/login',
+  [
+    body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
+    body('password').notEmpty().withMessage('Password is required'),
+    body('userType').optional().isIn(['patient', 'provider', 'admin']).withMessage('Valid user type')
+  ],
+  handleValidationErrors,
+  asyncHandler(async (req, res) => {
+    const { email, password, userType = 'patient' } = req.body;
+    const db = getDatabase();
+
+    let user = null;
+    let role = null;
+    let tableName = '';
+
+    // Determine which table to check based on userType or email domain
+    if (userType === 'admin' || email.includes('@admin.')) {
+      tableName = 'admins';
+      role = ROLES.ADMIN;
+    } else if (userType === 'provider' || email.includes('@provider.')) {
+      tableName = 'providers';
+      role = ROLES.PROVIDER;
+    } else {
+      tableName = 'patients';
+      role = ROLES.PATIENT;
+    }
+
+    // Get user data
+    let query = '';
+    switch (tableName) {
+      case 'patients':
+        query = `
+          SELECT 
+            id, email, password_hash, first_name, last_name,
+            phone, date_of_birth, email_verified, 
+            subscription_status, created_at
+          FROM patients 
+          WHERE email = $1
+        `;
+        break;
+      case 'providers':
+        query = `
+          SELECT 
+            id, email, password_hash, first_name, last_name,
+            license_number, npi_number, specialties, states_licensed,
+            status, email_verified, created_at
+          FROM providers 
+          WHERE email = $1
+        `;
+        break;
+      case 'admins':
+        query = `
+          SELECT 
+            id, email, password_hash, first_name, last_name,
+            role, permissions, two_factor_enabled, 
+            two_factor_secret, status, created_at
+          FROM admins 
+          WHERE email = $1
+        `;
+        break;
+    }
+
+    const result = await db.query(query, [email]);
+
+    if (result.rows.length === 0) {
+      throw new AppError('Invalid email or password', 401, 'INVALID_CREDENTIALS');
+    }
+
+    user = result.rows[0];
+
+    // Check account status for providers and admins
+    if ((role === ROLES.PROVIDER || role === ROLES.ADMIN) && user.status !== 'active') {
+      throw new AppError(`${role} account is not active`, 403, 'ACCOUNT_INACTIVE');
+    }
+
+    // Verify password
+    const isValidPassword = await bcrypt.compare(password, user.password_hash || '');
+    if (!isValidPassword) {
+      throw new AppError('Invalid email or password', 401, 'INVALID_CREDENTIALS');
+    }
+
+    // Generate tokens
+    const tokens = generateTokens({
+      id: user.id,
+      email: user.email,
+      role: role,
+      metadata: {
+        firstName: user.first_name,
+        lastName: user.last_name,
+        ...(role === ROLES.PATIENT && { subscriptionStatus: user.subscription_status }),
+        ...(role === ROLES.PROVIDER && { 
+          licenseNumber: user.license_number,
+          statesLicensed: user.states_licensed 
+        }),
+        ...(role === ROLES.ADMIN && { permissions: user.permissions })
+      },
+      verified: user.email_verified || role === ROLES.ADMIN,
+      created_at: user.created_at
+    });
+
+    // Update last login
+    await db.query(
+      `UPDATE ${tableName} SET last_login = NOW() WHERE id = $1`,
+      [user.id]
+    );
+
+    res.json({
+      success: true,
+      data: {
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.first_name,
+          lastName: user.last_name,
+          role: role,
+          verified: user.email_verified || role === ROLES.ADMIN,
+          ...(role === ROLES.PATIENT && { subscriptionStatus: user.subscription_status }),
+          ...(role === ROLES.PROVIDER && { licenseNumber: user.license_number })
+        },
+        ...tokens
+      }
+    });
+  })
+);
+
 export default router;

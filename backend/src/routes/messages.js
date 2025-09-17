@@ -83,4 +83,88 @@ router.get('/consultation/:consultationId',
   })
 );
 
+// Get unread message count for user
+router.get('/unread-count',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const db = getDatabase();
+    
+    let unreadCount = 0;
+    
+    try {
+      // Get unread count based on user role
+      if (req.user.role === 'patient') {
+        // For patients, count unread messages from providers in their consultations
+        const result = await db.query(`
+          SELECT COUNT(*) as count
+          FROM messages m
+          JOIN consultations c ON m.consultation_id = c.id
+          WHERE c.patient_id = $1 
+          AND m.sender_type = 'provider'
+          AND m.is_read = false
+        `, [req.user.id]);
+        unreadCount = parseInt(result.rows[0]?.count || 0);
+      } else if (req.user.role === 'provider') {
+        // For providers, count unread messages from patients in their consultations
+        const result = await db.query(`
+          SELECT COUNT(*) as count
+          FROM messages m
+          JOIN consultations c ON m.consultation_id = c.id
+          WHERE c.provider_id = $1 
+          AND m.sender_type = 'patient'
+          AND m.is_read = false
+        `, [req.user.id]);
+        unreadCount = parseInt(result.rows[0]?.count || 0);
+      }
+    } catch (error) {
+      console.error('Error getting unread count:', error);
+      // Return 0 if there's an error
+      unreadCount = 0;
+    }
+
+    res.json({
+      success: true,
+      data: {
+        unreadCount: unreadCount
+      }
+    });
+  })
+);
+
+// Mark consultation messages as read
+router.post('/consultation/:consultationId/read',
+  requireAuth,
+  [
+    param('consultationId').isUUID().withMessage('Invalid consultation ID')
+  ],
+  handleValidationErrors,
+  asyncHandler(async (req, res) => {
+    const db = getDatabase();
+    
+    try {
+      // Mark messages as read based on user role
+      let senderType = req.user.role === 'patient' ? 'provider' : 'patient';
+      
+      await db.query(`
+        UPDATE messages 
+        SET is_read = true 
+        WHERE consultation_id = $1 
+        AND sender_type = $2
+        AND is_read = false
+      `, [req.params.consultationId, senderType]);
+
+      res.json({
+        success: true,
+        message: 'Messages marked as read'
+      });
+    } catch (error) {
+      console.error('Error marking messages as read:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to mark messages as read'
+      });
+    }
+  })
+);
+
 export default router;

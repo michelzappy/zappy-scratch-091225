@@ -3,6 +3,50 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+// Schema validation for AI responses
+const validateAssessmentSchema = (data) => {
+  const required = ['diagnosis', 'assessment'];
+  const errors = [];
+  
+  if (typeof data !== 'object' || data === null) {
+    errors.push('Response must be an object');
+    return { isValid: false, errors };
+  }
+  
+  required.forEach(field => {
+    if (!data[field] || typeof data[field] !== 'string' || data[field].trim().length === 0) {
+      errors.push(`Field '${field}' is required and must be a non-empty string`);
+    }
+  });
+  
+  if (data.differentialDiagnosis && !Array.isArray(data.differentialDiagnosis)) {
+    errors.push('differentialDiagnosis must be an array if provided');
+  }
+  
+  return { isValid: errors.length === 0, errors };
+};
+
+const validateMedicationSchema = (data) => {
+  const errors = [];
+  
+  if (typeof data !== 'object' || data === null) {
+    errors.push('Response must be an object');
+    return { isValid: false, errors };
+  }
+  
+  if (data.medications && !Array.isArray(data.medications)) {
+    errors.push('medications must be an array if provided');
+  } else if (data.medications) {
+    data.medications.forEach((med, index) => {
+      if (typeof med !== 'object' || !med.name || !med.dose) {
+        errors.push(`Medication at index ${index} must have name and dose fields`);
+      }
+    });
+  }
+  
+  return { isValid: errors.length === 0, errors };
+};
+
 class AIConsultationService {
   constructor() {
     // Initialize OpenAI client when API key is provided
@@ -69,11 +113,19 @@ class AIConsultationService {
         response_format: { type: 'json_object' }
       });
 
-      const result = JSON.parse(response.choices[0].message.content);
+      const rawResult = JSON.parse(response.choices[0].message.content);
+      
+      // Validate AI response schema
+      const validation = validateAssessmentSchema(rawResult);
+      if (!validation.isValid) {
+        console.error('AI assessment validation failed:', validation.errors);
+        return this.getMockAssessment(consultationData);
+      }
+      
       return {
-        diagnosis: result.diagnosis,
-        assessment: result.assessment,
-        differentialDiagnosis: result.differentialDiagnosis || []
+        diagnosis: rawResult.diagnosis,
+        assessment: rawResult.assessment,
+        differentialDiagnosis: rawResult.differentialDiagnosis || []
       };
     } catch (error) {
       console.error('OpenAI API error:', error);
@@ -103,8 +155,11 @@ class AIConsultationService {
         3. Clearly outline the treatment plan and medications
         4. Include important instructions and expectations
         5. End with encouragement and next steps
+        6. MUST include medical disclaimer that this is AI-assisted and requires provider review
+        7. MUST include instruction to contact provider for concerns
         
         Keep it under 300 words and use a friendly, professional tone.
+        Include this medical disclaimer: "This message contains AI-assisted recommendations and must be reviewed by a licensed healthcare provider before implementation."
       `;
 
       const response = await this.openai.chat.completions.create({
@@ -123,7 +178,16 @@ class AIConsultationService {
         max_tokens: 500
       });
 
-      return response.choices[0].message.content;
+      const patientMessage = response.choices[0].message.content;
+      
+      // Add compliance disclaimer if not already present
+      const disclaimerText = "\n\n⚠️ IMPORTANT MEDICAL DISCLAIMER: This message contains AI-assisted recommendations that must be reviewed and approved by a licensed healthcare provider before implementation. This information is not a substitute for professional medical advice. Please contact your healthcare provider immediately if you have concerns about your condition or treatment.";
+      
+      if (!patientMessage.toLowerCase().includes('disclaimer') && !patientMessage.toLowerCase().includes('ai-assisted')) {
+        return patientMessage + disclaimerText;
+      }
+      
+      return patientMessage;
     } catch (error) {
       console.error('OpenAI API error:', error);
       return this.getMockPatientMessage(diagnosis, plan, patientName);
@@ -174,7 +238,16 @@ class AIConsultationService {
         response_format: { type: 'json_object' }
       });
 
-      return JSON.parse(response.choices[0].message.content);
+      const rawResult = JSON.parse(response.choices[0].message.content);
+      
+      // Validate medication recommendations schema
+      const validation = validateMedicationSchema(rawResult);
+      if (!validation.isValid) {
+        console.error('AI medication validation failed:', validation.errors);
+        return this.getMockMedicationRecommendations(diagnosis);
+      }
+      
+      return rawResult;
     } catch (error) {
       console.error('OpenAI API error:', error);
       return this.getMockMedicationRecommendations(diagnosis);

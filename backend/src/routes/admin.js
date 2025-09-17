@@ -395,4 +395,130 @@ router.get('/analytics/summary',
   })
 );
 
+// Dashboard endpoint for admin overview
+router.get('/dashboard',
+  requireAuth,
+  requireRole('admin'),
+  asyncHandler(async (req, res) => {
+    const db = getDatabase();
+    
+    try {
+      // Get dashboard statistics
+      const stats = await db.query(`
+        SELECT 
+          (SELECT COUNT(*) FROM patients) as total_patients,
+          (SELECT COUNT(*) FROM providers WHERE status = 'active') as active_providers,
+          (SELECT COUNT(*) FROM consultations WHERE status = 'pending') as pending_consultations,
+          (SELECT COUNT(*) FROM consultations WHERE DATE(created_at) = CURRENT_DATE) as today_consultations,
+          (SELECT COUNT(*) FROM consultations WHERE status = 'completed' AND DATE(completed_at) >= CURRENT_DATE - INTERVAL '7 days') as weekly_completed,
+          (SELECT SUM(total_amount) FROM orders WHERE status = 'completed' AND DATE(created_at) >= CURRENT_DATE - INTERVAL '30 days') as monthly_revenue,
+          (SELECT COUNT(*) FROM patients WHERE DATE(created_at) >= CURRENT_DATE - INTERVAL '7 days') as new_patients_week,
+          (SELECT COUNT(*) FROM orders WHERE status = 'processing') as pending_orders
+      `);
+
+      const dashboardData = stats.rows[0] || {};
+      
+      // Get recent activity
+      const recentActivity = await db.query(`
+        SELECT 
+          'consultation' as type,
+          c.id,
+          c.chief_complaint as description,
+          c.created_at,
+          p.first_name || ' ' || p.last_name as patient_name
+        FROM consultations c
+        JOIN patients p ON c.patient_id = p.id
+        ORDER BY c.created_at DESC
+        LIMIT 10
+      `);
+
+      res.json({
+        success: true,
+        data: {
+          statistics: dashboardData,
+          recentActivity: recentActivity.rows || []
+        }
+      });
+    } catch (error) {
+      console.error('Dashboard error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to load dashboard data'
+      });
+    }
+  })
+);
+
+// Audit logs endpoint
+router.get('/audit-logs',
+  requireAuth,
+  requireRole('admin'),
+  [
+    query('limit').optional().isInt({ min: 1, max: 100 }),
+    query('offset').optional().isInt({ min: 0 }),
+    query('action').optional().isString(),
+    query('userId').optional().isUUID()
+  ],
+  handleValidationErrors,
+  asyncHandler(async (req, res) => {
+    const db = getDatabase();
+    const { limit = 50, offset = 0, action, userId } = req.query;
+    
+    try {
+      let whereConditions = [];
+      let params = [];
+      let paramIndex = 1;
+
+      if (action) {
+        whereConditions.push(`action ILIKE $${paramIndex}`);
+        params.push(`%${action}%`);
+        paramIndex++;
+      }
+
+      if (userId) {
+        whereConditions.push(`user_id = $${paramIndex}`);
+        params.push(userId);
+        paramIndex++;
+      }
+
+      const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+
+      const result = await db.query(`
+        SELECT 
+          al.*,
+          CASE 
+            WHEN al.user_role = 'patient' THEN p.first_name || ' ' || p.last_name
+            WHEN al.user_role = 'provider' THEN pr.first_name || ' ' || pr.last_name
+            WHEN al.user_role = 'admin' THEN a.first_name || ' ' || a.last_name
+            ELSE 'Unknown User'
+          END as user_name
+        FROM audit_logs al
+        LEFT JOIN patients p ON al.user_id = p.id AND al.user_role = 'patient'
+        LEFT JOIN providers pr ON al.user_id = pr.id AND al.user_role = 'provider'
+        LEFT JOIN admins a ON al.user_id = a.id AND al.user_role = 'admin'
+        ${whereClause}
+        ORDER BY al.created_at DESC
+        LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+      `, [...params, limit, offset]);
+
+      res.json({
+        success: true,
+        data: result.rows || [],
+        pagination: {
+          limit: parseInt(limit),
+          offset: parseInt(offset),
+          total: result.rows?.length || 0
+        }
+      });
+    } catch (error) {
+      console.error('Audit logs error:', error);
+      res.json({
+        success: true,
+        data: [], // Return empty array if audit_logs table doesn't exist
+        message: 'Audit logs not available'
+      });
+    }
+  })
+);
+
 export default router;
