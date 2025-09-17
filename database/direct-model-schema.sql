@@ -260,18 +260,6 @@ CREATE TRIGGER update_orders_updated_at BEFORE UPDATE ON orders
 CREATE TRIGGER update_inventory_updated_at BEFORE UPDATE ON inventory
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
--- Sample inventory data (common medications)
-INSERT INTO inventory (sku, medication_name, generic_name, strength, form, quantity_on_hand, cost_per_unit, retail_price, subscription_price) VALUES
-    ('TRE-025-CR', 'Tretinoin Cream', 'Tretinoin', '0.025%', 'cream', 100, 8.00, 59.00, 49.00),
-    ('TRE-050-CR', 'Tretinoin Cream', 'Tretinoin', '0.05%', 'cream', 100, 10.00, 69.00, 59.00),
-    ('SIL-50-TAB', 'Sildenafil', 'Sildenafil', '50mg', 'tablet', 500, 2.00, 10.00, 8.00),
-    ('SIL-100-TAB', 'Sildenafil', 'Sildenafil', '100mg', 'tablet', 500, 3.00, 15.00, 12.00),
-    ('FIN-1-TAB', 'Finasteride', 'Finasteride', '1mg', 'tablet', 300, 0.50, 2.00, 1.50),
-    ('MIN-5-SOL', 'Minoxidil Solution', 'Minoxidil', '5%', 'solution', 200, 5.00, 29.00, 24.00),
-    ('DOX-100-CAP', 'Doxycycline', 'Doxycycline', '100mg', 'capsule', 400, 0.40, 4.00, 3.50),
-    ('PHE-375-TAB', 'Phentermine', 'Phentermine', '37.5mg', 'tablet', 200, 8.00, 89.00, 79.00),
-    ('MET-500-TAB', 'Metformin', 'Metformin', '500mg', 'tablet', 600, 0.30, 3.00, 2.50);
-
--- Sample provider (for testing)
-INSERT INTO providers (email, password_hash, first_name, last_name, license_number, license_state, specialties) VALUES
-    ('provider@clinic.com', '$2a$10$xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', 'Dr. Jane', 'Smith', 'MD123456', 'CA', ARRAY['General Medicine', 'Dermatology']);
+-- NOTE: Sample data removed from schema file
+-- Essential inventory and provider data should be added via seed scripts
+-- This keeps schema files clean and separates structure from data

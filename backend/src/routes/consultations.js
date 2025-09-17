@@ -49,15 +49,29 @@ const handleValidationErrors = (req, res, next) => {
   next();
 };
 
-// Mock Pharmacy API integration
+// Pharmacy API integration with feature flag
 const sendToPharmacyAPI = async (prescriptionData) => {
-  // In production, this would call the actual pharmacy API
-  // For now, we'll simulate the API call
+  const ENABLE_PHARMACY_INTEGRATION = process.env.ENABLE_PHARMACY === 'true';
+  
+  if (!ENABLE_PHARMACY_INTEGRATION) {
+    console.log('Pharmacy integration disabled - skipping API call');
+    return {
+      success: true,
+      pharmacyOrderId: null,
+      estimatedDelivery: null,
+      trackingNumber: null,
+      message: 'Pharmacy integration disabled'
+    };
+  }
+
+  if (!process.env.PHARMACY_API_URL || !process.env.PHARMACY_API_KEY) {
+    throw new Error('Pharmacy API configuration missing: PHARMACY_API_URL and PHARMACY_API_KEY required');
+  }
+
   console.log('Sending prescription to pharmacy:', prescriptionData);
   
   try {
-    // Simulate API call to pharmacy partner
-    const pharmacyResponse = await fetch(process.env.PHARMACY_API_URL || 'https://api.pharmacy-partner.com/prescriptions', {
+    const pharmacyResponse = await fetch(process.env.PHARMACY_API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -74,25 +88,19 @@ const sendToPharmacyAPI = async (prescriptionData) => {
     });
 
     if (!pharmacyResponse.ok) {
-      throw new Error('Pharmacy API error');
+      throw new Error(`Pharmacy API error: ${pharmacyResponse.status} ${pharmacyResponse.statusText}`);
     }
 
     const result = await pharmacyResponse.json();
     return {
       success: true,
-      pharmacyOrderId: result.orderId || `PHARM-${Date.now()}`,
-      estimatedDelivery: result.estimatedDelivery || '3-5 business days',
-      trackingNumber: result.trackingNumber || `TRACK-${Date.now()}`
+      pharmacyOrderId: result.orderId,
+      estimatedDelivery: result.estimatedDelivery,
+      trackingNumber: result.trackingNumber
     };
   } catch (error) {
     console.error('Pharmacy API error:', error);
-    // In development, return mock data
-    return {
-      success: true,
-      pharmacyOrderId: `PHARM-${Date.now()}`,
-      estimatedDelivery: '3-5 business days',
-      trackingNumber: `TRACK-${Date.now()}`
-    };
+    throw error;
   }
 };
 
@@ -429,57 +437,77 @@ router.post('/:id/approve-prescription',
     }
 
     // Send prescription to pharmacy API
-    const pharmacyResult = await sendToPharmacyAPI({
-      patientId: consultation.patientId,
-      providerId: req.user.id,
-      medications: req.body.medications,
-      consultationId: consultation.id,
-      providerSignature: req.user.signature || req.user.name
-    });
+    let pharmacyResult;
+    try {
+      pharmacyResult = await sendToPharmacyAPI({
+        patientId: consultation.patientId,
+        providerId: req.user.id,
+        medications: req.body.medications,
+        consultationId: consultation.id,
+        providerSignature: req.user.signature || req.user.name
+      });
+    } catch (error) {
+      return res.status(500).json({
+        error: 'Failed to send prescription to pharmacy',
+        details: error.message
+      });
+    }
 
     if (!pharmacyResult.success) {
-      return res.status(500).json({ 
+      return res.status(500).json({
         error: 'Failed to send prescription to pharmacy',
-        details: pharmacyResult.error 
+        details: pharmacyResult.error
       });
     }
 
     // Update consultation with prescription details
+    const prescriptionData = {
+      medications: req.body.medications,
+      approvedAt: new Date()
+    };
+
+    // Only include pharmacy data if integration is enabled
+    if (pharmacyResult.pharmacyOrderId) {
+      prescriptionData.pharmacyOrderId = pharmacyResult.pharmacyOrderId;
+      prescriptionData.trackingNumber = pharmacyResult.trackingNumber;
+      prescriptionData.estimatedDelivery = pharmacyResult.estimatedDelivery;
+    }
+
     const [updated] = await db
       .update(consultations)
       .set({
-        status: 'prescription_sent',
-        prescriptionData: JSON.stringify({
-          medications: req.body.medications,
-          pharmacyOrderId: pharmacyResult.pharmacyOrderId,
-          trackingNumber: pharmacyResult.trackingNumber,
-          estimatedDelivery: pharmacyResult.estimatedDelivery,
-          approvedAt: new Date()
-        }),
+        status: pharmacyResult.pharmacyOrderId ? 'prescription_sent' : 'prescription_approved',
+        prescriptionData: JSON.stringify(prescriptionData),
         providerNotes: req.body.providerNotes,
         completedAt: new Date()
       })
       .where(eq(consultations.id, req.params.id))
       .returning();
 
-    // Create order record (using raw SQL since orders table isn't in models)
-    await db.query(`
-      INSERT INTO orders (
-        consultation_id, patient_id, provider_id, 
-        pharmacy_order_id, tracking_number, medications,
-        status, estimated_delivery, created_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-    `, [
-      consultation.id,
-      consultation.patientId,
-      req.user.id,
-      pharmacyResult.pharmacyOrderId,
-      pharmacyResult.trackingNumber,
-      JSON.stringify(req.body.medications),
-      'processing',
-      pharmacyResult.estimatedDelivery,
-      new Date()
-    ]);
+    // Create order record only if pharmacy integration is enabled
+    if (pharmacyResult.pharmacyOrderId) {
+      await db.query(`
+        INSERT INTO orders (
+          consultation_id, patient_id, provider_id,
+          pharmacy_order_id, tracking_number, medications,
+          status, estimated_delivery, created_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      `, [
+        consultation.id,
+        consultation.patientId,
+        req.user.id,
+        pharmacyResult.pharmacyOrderId,
+        pharmacyResult.trackingNumber,
+        JSON.stringify(req.body.medications),
+        'processing',
+        pharmacyResult.estimatedDelivery,
+        new Date()
+      ]);
+    }
+
+    const message = pharmacyResult.pharmacyOrderId
+      ? 'Prescription approved and sent to pharmacy successfully'
+      : 'Prescription approved successfully (pharmacy integration disabled)';
 
     res.json({
       success: true,
@@ -487,7 +515,7 @@ router.post('/:id/approve-prescription',
         consultation: updated,
         pharmacy: pharmacyResult
       },
-      message: 'Prescription approved and sent to pharmacy successfully'
+      message
     });
   })
 );

@@ -471,30 +471,6 @@ CREATE TRIGGER update_inventory_updated_at BEFORE UPDATE ON inventory
 CREATE TRIGGER update_tickets_updated_at BEFORE UPDATE ON support_tickets
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
--- Insert sample data for testing
-INSERT INTO patients (email, password_hash, first_name, last_name, date_of_birth, gender, phone) VALUES
-    ('john.doe@example.com', '$2a$10$xxxxxxxxxxx', 'John', 'Doe', '1985-03-15', 'Male', '555-0100'),
-    ('jane.smith@example.com', '$2a$10$xxxxxxxxxxx', 'Jane', 'Smith', '1990-07-22', 'Female', '555-0101'),
-    ('bob.johnson@example.com', '$2a$10$xxxxxxxxxxx', 'Bob', 'Johnson', '1978-11-30', 'Male', '555-0102');
-
-INSERT INTO providers (email, password_hash, first_name, last_name, title, license_number, license_state, specialties) VALUES
-    ('dr.smith@clinic.com', '$2a$10$xxxxxxxxxxx', 'Sarah', 'Smith', 'Dr.', 'MD123456', 'CA', ARRAY['General Medicine', 'Dermatology']),
-    ('dr.jones@clinic.com', '$2a$10$xxxxxxxxxxx', 'Michael', 'Jones', 'Dr.', 'MD789012', 'CA', ARRAY['General Medicine', 'Endocrinology']),
-    ('np.williams@clinic.com', '$2a$10$xxxxxxxxxxx', 'Emily', 'Williams', 'NP', 'NP345678', 'CA', ARRAY['Family Medicine']);
-
-INSERT INTO admin_users (email, password_hash, first_name, last_name, role) VALUES
-    ('admin@telehealth.com', '$2a$10$xxxxxxxxxxx', 'Admin', 'User', 'super_admin'),
-    ('support@telehealth.com', '$2a$10$xxxxxxxxxxx', 'Support', 'Team', 'support');
-
--- Sample inventory
-INSERT INTO inventory (sku, medication_name, generic_name, strength, form, quantity_on_hand, cost_per_unit, retail_price, subscription_price, category) VALUES
-    ('TRE-025-CR', 'Tretinoin Cream', 'Tretinoin', '0.025%', 'cream', 100, 8.00, 59.00, 49.00, 'Dermatology'),
-    ('TRE-050-CR', 'Tretinoin Cream', 'Tretinoin', '0.05%', 'cream', 100, 10.00, 69.00, 59.00, 'Dermatology'),
-    ('SIL-50-TAB', 'Sildenafil', 'Sildenafil', '50mg', 'tablet', 500, 2.00, 10.00, 8.00, 'Mens Health'),
-    ('SIL-100-TAB', 'Sildenafil', 'Sildenafil', '100mg', 'tablet', 500, 3.00, 15.00, 12.00, 'Mens Health'),
-    ('FIN-1-TAB', 'Finasteride', 'Finasteride', '1mg', 'tablet', 300, 0.50, 2.00, 1.50, 'Hair Loss'),
-    ('MIN-5-SOL', 'Minoxidil Solution', 'Minoxidil', '5%', 'solution', 200, 5.00, 29.00, 24.00, 'Hair Loss'),
-    ('SEM-025-PEN', 'Semaglutide', 'Semaglutide', '0.25mg', 'pen', 50, 150.00, 299.00, 249.00, 'Weight Loss'),
-    ('SEM-050-PEN', 'Semaglutide', 'Semaglutide', '0.5mg', 'pen', 50, 200.00, 399.00, 349.00, 'Weight Loss'),
-    ('DOX-100-CAP', 'Doxycycline', 'Doxycycline', '100mg', 'capsule', 400, 0.40, 4.00, 3.50, 'Antibiotics'),
-    ('MET-500-TAB', 'Metformin', 'Metformin', '500mg', 'tablet', 600, 0.30, 3.00, 2.50, 'Diabetes');
+-- NOTE: Sample data removed from schema file
+-- Essential admin users and initial inventory should be added via seed scripts
+-- This keeps schema files clean and separates structure from data

@@ -38,7 +38,6 @@ CREATE TABLE consultation_settings (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-
 -- Patients table
 CREATE TABLE patients (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -76,11 +75,7 @@ CREATE TABLE patients (
     -- Timestamps
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_login TIMESTAMP,
-    
-    -- Indexes
-    INDEX idx_patients_email (email),
-    INDEX idx_patients_stripe (stripe_customer_id)
+    last_login TIMESTAMP
 );
 
 -- Providers table
@@ -113,12 +108,7 @@ CREATE TABLE providers (
     -- Timestamps
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_login TIMESTAMP,
-    
-    -- Indexes
-    INDEX idx_providers_email (email),
-    INDEX idx_providers_status (status),
-    INDEX idx_providers_availability (available_for_consultations)
+    last_login TIMESTAMP
 );
 
 -- Admins table
@@ -143,10 +133,7 @@ CREATE TABLE admins (
     -- Timestamps
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_login TIMESTAMP,
-    
-    -- Indexes
-    INDEX idx_admins_email (email)
+    last_login TIMESTAMP
 );
 
 -- ============================================
@@ -184,11 +171,7 @@ CREATE TABLE medications (
     image_url VARCHAR(500),
     
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Indexes
-    INDEX idx_medications_category (category),
-    INDEX idx_medications_active (active)
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Pharmacies (for fulfillment)
@@ -215,10 +198,7 @@ CREATE TABLE pharmacies (
     preferred BOOLEAN DEFAULT false, -- Preferred pharmacy partner
     
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Indexes
-    INDEX idx_pharmacies_active (active)
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ============================================
@@ -258,13 +238,7 @@ CREATE TABLE consultations (
     follow_up_date DATE,
     
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Indexes
-    INDEX idx_consultations_patient (patient_id),
-    INDEX idx_consultations_provider (provider_id),
-    INDEX idx_consultations_status (status),
-    INDEX idx_consultations_created (created_at DESC)
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Prescriptions table
@@ -289,12 +263,7 @@ CREATE TABLE prescriptions (
     pharmacy_order_id VARCHAR(255), -- External pharmacy order ID
     
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Indexes
-    INDEX idx_prescriptions_patient (patient_id),
-    INDEX idx_prescriptions_status (status),
-    INDEX idx_prescriptions_expires (expires_date)
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Prescription items (medications in prescription)
@@ -310,10 +279,7 @@ CREATE TABLE prescription_items (
     duration VARCHAR(100), -- "30 days"
     instructions TEXT,
     
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Indexes
-    INDEX idx_prescription_items_prescription (prescription_id)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ============================================
@@ -363,12 +329,7 @@ CREATE TABLE orders (
     pharmacy_order_id VARCHAR(255),
     
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Indexes
-    INDEX idx_orders_patient (patient_id),
-    INDEX idx_orders_status (status),
-    INDEX idx_orders_created (created_at DESC)
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Order items
@@ -386,10 +347,7 @@ CREATE TABLE order_items (
     unit_price DECIMAL(10,2) NOT NULL,
     total_price DECIMAL(10,2) NOT NULL,
     
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Indexes
-    INDEX idx_order_items_order (order_id)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ============================================
@@ -411,11 +369,7 @@ CREATE TABLE messages (
     is_read BOOLEAN DEFAULT false,
     read_at TIMESTAMP,
     
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Indexes
-    INDEX idx_messages_consultation (consultation_id),
-    INDEX idx_messages_created (created_at DESC)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Patient documents (medical records, IDs, etc.)
@@ -436,12 +390,61 @@ CREATE TABLE patient_documents (
     verified_by UUID REFERENCES providers(id),
     verified_at TIMESTAMP,
     
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Indexes
-    INDEX idx_documents_patient (patient_id),
-    INDEX idx_documents_type (document_type)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- ============================================
+-- CREATE INDEXES
+-- ============================================
+
+-- Patients indexes
+CREATE INDEX idx_patients_email ON patients(email);
+CREATE INDEX idx_patients_stripe ON patients(stripe_customer_id);
+
+-- Providers indexes
+CREATE INDEX idx_providers_email ON providers(email);
+CREATE INDEX idx_providers_status ON providers(status);
+CREATE INDEX idx_providers_availability ON providers(available_for_consultations);
+
+-- Admins indexes
+CREATE INDEX idx_admins_email ON admins(email);
+
+-- Medications indexes
+CREATE INDEX idx_medications_category ON medications(category);
+CREATE INDEX idx_medications_active ON medications(active);
+
+-- Pharmacies indexes
+CREATE INDEX idx_pharmacies_active ON pharmacies(active);
+
+-- Consultations indexes
+CREATE INDEX idx_consultations_patient ON consultations(patient_id);
+CREATE INDEX idx_consultations_provider ON consultations(provider_id);
+CREATE INDEX idx_consultations_status ON consultations(status);
+CREATE INDEX idx_consultations_created ON consultations(created_at DESC);
+
+-- Prescriptions indexes
+CREATE INDEX idx_prescriptions_patient ON prescriptions(patient_id);
+CREATE INDEX idx_prescriptions_status ON prescriptions(status);
+CREATE INDEX idx_prescriptions_expires ON prescriptions(expires_date);
+
+-- Prescription items indexes
+CREATE INDEX idx_prescription_items_prescription ON prescription_items(prescription_id);
+
+-- Orders indexes
+CREATE INDEX idx_orders_patient ON orders(patient_id);
+CREATE INDEX idx_orders_status ON orders(status);
+CREATE INDEX idx_orders_created ON orders(created_at DESC);
+
+-- Order items indexes
+CREATE INDEX idx_order_items_order ON order_items(order_id);
+
+-- Messages indexes
+CREATE INDEX idx_messages_consultation ON messages(consultation_id);
+CREATE INDEX idx_messages_created ON messages(created_at DESC);
+
+-- Documents indexes
+CREATE INDEX idx_documents_patient ON patient_documents(patient_id);
+CREATE INDEX idx_documents_type ON patient_documents(document_type);
 
 -- ============================================
 -- FUNCTIONS & TRIGGERS
@@ -492,7 +495,6 @@ BEGIN
     RETURN order_num;
 END;
 $$ LANGUAGE plpgsql;
-
 
 -- ============================================
 -- COMMENTS

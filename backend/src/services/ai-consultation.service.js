@@ -64,7 +64,9 @@ class AIConsultationService {
    */
   async generateAssessment(consultationData, hpi) {
     if (!this.openai) {
-      return this.getMockAssessment(consultationData);
+      const e = new Error('AI model unavailable: missing OPENAI_API_KEY');
+      e.status = 503;
+      throw e;
     }
 
     try {
@@ -119,7 +121,9 @@ class AIConsultationService {
       const validation = validateAssessmentSchema(rawResult);
       if (!validation.isValid) {
         console.error('AI assessment validation failed:', validation.errors);
-        return this.getMockAssessment(consultationData);
+        const e = new Error('AI response validation failed');
+        e.status = 502;
+        throw e;
       }
       
       return {
@@ -129,7 +133,12 @@ class AIConsultationService {
       };
     } catch (error) {
       console.error('OpenAI API error:', error);
-      return this.getMockAssessment(consultationData);
+      if (error.status) {
+        throw error;
+      }
+      const e = new Error('AI service temporarily unavailable');
+      e.status = 503;
+      throw e;
     }
   }
 
@@ -138,7 +147,9 @@ class AIConsultationService {
    */
   async generatePatientMessage(diagnosis, plan, patientName) {
     if (!this.openai) {
-      return this.getMockPatientMessage(diagnosis, plan, patientName);
+      const e = new Error('AI model unavailable: missing OPENAI_API_KEY');
+      e.status = 503;
+      throw e;
     }
 
     try {
@@ -190,7 +201,12 @@ class AIConsultationService {
       return patientMessage;
     } catch (error) {
       console.error('OpenAI API error:', error);
-      return this.getMockPatientMessage(diagnosis, plan, patientName);
+      if (error.status) {
+        throw error;
+      }
+      const e = new Error('AI service temporarily unavailable');
+      e.status = 503;
+      throw e;
     }
   }
 
@@ -199,7 +215,9 @@ class AIConsultationService {
    */
   async generateMedicationRecommendations(diagnosis, patientData) {
     if (!this.openai) {
-      return this.getMockMedicationRecommendations(diagnosis);
+      const e = new Error('AI model unavailable: missing OPENAI_API_KEY');
+      e.status = 503;
+      throw e;
     }
 
     try {
@@ -244,13 +262,20 @@ class AIConsultationService {
       const validation = validateMedicationSchema(rawResult);
       if (!validation.isValid) {
         console.error('AI medication validation failed:', validation.errors);
-        return this.getMockMedicationRecommendations(diagnosis);
+        const e = new Error('AI response validation failed');
+        e.status = 502;
+        throw e;
       }
       
       return rawResult;
     } catch (error) {
       console.error('OpenAI API error:', error);
-      return this.getMockMedicationRecommendations(diagnosis);
+      if (error.status) {
+        throw error;
+      }
+      const e = new Error('AI service temporarily unavailable');
+      e.status = 503;
+      throw e;
     }
   }
 
@@ -259,7 +284,9 @@ class AIConsultationService {
    */
   async generateSOAPNote(consultationData, hpi, assessment, plan) {
     if (!this.openai) {
-      return this.getMockSOAPNote(consultationData, hpi, assessment, plan);
+      const e = new Error('AI model unavailable: missing OPENAI_API_KEY');
+      e.status = 503;
+      throw e;
     }
 
     try {
@@ -298,144 +325,15 @@ class AIConsultationService {
       return response.choices[0].message.content;
     } catch (error) {
       console.error('OpenAI API error:', error);
-      return this.getMockSOAPNote(consultationData, hpi, assessment, plan);
+      if (error.status) {
+        throw error;
+      }
+      const e = new Error('AI service temporarily unavailable');
+      e.status = 503;
+      throw e;
     }
   }
 
-  // Mock responses when OpenAI is not configured
-  getMockAssessment(consultationData) {
-    const assessments = {
-      acne: {
-        diagnosis: 'Acne vulgaris, moderate to severe, with hormonal component',
-        assessment: 'Patient presents with moderate to severe inflammatory acne with post-inflammatory hyperpigmentation. The cyclical pattern correlating with menses and history of PCOS suggests a hormonal component. Combination therapy with topical retinoid and oral antibiotic is indicated.',
-        differentialDiagnosis: ['Rosacea', 'Folliculitis', 'Perioral dermatitis']
-      },
-      default: {
-        diagnosis: 'Condition requiring further evaluation',
-        assessment: 'Patient presents with symptoms requiring comprehensive evaluation and treatment planning.',
-        differentialDiagnosis: []
-      }
-    };
-
-    // Simple keyword matching for demo
-    const complaint = consultationData.chief_complaint?.toLowerCase() || '';
-    if (complaint.includes('acne')) return assessments.acne;
-    return assessments.default;
-  }
-
-  getMockPatientMessage(diagnosis, plan, patientName) {
-    return `Dear ${patientName},
-
-Thank you for your consultation today. After reviewing your symptoms and medical history, I've diagnosed you with ${diagnosis}.
-
-This is a common and very treatable condition. I'm confident that with the right treatment plan, we can significantly improve your symptoms.
-
-Your Treatment Plan:
-${plan.medications?.map(med => `• ${med.name}: ${med.instructions}`).join('\n') || '• Medications as prescribed'}
-
-Important Instructions:
-• Take all medications as directed
-• Be patient - improvement typically takes 6-8 weeks
-• Use sun protection daily if prescribed retinoids
-• Stay hydrated and maintain a healthy diet
-
-What to Expect:
-You may experience some initial dryness or mild irritation, which is normal and usually improves. If you experience severe side effects, please contact us immediately.
-
-We'll follow up in 6-8 weeks to assess your progress. In the meantime, don't hesitate to reach out if you have any questions or concerns.
-
-You're taking an important step toward better health, and I'm here to support you throughout your treatment journey.
-
-Best regards,
-Dr. Smith`;
-  }
-
-  getMockMedicationRecommendations(diagnosis) {
-    const recommendations = {
-      'acne': {
-        medications: [
-          {
-            name: 'Tretinoin 0.025%',
-            dose: 'Apply thin layer at bedtime',
-            duration: '12 weeks minimum',
-            sideEffects: 'Initial dryness, purging, photosensitivity'
-          },
-          {
-            name: 'Doxycycline 100mg',
-            dose: 'Twice daily with food',
-            duration: '3 months',
-            sideEffects: 'GI upset, photosensitivity'
-          }
-        ],
-        monitoring: 'Follow up in 6-8 weeks to assess response',
-        duration: '3-6 months initial treatment'
-      },
-      'default': {
-        medications: [],
-        monitoring: 'Regular follow-up recommended',
-        duration: 'As clinically indicated'
-      }
-    };
-
-    const condition = diagnosis?.toLowerCase() || '';
-    if (condition.includes('acne')) return recommendations.acne;
-    return recommendations.default;
-  }
-
-  getMockSOAPNote(consultationData, hpi, assessment, plan) {
-    return `SOAP NOTE
-
-Date: ${new Date().toLocaleDateString()}
-Patient: ${consultationData.first_name} ${consultationData.last_name}
-DOB: ${consultationData.date_of_birth} (${consultationData.age} years old)
-
-SUBJECTIVE:
-Chief Complaint: ${hpi.chiefComplaint}
-
-History of Present Illness:
-The patient presents with ${hpi.chiefComplaint}. Symptoms began ${hpi.onset} and have been present for ${hpi.duration}. 
-Location: ${hpi.location}
-Character: ${hpi.characteristics}
-Aggravating factors: ${hpi.aggravatingFactors}
-Relieving factors: ${hpi.relievingFactors}
-Timing: ${hpi.timing}
-Severity: ${hpi.severity}
-Context: ${hpi.context}
-
-Past Medical History: ${consultationData.past_medical_history || 'As documented'}
-Current Medications: ${consultationData.current_medications}
-Allergies: ${consultationData.allergies}
-Social History: Non-contributory
-
-Review of Systems: 
-Constitutional: Denies fever, chills, weight loss
-Skin: As per HPI
-All other systems: Negative
-
-OBJECTIVE:
-Vital Signs: Within normal limits
-Physical Exam: Limited telehealth examination
-Skin: Unable to fully assess via video, patient-provided photos show ${hpi.characteristics}
-
-ASSESSMENT:
-${assessment}
-
-PLAN:
-1. Medications:
-${plan.medications?.map(med => `   - ${med.name}: ${med.instructions}`).join('\n') || '   As prescribed'}
-
-2. Patient Education:
-   - Counseled on diagnosis and treatment expectations
-   - Discussed proper medication use and potential side effects
-   - Emphasized importance of adherence and sun protection
-
-3. Follow-up:
-   - Scheduled in 6-8 weeks to assess treatment response
-   - Patient instructed to contact if symptoms worsen or side effects occur
-
-Provider: Dr. Smith, MD
-Electronically signed at ${new Date().toLocaleString()}`;
-  }
 }
 
 // Export singleton instance
