@@ -13,8 +13,12 @@
     "db:rollback": "bash ../database/migrations/run_all_migrations.sh down",
     "db:status": "bash ../database/migrations/run_all_migrations.sh status",
     "db:seed": "node scripts/seed.js",
+    "db:seed:core": "node -e \"import('./seeds/00_core.js').then(m => m.default(await import('./src/config/database.js').then(d => d.connectDatabase())))\"",
+    "db:seed:admin": "node -e \"import('./seeds/10_admin.js').then(m => m.default(await import('./src/config/database.js').then(d => d.connectDatabase())))\"",
+    "db:seed:reference": "node -e \"import('./seeds/20_reference.js').then(m => m.default(await import('./src/config/database.js').then(d => d.connectDatabase())))\"",
     "db:init": "npm run db:migrate && npm run db:seed",
     "db:reset": "npm run db:rollback && npm run db:migrate && npm run db:seed",
+    "db:fresh": "psql \"$DATABASE_URL\" -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;' && npm run db:migrate && npm run db:seed",
     "lint": "eslint src/",
     "format": "prettier --write src/"
   },
