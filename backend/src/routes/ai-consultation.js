@@ -62,9 +62,10 @@ router.post('/generate',
       }
     } catch (error) {
       console.error('AI generation error:', error);
-      res.status(500).json({ 
+      const statusCode = error.status || 500;
+      res.status(statusCode).json({
         error: 'AI generation failed',
-        message: 'Using fallback suggestions'
+        message: error.message || 'AI service temporarily unavailable'
       });
     }
   })
@@ -97,9 +98,10 @@ router.post('/soap-note',
       });
     } catch (error) {
       console.error('SOAP note generation error:', error);
-      res.status(500).json({ 
+      const statusCode = error.status || 500;
+      res.status(statusCode).json({
         error: 'SOAP note generation failed',
-        message: 'Using template format'
+        message: error.message || 'AI service temporarily unavailable'
       });
     }
   })
@@ -130,9 +132,10 @@ router.post('/medication-recommendations',
       });
     } catch (error) {
       console.error('Medication recommendation error:', error);
-      res.status(500).json({ 
+      const statusCode = error.status || 500;
+      res.status(statusCode).json({
         error: 'Recommendation generation failed',
-        message: 'Using standard protocols'
+        message: error.message || 'AI service temporarily unavailable'
       });
     }
   })
@@ -147,9 +150,9 @@ router.get('/status', requireAuth, (req, res) => {
     success: true,
     aiEnabled: isConfigured,
     model: process.env.AI_MODEL || 'gpt-4',
-    message: isConfigured 
-      ? 'AI service is configured and ready' 
-      : 'AI service not configured - using mock responses'
+    message: isConfigured
+      ? 'AI service is configured and ready'
+      : 'AI service not configured - API key required'
   });
 });
 
