@@ -8,10 +8,18 @@ import AuthService from '../services/auth.service.js';
 
 const router = express.Router();
 
-// Initialize services
-const adminService = new AdminService();
-const analyticsService = new AnalyticsService();
-const authService = new AuthService();
+// Services will be instantiated when needed
+let adminService;
+let analyticsService;
+let authService;
+
+// Initialize services on first use
+const getServices = () => {
+  if (!adminService) adminService = new AdminService();
+  if (!analyticsService) analyticsService = new AnalyticsService();
+  if (!authService) authService = new AuthService();
+  return { adminService, analyticsService, authService };
+};
 
 // Validation middleware
 const handleValidationErrors = (req, res, next) => {
@@ -37,6 +45,7 @@ router.post('/login',
     const { email, password } = req.body;
     
     try {
+      const { authService } = getServices();
       const result = await authService.adminLogin(email, password);
       res.json(result);
     } catch (error) {
@@ -54,6 +63,7 @@ router.get('/metrics',
   requireRole('admin'),
   asyncHandler(async (req, res) => {
     try {
+      const { adminService } = getServices();
       const metrics = await adminService.getDashboardMetrics();
       res.json({
         success: true,
@@ -75,6 +85,7 @@ router.get('/dashboard',
   requireRole('admin'),
   asyncHandler(async (req, res) => {
     try {
+      const { adminService } = getServices();
       const dashboardData = await adminService.getDashboardData();
       res.json({
         success: true,
@@ -102,6 +113,7 @@ router.get('/consultations/pending',
   asyncHandler(async (req, res) => {
     try {
       const { limit = 20, offset = 0 } = req.query;
+      const { adminService } = getServices();
       const consultations = await adminService.getPendingConsultations(limit, offset);
       
       res.json({
@@ -132,6 +144,7 @@ router.post('/consultations/:id/assign',
       const { id } = req.params;
       const { provider_id } = req.body;
       
+      const { adminService } = getServices();
       const result = await adminService.assignConsultation(id, provider_id);
       
       res.json({
@@ -162,6 +175,7 @@ router.get('/patients',
   handleValidationErrors,
   asyncHandler(async (req, res) => {
     try {
+      const { adminService } = getServices();
       const patients = await adminService.getPatients(req.query);
       
       res.json({
@@ -191,6 +205,7 @@ router.get('/providers',
   handleValidationErrors,
   asyncHandler(async (req, res) => {
     try {
+      const { adminService } = getServices();
       const providers = await adminService.getProviders(req.query);
       
       res.json({
@@ -218,6 +233,7 @@ router.get('/orders/stats',
   asyncHandler(async (req, res) => {
     try {
       const { period = 'month' } = req.query;
+      const { adminService } = getServices();
       const stats = await adminService.getOrderStatistics(period);
       
       res.json({
@@ -254,6 +270,7 @@ router.post('/analytics/events',
         user_type: req.user.role
       };
       
+      const { analyticsService } = getServices();
       const event = await analyticsService.trackEvent(eventData);
       
       res.status(201).json({
@@ -281,6 +298,7 @@ router.get('/analytics/summary',
   asyncHandler(async (req, res) => {
     try {
       const { period = 'month' } = req.query;
+      const { analyticsService } = getServices();
       const summary = await analyticsService.getAnalyticsSummary(period);
       
       res.json({
@@ -311,6 +329,7 @@ router.get('/audit-logs',
   handleValidationErrors,
   asyncHandler(async (req, res) => {
     try {
+      const { adminService } = getServices();
       const logs = await adminService.getAuditLogs(req.query);
       
       res.json({
@@ -342,6 +361,7 @@ router.get('/users',
   handleValidationErrors,
   asyncHandler(async (req, res) => {
     try {
+      const { adminService } = getServices();
       const users = await adminService.getAllUsers(req.query);
       
       res.json({
@@ -373,6 +393,7 @@ router.patch('/users/:id/status',
       const { id } = req.params;
       const { status, reason } = req.body;
       
+      const { adminService } = getServices();
       const result = await adminService.updateUserStatus(id, status, reason);
       
       res.json({
@@ -396,6 +417,7 @@ router.get('/health',
   requireRole('admin'),
   asyncHandler(async (req, res) => {
     try {
+      const { adminService } = getServices();
       const health = await adminService.getSystemHealth();
       
       res.json({

@@ -1,19 +1,12 @@
 [build]
 builder = "nixpacks"
+buildCommand = "npm install"
 
 [deploy]
+startCommand = "npm start"
 healthcheckPath = "/health"
 healthcheckTimeout = 300
 restartPolicyType = "always"
 
-[[services]]
-name = "backend"
-source = "backend"
-
-[services.variables]
+[variables]
 NODE_ENV = "production"
-PORT = "${{RAILWAY_PUBLIC_PORT}}"
-
-[[services]]
-name = "postgres" 
-source = "postgres:15"
