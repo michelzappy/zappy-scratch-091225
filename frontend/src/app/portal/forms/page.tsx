@@ -110,6 +110,10 @@ export default function FormsPage() {
           <select
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500"
             required={question.required}
+            onChange={(e) => {
+              // TODO: Add proper state management for form responses
+              console.log('Option selected:', e.target.value);
+            }}
           >
             <option value="">Select an option...</option>
             {question.options?.map((option) => (
@@ -426,7 +430,14 @@ export default function FormsPage() {
                 </p>
               )}
               
-              <form className="space-y-6">
+              <form 
+                className="space-y-6"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  console.log('Form submitted for step:', currentPreviewStep);
+                  // TODO: Add proper form submission logic
+                }}
+              >
                 {selectedIntakeForm.steps[currentPreviewStep].questions.map((question, index) => (
                   <div key={question.id} className="space-y-2">
                     <label className="block text-sm font-medium text-gray-700">
@@ -439,6 +450,16 @@ export default function FormsPage() {
                     {renderQuestionInput(question)}
                   </div>
                 ))}
+                
+                {/* Submit button for the form */}
+                <div className="pt-4">
+                  <button
+                    type="submit"
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Save Step {currentPreviewStep + 1}
+                  </button>
+                </div>
               </form>
             </div>
 

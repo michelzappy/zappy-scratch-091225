@@ -84,7 +84,14 @@ export default function PatientSubscription() {
           <p className="text-xs text-white/80 mt-1">Member since: October 2023</p>
         </div>
         <div className="mt-4 flex gap-2">
-          <button className="flex-1 bg-white/20 backdrop-blur text-white font-medium text-sm py-2 px-3 rounded-lg hover:bg-white/30 transition">
+          <button 
+            onClick={() => {
+              // Navigate to upgrade flow
+              window.location.href = '/patient/subscription/upgrade';
+            }}
+            aria-label="Upgrade to premium plan"
+            className="flex-1 bg-white/20 backdrop-blur text-white font-medium text-sm py-2 px-3 rounded-lg hover:bg-white/30 transition"
+          >
             Upgrade
           </button>
           <button 
@@ -142,6 +149,19 @@ export default function PatientSubscription() {
 
               {!plan.current && (
                 <button
+                  onClick={() => {
+                    // Handle plan selection
+                    setCurrentPlan(plan.id);
+                    console.log(`Switching to ${plan.name} plan`);
+                    // Implement plan switching via API
+                    try {
+                      // This would call a subscription update endpoint
+                      console.log('Plan switch initiated - would call API here');
+                    } catch (error) {
+                      console.error('Failed to switch plans:', error);
+                    }
+                  }}
+                  aria-label={`Switch to ${plan.name} plan - $${plan.price}${plan.price > 0 ? '/' + plan.period : ''}`}
                   className={`mt-4 w-full py-2 px-4 rounded-lg text-sm font-medium transition ${
                     plan.price > 29
                       ? 'bg-medical-600 text-white hover:bg-medical-700'
@@ -175,11 +195,27 @@ export default function PatientSubscription() {
                 Default
               </span>
             </div>
-            <button className="text-medical-600 hover:text-medical-700 text-sm">
+            <button 
+              onClick={() => {
+                // Handle payment method editing
+                console.log('Opening payment method editor');
+                // TODO: Navigate to payment method edit page
+              }}
+              aria-label="Edit payment method"
+              className="text-medical-600 hover:text-medical-700 text-sm"
+            >
               Edit
             </button>
           </div>
-          <button className="w-full py-2.5 px-4 border-2 border-dashed border-slate-300 text-slate-600 rounded-lg hover:border-slate-400 hover:text-slate-700 transition-colors text-sm">
+          <button 
+            onClick={() => {
+              // Handle adding new payment method
+              console.log('Opening add payment method form');
+              // TODO: Navigate to add payment method page
+            }}
+            aria-label="Add new payment method"
+            className="w-full py-2.5 px-4 border-2 border-dashed border-slate-300 text-slate-600 rounded-lg hover:border-slate-400 hover:text-slate-700 transition-colors text-sm"
+          >
             + Add Payment Method
           </button>
         </div>
@@ -207,7 +243,15 @@ export default function PatientSubscription() {
                   </span>
                 </div>
               </div>
-              <button className="mt-2 text-xs text-medical-600 hover:text-medical-700">
+              <button 
+                onClick={() => {
+                  // Handle invoice download
+                  console.log(`Downloading invoice for ${item.description} - $${item.amount}`);
+                  // TODO: Implement invoice download API call
+                }}
+                aria-label={`Download invoice for ${item.description} - $${item.amount}`}
+                className="mt-2 text-xs text-medical-600 hover:text-medical-700"
+              >
                 Download Invoice →
               </button>
             </div>
@@ -238,7 +282,15 @@ export default function PatientSubscription() {
                     </span>
                   </td>
                   <td className="py-3">
-                    <button className="text-medical-600 hover:text-medical-700 text-sm">
+                    <button 
+                      onClick={() => {
+                        // Handle invoice download
+                        console.log(`Downloading invoice for ${item.description} - $${item.amount}`);
+                        // TODO: Implement invoice download API call
+                      }}
+                      aria-label={`Download invoice for ${item.description} - $${item.amount}`}
+                      className="text-medical-600 hover:text-medical-700 text-sm"
+                    >
                       Download
                     </button>
                   </td>

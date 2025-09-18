@@ -88,9 +88,25 @@ class ApiClient {
 
   // Patient endpoints
   patients = {
-    getProfile: (id: string) => this.client.get(`/api/patients/${id}`),
-    updateProfile: (id: string, data: any) => this.client.put(`/api/patients/${id}`, data),
-    getConsultations: (id: string) => this.client.get(`/api/patients/${id}/consultations`),
+    getProfile: (id?: string) => {
+      // If no ID provided or it's the current user, use /me endpoint
+      return this.client.get(id && id !== 'me' ? `/api/patients/${id}` : '/api/patients/me');
+    },
+    updateProfile: (id: string, data: any) => {
+      // Use /me endpoint for current user profile updates
+      return this.client.put('/api/patients/me', data);
+    },
+    getConsultations: (id?: string) => {
+      // Use /me/consultations for current user's consultations
+      return this.client.get('/api/patients/me/consultations');
+    },
+    getStats: () => this.client.get('/api/patients/me/stats'),
+    getPrograms: () => this.client.get('/api/patients/me/programs'),
+    getOrders: (params?: any) => this.client.get('/api/patients/me/orders', { params }),
+    getMeasurements: (params?: any) => this.client.get('/api/patients/me/measurements', { params }),
+    logMeasurement: (data: any) => this.client.post('/api/patients/me/measurements', data),
+    register: (data: any) => this.client.post('/api/patients/register', data),
+    login: (data: any) => this.client.post('/api/patients/login', data),
   };
 
   // Provider endpoints
@@ -100,7 +116,28 @@ class ApiClient {
     getConsultations: (id: string) => this.client.get(`/api/providers/${id}/consultations`),
   };
 
-  // File endpoints
+  // Admin endpoints
+  admin = {
+    getDashboard: () => this.client.get('/api/admin/dashboard'),
+    getAuditLogs: () => this.client.get('/api/admin/audit-logs'),
+    getMetrics: () => this.client.get('/api/admin/metrics'),
+    getPendingConsultations: () => this.client.get('/api/admin/consultations/pending'),
+    getPatients: (params?: any) => this.client.get('/api/admin/patients', { params }),
+    getProviders: () => this.client.get('/api/admin/providers'),
+    getUsers: () => this.client.get('/api/admin/users'),
+    getOrdersStats: () => this.client.get('/api/admin/orders/stats'),
+    getAnalyticsSummary: () => this.client.get('/api/admin/analytics/summary'),
+    getHealth: () => this.client.get('/api/admin/health'),
+    getPatientFull: (id: string) => this.client.get(`/api/admin/patients/${id}/full`),
+    getPatientStatistics: (id: string) => this.client.get(`/api/admin/patients/${id}/statistics`),
+  };
+
+  // AI Consultation endpoints
+  aiConsultation = {
+    getStatus: () => this.client.get('/api/ai-consultation/status'),
+  };
+
+  // File management endpoints
   files = {
     upload: (data: FormData) => this.client.post('/api/files/upload', data, {
       headers: { 'Content-Type': 'multipart/form-data' },
@@ -108,12 +145,7 @@ class ApiClient {
     download: (id: string) => this.client.get(`/api/files/${id}/download`, {
       responseType: 'blob',
     }),
-  };
-
-  // Admin endpoints
-  admin = {
-    getDashboard: () => this.client.get('/api/admin/dashboard'),
-    getAuditLogs: () => this.client.get('/api/admin/audit-logs'),
+    delete: (id: string) => this.client.delete(`/api/files/${id}`),
   };
 }
 

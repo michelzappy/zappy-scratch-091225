@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { apiClient } from '@/lib/api';
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'notifications' | 'billing'>('profile');
@@ -62,7 +63,28 @@ export default function ProfilePage() {
                 />
                 <div>
                   <h3 className="font-semibold text-slate-900">John Doe</h3>
-                  <button className="text-sm text-medical-600 hover:text-medical-700 mt-1">
+                  <button 
+                    onClick={() => {
+                      // Handle photo change
+                      const input = document.createElement('input');
+                      input.type = 'file';
+                      input.accept = 'image/*';
+                      input.onchange = (e) => {
+                        const file = (e.target as HTMLInputElement).files?.[0];
+                        if (file) {
+                        console.log('Photo selected:', file.name);
+                        // Upload photo to server via API
+                        const formData = new FormData();
+                        formData.append('profile_photo', file);
+                        apiClient.files.upload(formData)
+                          .then(() => console.log('Profile photo uploaded successfully'))
+                          .catch(err => console.error('Failed to upload photo:', err));
+                        }
+                      };
+                      input.click();
+                    }}
+                    className="text-sm text-medical-600 hover:text-medical-700 mt-1"
+                  >
                     Change Photo
                   </button>
                 </div>
@@ -175,7 +197,14 @@ export default function ProfilePage() {
                     <p className="text-sm font-medium text-slate-900">SMS Authentication</p>
                     <p className="text-xs text-slate-600 mt-1">Get codes via text message</p>
                   </div>
-                  <button className="px-4 py-2 bg-medical-600 text-white text-sm rounded-lg hover:bg-medical-700 transition-colors">
+                  <button 
+                    onClick={() => {
+                      // Handle 2FA setup
+                      console.log('Setting up two-factor authentication');
+                      // TODO: Navigate to 2FA setup flow
+                    }}
+                    className="px-4 py-2 bg-medical-600 text-white text-sm rounded-lg hover:bg-medical-700 transition-colors"
+                  >
                     Enable
                   </button>
                 </div>
@@ -228,7 +257,14 @@ export default function ProfilePage() {
                       Primary
                     </span>
                   </div>
-                  <button className="w-full py-2.5 px-4 border-2 border-dashed border-slate-300 text-slate-600 rounded-xl hover:border-slate-400 hover:text-slate-700 transition-colors text-sm">
+                  <button 
+                    onClick={() => {
+                      // Handle adding payment method
+                      console.log('Adding new payment method');
+                      // TODO: Navigate to payment method setup
+                    }}
+                    className="w-full py-2.5 px-4 border-2 border-dashed border-slate-300 text-slate-600 rounded-xl hover:border-slate-400 hover:text-slate-700 transition-colors text-sm"
+                  >
                     + Add Payment Method
                   </button>
                 </div>
@@ -250,7 +286,14 @@ export default function ProfilePage() {
                       </div>
                       <div className="text-right">
                         <p className="text-sm font-semibold text-slate-900">{charge.amount}</p>
-                        <button className="text-xs text-medical-600 hover:text-medical-700">
+                        <button 
+                          onClick={() => {
+                            // Handle receipt download
+                            console.log(`Downloading receipt for ${charge.date} - ${charge.amount}`);
+                            // TODO: Generate and download receipt PDF
+                          }}
+                          className="text-xs text-medical-600 hover:text-medical-700"
+                        >
                           Receipt
                         </button>
                       </div>
