@@ -66,6 +66,12 @@ export default function ConsultationsPage() {
       setLoading(true);
       setError(null);
       
+      console.log('🔍 Fetching consultations with params:', {
+        status: activeFilter !== 'all' ? activeFilter : undefined,
+        dateRange,
+        search: searchTerm || undefined
+      });
+      
       // Use provider queue endpoint to get consultations for providers
       const response = await apiClient.consultations.getProviderQueue({
         status: activeFilter !== 'all' ? activeFilter : undefined,
@@ -73,7 +79,12 @@ export default function ConsultationsPage() {
         search: searchTerm || undefined
       });
       
-      const consultationsData = response.data || [];
+      console.log('📦 Raw API response:', response);
+      console.log('📊 Response data:', response.data);
+      
+      const consultationsData = response.data?.data || response.data || [];
+      
+      console.log('🔄 Consultations data to transform:', consultationsData);
       
       // Transform API data to match our interface
       const transformedConsultations: Consultation[] = consultationsData.map((item: any) => ({
@@ -86,10 +97,17 @@ export default function ConsultationsPage() {
         provider: item.provider_name || item.assigned_provider || 'Unassigned'
       }));
       
+      console.log('✅ Transformed consultations:', transformedConsultations);
+      
       setConsultations(transformedConsultations);
       
     } catch (err) {
-      console.error('Error fetching consultations:', err);
+      console.error('❌ Error fetching consultations:', err);
+      console.error('❌ Error details:', {
+        message: err.message,
+        response: err.response,
+        stack: err.stack
+      });
       setError('Failed to load consultations');
       setConsultations([]);
     } finally {

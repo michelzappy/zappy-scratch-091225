@@ -44,13 +44,91 @@ class ApiClient {
             return this.client.request(error.config);
           }
           
-          // If refresh failed, logout and redirect
+          // If refresh failed, try mock endpoints as fallback
+          const mockResponse = await this.tryMockFallback(error.config, error);
+          if (mockResponse) {
+            return mockResponse;
+          }
+          
+          // If no mock fallback available, logout and redirect
           await authService.logout();
+        }
+        
+        // For other errors (404, 500, etc.), try mock fallback
+        if (error.response?.status && [404, 500, 503].includes(error.response.status)) {
+          const mockResponse = await this.tryMockFallback(error.config, error);
+          if (mockResponse) {
+            return mockResponse;
+          }
         }
         
         return Promise.reject(error);
       }
     );
+  }
+
+  // Mock fallback method
+  private async tryMockFallback(config: any, originalError?: AxiosError): Promise<any> {
+    if (!config || !config.url) return null;
+
+    try {
+      // Map regular API endpoints to mock endpoints
+      const mockMappings: { [key: string]: string } = {
+        '/api/consultations/provider/queue': '/api/mock/consultations/provider/queue',
+        '/api/consultations': '/api/mock/consultations',
+        '/api/admin/dashboard': '/api/mock/admin/dashboard',
+        '/api/admin/patients': '/api/mock/admin/patients',
+        '/api/messages': '/api/mock/messages',
+        '/api/orders': '/api/mock/orders',
+      };
+
+      // Check if we have a mock mapping for this endpoint
+      let mockUrl = null;
+      for (const [originalPath, mockPath] of Object.entries(mockMappings)) {
+        if (config.url.includes(originalPath)) {
+          mockUrl = mockPath;
+          break;
+        }
+      }
+
+      if (!mockUrl) return null;
+
+      console.log(`🔄 Falling back to mock endpoint: ${mockUrl} (original: ${config.url})`);
+
+      // Track fallback usage
+      try {
+        await this.client.post('/api/mock-management/track-fallback', {
+          originalPath: config.url,
+          mockPath: mockUrl,
+          trigger: originalError?.response?.status?.toString() || 'unknown'
+        });
+      } catch (trackError: any) {
+        // Silently fail tracking - don't break the fallback
+        console.warn('Failed to track fallback usage:', trackError?.message || 'Unknown error');
+      }
+
+      // Make request to mock endpoint without authentication
+      const mockConfig = {
+        ...config,
+        url: mockUrl,
+        headers: {
+          ...config.headers,
+          Authorization: undefined, // Remove auth header for mock endpoints
+        },
+      };
+
+      const response = await this.client.request(mockConfig);
+      
+      // Add a flag to indicate this is mock data
+      if (response.data && typeof response.data === 'object') {
+        response.data._isMockData = true;
+      }
+
+      return response;
+    } catch (mockError) {
+      console.warn('Mock fallback also failed:', mockError);
+      return null;
+    }
   }
 
   // Auth endpoints
