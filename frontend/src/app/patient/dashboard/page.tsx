@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { api } from '@/lib/api';
+import { apiClient } from '@/lib/api';
 
 export default function PatientDashboard() {
   const [activeProgramIndex, setActiveProgramIndex] = useState(0);
@@ -16,78 +16,6 @@ export default function PatientDashboard() {
   const [measurements, setMeasurements] = useState<any[]>([]);
   const [stats, setStats] = useState<any>(null);
 
-  // Mock programs for demo
-  const mockPrograms = [
-    {
-      id: '1',
-      program_name: 'Acne Treatment',
-      category: 'acne',
-      medication_name: 'Tretinoin + Doxycycline',
-      dosage: '0.05% cream + 100mg',
-      frequency: 'Nightly + Twice daily',
-      duration: '12 weeks',
-      refills_remaining: 2,
-      next_refill_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days from now
-      consultation_id: '123',
-      prescribed_date: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000), // 45 days ago
-      status: 'active'
-    },
-    {
-      id: '2',
-      program_name: 'Weight Management',
-      category: 'weight-loss',
-      medication_name: 'Semaglutide',
-      dosage: '0.5mg weekly',
-      frequency: 'Once weekly',
-      duration: 'Ongoing',
-      refills_remaining: 5,
-      next_refill_date: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000), // 21 days from now
-      consultation_id: '124',
-      prescribed_date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
-      status: 'active'
-    }
-  ];
-
-  // Mock recent orders
-  const mockOrders = [
-    {
-      id: '1',
-      order_number: 'ORD-2024-001',
-      items: [{ medication_name: 'Tretinoin 0.05%' }],
-      total_amount: 89,
-      created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
-      fulfillment_status: 'shipped',
-      tracking_number: '1Z999AA10123456784',
-      payment_status: 'completed'
-    },
-    {
-      id: '2',
-      order_number: 'ORD-2024-002',
-      items: [{ medication_name: 'Semaglutide 0.5mg' }],
-      total_amount: 299,
-      created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
-      fulfillment_status: 'delivered',
-      tracking_number: '1Z999AA10123456785',
-      payment_status: 'completed'
-    }
-  ];
-
-  // Mock measurements
-  const mockMeasurements = [
-    { weight: 185, measurement_date: new Date(Date.now() - 28 * 24 * 60 * 60 * 1000) },
-    { weight: 183, measurement_date: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000) },
-    { weight: 181, measurement_date: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000) },
-    { weight: 179, measurement_date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
-    { weight: 178, measurement_date: new Date() }
-  ];
-
-  // Mock stats
-  const mockStats = {
-    active_prescriptions: 2,
-    total_orders: 8,
-    total_consultations: 4,
-    unread_messages: 1
-  };
 
   // Fetch all dashboard data
   useEffect(() => {
@@ -97,19 +25,19 @@ export default function PatientDashboard() {
         
         // Fetch all data in parallel
         const [patient, programs, orders, measurements, stats] = await Promise.all([
-          api.get('/patients/me').catch(() => null),
-          api.get('/patients/me/programs').catch(() => ({ data: [] })),
-          api.get('/patients/me/orders?limit=5').catch(() => ({ data: [] })),
-          api.get('/patients/me/measurements?limit=5').catch(() => ({ data: [] })),
-          api.get('/patients/me/stats').catch(() => ({ data: {} }))
+          apiClient.patients.getMe().catch(() => ({ data: null })),
+          apiClient.patients.getMyPrograms().catch(() => ({ data: [] })),
+          apiClient.patients.getMyOrders({ limit: 5 }).catch(() => ({ data: [] })),
+          apiClient.patients.getMeasurements({ limit: 5 }).catch(() => ({ data: [] })),
+          apiClient.patients.getMyStats().catch(() => ({ data: {} }))
         ]);
 
-        // Use mock data if API returns empty
-        if (patient?.data) setPatientData(patient.data);
-        setPrograms(programs?.data?.length > 0 ? programs.data : mockPrograms);
-        setRecentOrders(orders?.data?.length > 0 ? orders.data : mockOrders);
-        setMeasurements(measurements?.data?.length > 0 ? measurements.data : mockMeasurements);
-        setStats(stats?.data?.active_prescriptions > 0 ? stats.data : mockStats);
+        // Set data from API responses
+        setPatientData(patient.data);
+        setPrograms(programs.data || []);
+        setRecentOrders(orders.data || []);
+        setMeasurements(measurements.data || []);
+        setStats(stats.data || {});
         
         setLoading(false);
       } catch (err) {
@@ -125,14 +53,14 @@ export default function PatientDashboard() {
   // Log weight measurement
   const handleLogWeight = async (weight: number) => {
     try {
-      await api.post('/patients/me/measurements', {
+      await apiClient.patients.logMeasurement({
         weight,
         measurement_date: new Date().toISOString()
       });
       
       // Refresh measurements
-      const response = await api.get('/patients/me/measurements?limit=5');
-      setMeasurements(response.data);
+      const response = await apiClient.patients.getMeasurements({ limit: 5 });
+      setMeasurements(response.data || []);
     } catch (err) {
       console.error('Error logging weight:', err);
     }

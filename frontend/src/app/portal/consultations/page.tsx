@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { apiClient } from '@/lib/api';
 
 type UserRole = 'provider' | 'admin' | 'provider-admin' | 'super-admin';
 
@@ -22,6 +23,7 @@ export default function ConsultationsPage() {
   const [userRole, setUserRole] = useState<UserRole>('provider');
   const [consultations, setConsultations] = useState<Consultation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedConsultations, setSelectedConsultations] = useState<Set<string>>(new Set());
@@ -43,66 +45,56 @@ export default function ConsultationsPage() {
     fetchConsultations();
   }, []);
 
-  const fetchConsultations = async () => {
-    const mockConsultations: Consultation[] = [
-      {
-        id: '1',
-        patientName: 'Sarah Johnson',
-        type: 'Acne Treatment',
-        status: 'pending',
-        priority: 'high',
-        date: '2024-01-15T10:00:00',
-        provider: 'Dr. Smith'
-      },
-      {
-        id: '2',
-        patientName: 'Michael Chen',
-        type: 'Follow-up',
-        status: 'in-progress',
-        priority: 'medium',
-        date: '2024-01-15T11:00:00',
-        provider: 'Dr. Jones'
-      },
-      {
-        id: '3',
-        patientName: 'Emily Davis',
-        type: 'Initial Consultation',
-        status: 'pending',
-        priority: 'urgent',
-        date: '2024-01-15T14:00:00',
-        provider: 'Dr. Smith'
-      },
-      {
-        id: '4',
-        patientName: 'Robert Wilson',
-        type: 'Prescription Renewal',
-        status: 'completed',
-        priority: 'low',
-        date: '2024-01-14T16:00:00',
-        provider: 'Dr. Brown'
-      },
-      {
-        id: '5',
-        patientName: 'Jessica Martinez',
-        type: 'Dermatology Consult',
-        status: 'pending',
-        priority: 'medium',
-        date: '2024-01-15T15:00:00',
-        provider: 'Dr. Smith'
-      },
-      {
-        id: '6',
-        patientName: 'David Thompson',
-        type: 'Weight Loss Program',
-        status: 'in-progress',
-        priority: 'low',
-        date: '2024-01-15T09:00:00',
-        provider: 'Dr. Jones'
+  // Refetch when filters change
+  useEffect(() => {
+    fetchConsultations();
+  }, [activeFilter, dateRange]);
+
+  // Debounced search
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (searchTerm !== '') {
+        fetchConsultations();
       }
-    ];
-    
-    setConsultations(mockConsultations);
-    setLoading(false);
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm]);
+
+  const fetchConsultations = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Use provider queue endpoint to get consultations for providers
+      const response = await apiClient.consultations.getProviderQueue({
+        status: activeFilter !== 'all' ? activeFilter : undefined,
+        dateRange,
+        search: searchTerm || undefined
+      });
+      
+      const consultationsData = response.data || [];
+      
+      // Transform API data to match our interface
+      const transformedConsultations: Consultation[] = consultationsData.map((item: any) => ({
+        id: item.id,
+        patientName: item.patient_name || `${item.first_name || ''} ${item.last_name || ''}`.trim(),
+        type: item.consultation_type || item.type || 'General Consultation',
+        status: item.status || 'pending',
+        priority: item.priority || 'medium',
+        date: item.created_at || item.submitted_at || new Date().toISOString(),
+        provider: item.provider_name || item.assigned_provider || 'Unassigned'
+      }));
+      
+      setConsultations(transformedConsultations);
+      
+    } catch (err) {
+      console.error('Error fetching consultations:', err);
+      setError('Failed to load consultations');
+      setConsultations([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Filter counts
@@ -173,6 +165,22 @@ export default function ConsultationsPage() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">{error}</p>
+          <button
+            onClick={fetchConsultations}
+            className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800"
+          >
+            Retry
+          </button>
+        </div>
       </div>
     );
   }
@@ -381,13 +389,20 @@ export default function ConsultationsPage() {
                       View
                     </button>
                     {consultation.status === 'pending' && (
-                      <button 
-                        onClick={() => {
-                          const updatedConsultations = consultations.map(c => 
-                            c.id === consultation.id ? {...c, status: 'in-progress' as const} : c
-                          );
-                          setConsultations(updatedConsultations);
-                          router.push(`/portal/consultation/${consultation.id}`);
+                      <button
+                        onClick={async () => {
+                          try {
+                            await apiClient.consultations.accept(consultation.id);
+                            // Update local state
+                            const updatedConsultations = consultations.map(c =>
+                              c.id === consultation.id ? {...c, status: 'in-progress' as const} : c
+                            );
+                            setConsultations(updatedConsultations);
+                            router.push(`/portal/consultation/${consultation.id}`);
+                          } catch (err) {
+                            console.error('Error accepting consultation:', err);
+                            alert('Failed to start consultation. Please try again.');
+                          }
                         }}
                         className="text-blue-600 hover:text-blue-900"
                       >

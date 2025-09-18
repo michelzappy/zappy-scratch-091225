@@ -1,17 +1,13 @@
 # Multi-agent Review Report
 
 ## Summary
-Info: 3 | Medium: 40 | Low: 1 | High: 2
+Info: 3 | Medium: 39 | Low: 1
 
 ### Automation Commands
 - **Backend**: npm run lint, npm run test
 - **Frontend**: npm run lint, npm run test, npm run type-check
 
 ## Findings by Agent
-### AI Consultation Specialist
-- **MEDIUM** LLM JSON output is trusted without schema validation (`backend\src\services\ai-consultation.service.js`:118) [#ai #safety]
-  - Wrap the parsed response in a schema validator (zod/io-ts) to reject malformed content before persisting clinical recommendations.
-
 ### Automation & Quality
 - **INFO** Backend automation commands discovered (`backend\package.json`) [#automation]
   - npm run lint, npm run test
@@ -103,10 +99,6 @@ Info: 3 | Medium: 40 | Low: 1 | High: 2
   - Expose `GET /api/admin/users` through the Next.js api client to keep the portal in sync with the Express app.
 - **MEDIUM** Backend endpoint missing from API client (`backend\src\routes\ai-consultation.js`:147) [#integration]
   - Expose `GET /api/ai-consultation/status` through the Next.js api client to keep the portal in sync with the Express app.
-- **HIGH** Frontend references undefined API route (`frontend\src\lib\api.ts`:93) [#integration]
-  - The client calls `GET /api/patients/:id/consultations` but no Express route exposes it. Either implement the route or update the UI.
-- **HIGH** Frontend references undefined API route (`frontend\src\lib\api.ts`:92) [#integration]
-  - The client calls `PUT /api/patients/:id` but no Express route exposes it. Either implement the route or update the UI.
 
 ### Repository Cartographer
 - **INFO** Component map generated

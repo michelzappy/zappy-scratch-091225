@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { apiClient } from '@/lib/api';
 
 type UserRole = 'provider' | 'admin' | 'provider-admin' | 'super-admin';
 
@@ -35,6 +36,7 @@ export default function OrdersPage() {
   const [userRole, setUserRole] = useState<UserRole>('admin');
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
@@ -66,97 +68,60 @@ export default function OrdersPage() {
     }
   }, [router]);
 
+  // Refetch when filters change
+  useEffect(() => {
+    if (userRole && (userRole === 'admin' || userRole === 'provider-admin' || userRole === 'super-admin')) {
+      fetchOrders();
+    }
+  }, [activeFilter, dateRange, userRole]);
+
   const fetchOrders = async () => {
-    // Mock data with enhanced details
-    const mockOrders: Order[] = [
-      {
-        id: '1',
-        orderNumber: 'ORD-2024-001',
-        patientName: 'Sarah Johnson',
-        patientEmail: 'sarah.j@email.com',
-        items: [
-          { name: 'Tretinoin 0.025%', quantity: 1, price: 59.99 },
-          { name: 'Moisturizer SPF 30', quantity: 2, price: 15.00 }
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Get orders from API
+      const response = await apiClient.orders.getAll({
+        status: activeFilter !== 'all' ? activeFilter : undefined,
+        dateRange,
+        search: searchTerm || undefined
+      });
+      
+      const ordersData = response.data || [];
+      
+      // Transform API data to match our interface
+      const transformedOrders: Order[] = ordersData.map((item: any) => ({
+        id: item.id,
+        orderNumber: item.order_number || item.orderNumber || `ORD-${item.id}`,
+        patientName: item.patient_name || `${item.first_name || ''} ${item.last_name || ''}`.trim() || 'Unknown Patient',
+        patientEmail: item.patient_email || item.email || 'No email',
+        items: item.items || item.order_items || [
+          {
+            name: item.medication_name || item.product_name || 'Unknown Item',
+            quantity: item.quantity || 1,
+            price: item.price || item.total || 0
+          }
         ],
-        status: 'processing',
-        paymentStatus: 'paid',
-        total: 89.99,
-        date: '2024-01-15T10:00:00',
-        shippingAddress: '123 Main St, San Francisco, CA 94105',
-        fulfillmentPartner: 'QuickMeds Pharmacy',
-        trackingNumber: undefined
-      },
-      {
-        id: '2',
-        orderNumber: 'ORD-2024-002',
-        patientName: 'Michael Chen',
-        patientEmail: 'mchen@email.com',
-        items: [
-          { name: 'Hydrocortisone 2.5%', quantity: 1, price: 45.00 }
-        ],
-        status: 'shipped',
-        paymentStatus: 'paid',
-        total: 45.00,
-        date: '2024-01-14T15:00:00',
-        shippingAddress: '456 Oak Ave, Los Angeles, CA 90012',
-        fulfillmentPartner: 'Regional Health Pharmacy',
-        trackingNumber: '1Z999AA10123456784',
-        shippedAt: '2024-01-15T09:00:00'
-      },
-      {
-        id: '3',
-        orderNumber: 'ORD-2024-003',
-        patientName: 'Emily Davis',
-        patientEmail: 'emily.d@email.com',
-        items: [
-          { name: 'Doxycycline 100mg', quantity: 30, price: 65.50 },
-          { name: 'Cleanser', quantity: 1, price: 30.00 },
-          { name: 'Sunscreen', quantity: 1, price: 30.00 }
-        ],
-        status: 'delivered',
-        paymentStatus: 'paid',
-        total: 125.50,
-        date: '2024-01-10T09:00:00',
-        shippingAddress: '789 Pine St, Seattle, WA 98101',
-        fulfillmentPartner: 'QuickMeds Pharmacy',
-        trackingNumber: '1Z999AA10123456785',
-        shippedAt: '2024-01-11T10:00:00',
-        deliveredAt: '2024-01-13T14:30:00'
-      },
-      {
-        id: '4',
-        orderNumber: 'ORD-2024-004',
-        patientName: 'James Wilson',
-        patientEmail: 'jwilson@email.com',
-        items: [
-          { name: 'Sertraline 50mg', quantity: 30, price: 22.99 }
-        ],
-        status: 'pending',
-        paymentStatus: 'pending',
-        total: 22.99,
-        date: '2024-01-15T11:00:00',
-        shippingAddress: '321 Elm St, Portland, OR 97201',
-        fulfillmentPartner: undefined
-      },
-      {
-        id: '5',
-        orderNumber: 'ORD-2024-005',
-        patientName: 'Amanda White',
-        patientEmail: 'awhite@email.com',
-        items: [
-          { name: 'Finasteride 1mg', quantity: 30, price: 45.00 }
-        ],
-        status: 'processing',
-        paymentStatus: 'paid',
-        total: 45.00,
-        date: '2024-01-15T09:30:00',
-        shippingAddress: '555 Market St, San Diego, CA 92101',
-        fulfillmentPartner: 'QuickMeds Pharmacy'
-      }
-    ];
-    
-    setOrders(mockOrders);
-    setLoading(false);
+        status: item.status || 'pending',
+        paymentStatus: item.payment_status || item.paymentStatus || 'pending',
+        total: item.total || item.amount || 0,
+        date: item.created_at || item.order_date || new Date().toISOString(),
+        shippingAddress: item.shipping_address || item.address || 'No address provided',
+        fulfillmentPartner: item.fulfillment_partner || item.pharmacy_name || undefined,
+        trackingNumber: item.tracking_number || item.trackingNumber || undefined,
+        shippedAt: item.shipped_at || item.shippedAt || undefined,
+        deliveredAt: item.delivered_at || item.deliveredAt || undefined
+      }));
+      
+      setOrders(transformedOrders);
+      
+    } catch (err) {
+      console.error('Error fetching orders:', err);
+      setError('Failed to load orders');
+      setOrders([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Filter counts
@@ -227,17 +192,40 @@ export default function OrdersPage() {
     }
   };
 
-  const handleStatusUpdate = (orderId: string, newStatus: string) => {
-    const updatedOrders = orders.map(order => 
-      order.id === orderId ? { ...order, status: newStatus as any } : order
-    );
-    setOrders(updatedOrders);
+  const handleStatusUpdate = async (orderId: string, newStatus: string) => {
+    try {
+      await apiClient.orders.updateStatus(orderId, newStatus);
+      // Update local state
+      const updatedOrders = orders.map(order =>
+        order.id === orderId ? { ...order, status: newStatus as any } : order
+      );
+      setOrders(updatedOrders);
+    } catch (err) {
+      console.error('Error updating order status:', err);
+      alert('Failed to update order status. Please try again.');
+    }
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">{error}</p>
+          <button
+            onClick={fetchOrders}
+            className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800"
+          >
+            Retry
+          </button>
+        </div>
       </div>
     );
   }

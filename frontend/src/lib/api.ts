@@ -84,6 +84,17 @@ class ApiClient {
     markAsRead: (consultationId: string) =>
       this.client.post(`/api/messages/consultation/${consultationId}/read`),
     getUnreadCount: () => this.client.get('/api/messages/unread-count'),
+    // Patient message endpoints
+    getMyConversations: () => this.client.get('/api/messages/conversations'),
+    getConversationMessages: (conversationId: string) =>
+      this.client.get(`/api/messages/conversations/${conversationId}/messages`),
+    sendMessage: (conversationId: string, data: any) =>
+      this.client.post(`/api/messages/conversations/${conversationId}/messages`, data),
+    // Portal message endpoints
+    getAll: (params?: any) => this.client.get('/api/messages', { params }),
+    getById: (id: string) => this.client.get(`/api/messages/${id}`),
+    markRead: (id: string) => this.client.post(`/api/messages/${id}/read`),
+    compose: (data: any) => this.client.post('/api/messages/compose', data),
   };
 
   // Patient endpoints
@@ -91,6 +102,13 @@ class ApiClient {
     getProfile: (id: string) => this.client.get(`/api/patients/${id}`),
     updateProfile: (id: string, data: any) => this.client.put(`/api/patients/${id}`, data),
     getConsultations: (id: string) => this.client.get(`/api/patients/${id}/consultations`),
+    // Dashboard endpoints
+    getMe: () => this.client.get('/api/patients/me'),
+    getMyPrograms: () => this.client.get('/api/patients/me/programs'),
+    getMyOrders: (params?: any) => this.client.get('/api/patients/me/orders', { params }),
+    getMeasurements: (params?: any) => this.client.get('/api/patients/me/measurements', { params }),
+    getMyStats: () => this.client.get('/api/patients/me/stats'),
+    logMeasurement: (data: any) => this.client.post('/api/patients/me/measurements', data),
   };
 
   // Provider endpoints
@@ -114,6 +132,39 @@ class ApiClient {
   admin = {
     getDashboard: () => this.client.get('/api/admin/dashboard'),
     getAuditLogs: () => this.client.get('/api/admin/audit-logs'),
+  };
+
+  // Check-in endpoints
+  checkins = {
+    getAll: () => this.client.get('/api/checkins'),
+    getById: (id: string) => this.client.get(`/api/checkins/${id}`),
+    getByPatient: (patientId: string) => this.client.get(`/api/checkins/patient/${patientId}`),
+    getPending: () => this.client.get('/api/checkins/pending'),
+    create: (data: any) => this.client.post('/api/checkins', data),
+    update: (id: string, data: any) => this.client.put(`/api/checkins/${id}`, data),
+    complete: (id: string, data: any) => this.client.post(`/api/checkins/${id}/complete`, data),
+    requestMoreInfo: (id: string, message: string) => this.client.post(`/api/checkins/${id}/request-info`, { message }),
+  };
+
+  // Order endpoints
+  orders = {
+    getAll: (params?: any) => this.client.get('/api/orders', { params }),
+    getById: (id: string) => this.client.get(`/api/orders/${id}`),
+    create: (data: any) => this.client.post('/api/orders', data),
+    update: (id: string, data: any) => this.client.put(`/api/orders/${id}`, data),
+    updateStatus: (id: string, status: string) => this.client.patch(`/api/orders/${id}/status`, { status }),
+    cancel: (id: string) => this.client.post(`/api/orders/${id}/cancel`),
+    getByPatient: (patientId: string) => this.client.get(`/api/orders/patient/${patientId}`),
+  };
+
+  // Treatment plan endpoints
+  treatmentPlans = {
+    getAll: (params?: any) => this.client.get('/api/treatment-plans', { params }),
+    getById: (id: string) => this.client.get(`/api/treatment-plans/${id}`),
+    getByCondition: (condition: string) => this.client.get(`/api/treatment-plans/condition/${condition}`),
+    create: (data: any) => this.client.post('/api/treatment-plans', data),
+    update: (id: string, data: any) => this.client.put(`/api/treatment-plans/${id}`, data),
+    delete: (id: string) => this.client.delete(`/api/treatment-plans/${id}`),
   };
 }
 
