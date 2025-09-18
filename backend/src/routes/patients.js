@@ -326,12 +326,12 @@ router.get('/me/stats',
     const db = getDatabase();
     
     const stats = await db.raw(`
-      SELECT 
+      SELECT
         (SELECT COUNT(*) FROM consultations WHERE patient_id = ? AND status = 'completed') as total_consultations,
         (SELECT COUNT(*) FROM orders WHERE patient_id = ?) as total_orders,
         (SELECT COUNT(*) FROM prescriptions WHERE patient_id = ? AND status = 'active') as active_prescriptions,
-        (SELECT COUNT(*) FROM consultation_messages cm 
-         JOIN consultations c ON cm.consultation_id = c.id 
+        (SELECT COUNT(*) FROM consultation_messages cm
+         JOIN consultations c ON cm.consultation_id = c.id
          WHERE c.patient_id = ? AND cm.is_read = false AND cm.sender_type != 'patient') as unread_messages,
         (SELECT MAX(created_at) FROM consultations WHERE patient_id = ?) as last_consultation_date,
         (SELECT subscription_tier FROM patients WHERE id = ?) as subscription_tier,
@@ -341,6 +341,133 @@ router.get('/me/stats',
     res.json({
       success: true,
       data: stats.rows[0] || {}
+    });
+  })
+);
+
+// Get patient's consultations by ID (for providers/admins)
+router.get('/:id/consultations',
+  requireAuth,
+  [
+    param('id').isUUID().withMessage('Invalid patient ID'),
+    query('status').optional().isString(),
+    query('limit').optional().isInt({ min: 1, max: 100 })
+  ],
+  handleValidationErrors,
+  asyncHandler(async (req, res) => {
+    const db = getDatabase();
+    const { status, limit = 20 } = req.query;
+    
+    // Only allow patients to view their own data or providers/admins to view any
+    if (req.user.role === 'patient' && req.user.id !== req.params.id) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Verify patient exists
+    const [patient] = await db
+      .select('id')
+      .from('patients')
+      .where({ id: req.params.id })
+      .limit(1);
+
+    if (!patient) {
+      return res.status(404).json({ error: 'Patient not found' });
+    }
+
+    let query = db
+      .select([
+        'consultations.*',
+        'providers.first_name as provider_first_name',
+        'providers.last_name as provider_last_name',
+        'providers.title as provider_title'
+      ])
+      .from('consultations')
+      .leftJoin('providers', 'consultations.provider_id', 'providers.id')
+      .where({ 'consultations.patient_id': req.params.id })
+      .orderBy('consultations.created_at', 'desc')
+      .limit(limit);
+
+    if (status) {
+      query = query.where({ 'consultations.status': status });
+    }
+
+    const consultations = await query;
+
+    res.json({
+      success: true,
+      data: consultations
+    });
+  })
+);
+
+// Update patient profile by ID (for providers/admins)
+router.put('/:id',
+  requireAuth,
+  [
+    param('id').isUUID().withMessage('Invalid patient ID'),
+    body('first_name').optional().isString(),
+    body('last_name').optional().isString(),
+    body('phone').optional().isString(),
+    body('date_of_birth').optional().isISO8601(),
+    body('gender').optional().isString(),
+    body('shipping_address').optional().isString(),
+    body('shipping_city').optional().isString(),
+    body('shipping_state').optional().isString(),
+    body('shipping_zip').optional().isString(),
+    body('allergies').optional().isString(),
+    body('current_medications').optional().isString(),
+    body('medical_conditions').optional().isString(),
+    body('emergency_contact_name').optional().isString(),
+    body('emergency_contact_phone').optional().isString(),
+    body('insurance_provider').optional().isString(),
+    body('insurance_policy_number').optional().isString()
+  ],
+  handleValidationErrors,
+  asyncHandler(async (req, res) => {
+    const db = getDatabase();
+    
+    // Only allow patients to update their own data or providers/admins to update any
+    if (req.user.role === 'patient' && req.user.id !== req.params.id) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Verify patient exists
+    const [existingPatient] = await db
+      .select()
+      .from('patients')
+      .where({ id: req.params.id })
+      .limit(1);
+
+    if (!existingPatient) {
+      return res.status(404).json({ error: 'Patient not found' });
+    }
+    
+    // Don't allow updating sensitive fields
+    delete req.body.id;
+    delete req.body.email;
+    delete req.body.password_hash;
+    delete req.body.stripe_customer_id;
+    delete req.body.total_spent;
+    delete req.body.total_orders;
+    delete req.body.subscription_tier;
+    delete req.body.subscription_active;
+    delete req.body.created_at;
+
+    const [updated] = await db
+      .update('patients')
+      .set({
+        ...req.body,
+        updated_at: new Date()
+      })
+      .where({ id: req.params.id })
+      .returning();
+
+    delete updated.password_hash;
+
+    res.json({
+      success: true,
+      data: updated,
+      message: 'Patient profile updated successfully'
     });
   })
 );
