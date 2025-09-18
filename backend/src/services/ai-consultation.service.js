@@ -1,50 +1,125 @@
 import OpenAI from 'openai';
 import dotenv from 'dotenv';
+import { z } from 'zod';
 
 dotenv.config();
 
-// Schema validation for AI responses
-const validateAssessmentSchema = (data) => {
-  const required = ['diagnosis', 'assessment'];
-  const errors = [];
+// Comprehensive Zod schemas for AI response validation
+const AssessmentResponseSchema = z.object({
+  diagnosis: z.string()
+    .min(1, 'Diagnosis is required')
+    .max(500, 'Diagnosis too long')
+    .refine(val => val.trim().length > 0, 'Diagnosis cannot be empty'),
   
-  if (typeof data !== 'object' || data === null) {
-    errors.push('Response must be an object');
-    return { isValid: false, errors };
+  assessment: z.string()
+    .min(10, 'Assessment must be at least 10 characters')
+    .max(2000, 'Assessment too long')
+    .refine(val => val.trim().length > 0, 'Assessment cannot be empty'),
+  
+  differentialDiagnosis: z.array(z.string().min(1)).optional().default([]),
+  
+  // Optional fields that might be included
+  severity: z.enum(['mild', 'moderate', 'severe']).optional(),
+  urgency: z.enum(['low', 'medium', 'high', 'urgent']).optional(),
+  followUpRequired: z.boolean().optional(),
+  redFlags: z.array(z.string()).optional().default([])
+});
+
+const MedicationSchema = z.object({
+  name: z.string()
+    .min(1, 'Medication name is required')
+    .max(200, 'Medication name too long'),
+  
+  dose: z.string()
+    .min(1, 'Dose is required')
+    .max(100, 'Dose description too long'),
+  
+  frequency: z.string()
+    .min(1, 'Frequency is required')
+    .max(100, 'Frequency description too long'),
+  
+  duration: z.string().optional(),
+  instructions: z.string().optional(),
+  sideEffects: z.array(z.string()).optional().default([]),
+  contraindications: z.array(z.string()).optional().default([])
+});
+
+const MedicationResponseSchema = z.object({
+  medications: z.array(MedicationSchema).optional().default([]),
+  
+  monitoring: z.string().optional(),
+  
+  duration: z.string().optional(),
+  
+  // Additional safety fields
+  drugInteractions: z.array(z.string()).optional().default([]),
+  allergicReactions: z.array(z.string()).optional().default([]),
+  specialInstructions: z.string().optional()
+});
+
+const SOAPNoteSchema = z.object({
+  subjective: z.string().min(10, 'Subjective section too short'),
+  objective: z.string().min(5, 'Objective section too short'),
+  assessment: z.string().min(10, 'Assessment section too short'),
+  plan: z.string().min(10, 'Plan section too short')
+});
+
+// Validation helper functions with comprehensive error logging
+const validateAIResponse = (schema, data, responseType) => {
+  try {
+    const validatedData = schema.parse(data);
+    console.log(`✅ AI ${responseType} validation successful`);
+    return { success: true, data: validatedData, errors: null };
+  } catch (error) {
+    const validationErrors = error.errors || [{ message: error.message }];
+    
+    console.error(`❌ AI ${responseType} validation failed:`, {
+      timestamp: new Date().toISOString(),
+      responseType,
+      errors: validationErrors,
+      rawData: JSON.stringify(data, null, 2)
+    });
+    
+    // Log specific validation issues for monitoring
+    validationErrors.forEach(err => {
+      console.error(`  - Field: ${err.path?.join('.') || 'root'}, Issue: ${err.message}`);
+    });
+    
+    return { 
+      success: false, 
+      data: null, 
+      errors: validationErrors.map(err => ({
+        field: err.path?.join('.') || 'root',
+        message: err.message,
+        code: err.code
+      }))
+    };
   }
-  
-  required.forEach(field => {
-    if (!data[field] || typeof data[field] !== 'string' || data[field].trim().length === 0) {
-      errors.push(`Field '${field}' is required and must be a non-empty string`);
-    }
-  });
-  
-  if (data.differentialDiagnosis && !Array.isArray(data.differentialDiagnosis)) {
-    errors.push('differentialDiagnosis must be an array if provided');
-  }
-  
-  return { isValid: errors.length === 0, errors };
 };
 
-const validateMedicationSchema = (data) => {
-  const errors = [];
-  
-  if (typeof data !== 'object' || data === null) {
-    errors.push('Response must be an object');
-    return { isValid: false, errors };
-  }
-  
-  if (data.medications && !Array.isArray(data.medications)) {
-    errors.push('medications must be an array if provided');
-  } else if (data.medications) {
-    data.medications.forEach((med, index) => {
-      if (typeof med !== 'object' || !med.name || !med.dose) {
-        errors.push(`Medication at index ${index} must have name and dose fields`);
-      }
+// Enhanced error handling for AI response parsing
+const safeParseAIResponse = (responseContent, responseType) => {
+  try {
+    const parsedData = JSON.parse(responseContent);
+    console.log(`📥 AI ${responseType} response received:`, {
+      timestamp: new Date().toISOString(),
+      responseType,
+      hasData: !!parsedData
     });
+    return { success: true, data: parsedData, error: null };
+  } catch (error) {
+    console.error(`❌ AI ${responseType} JSON parsing failed:`, {
+      timestamp: new Date().toISOString(),
+      responseType,
+      error: error.message,
+      rawContent: responseContent?.substring(0, 200) + '...'
+    });
+    return { 
+      success: false, 
+      data: null, 
+      error: `Invalid JSON response from AI: ${error.message}` 
+    };
   }
-  
-  return { isValid: errors.length === 0, errors };
 };
 
 class AIConsultationService {
@@ -96,6 +171,7 @@ class AIConsultationService {
         3. Key differential diagnoses to consider
         
         Format the response as JSON with fields: diagnosis, assessment, differentialDiagnosis
+        Ensure diagnosis is concise but specific, assessment is comprehensive, and differentialDiagnosis is an array of strings.
       `;
 
       const response = await this.openai.chat.completions.create({
@@ -103,7 +179,7 @@ class AIConsultationService {
         messages: [
           {
             role: 'system',
-            content: 'You are a medical assistant helping providers with clinical assessments. Provide evidence-based recommendations.'
+            content: 'You are a medical assistant helping providers with clinical assessments. Provide evidence-based recommendations. Always return valid JSON with the exact fields requested.'
           },
           {
             role: 'user',
@@ -115,24 +191,35 @@ class AIConsultationService {
         response_format: { type: 'json_object' }
       });
 
-      const rawResult = JSON.parse(response.choices[0].message.content);
-      
-      // Validate AI response schema
-      const validation = validateAssessmentSchema(rawResult);
-      if (!validation.isValid) {
-        console.error('AI assessment validation failed:', validation.errors);
-        const e = new Error('AI response validation failed');
+      // Safe JSON parsing with error handling
+      const parseResult = safeParseAIResponse(response.choices[0].message.content, 'assessment');
+      if (!parseResult.success) {
+        const e = new Error(`AI response parsing failed: ${parseResult.error}`);
         e.status = 502;
         throw e;
       }
+
+      // Comprehensive schema validation
+      const validation = validateAIResponse(AssessmentResponseSchema, parseResult.data, 'assessment');
+      if (!validation.success) {
+        console.error('🚨 AI assessment validation failed - potential data corruption risk');
+        const e = new Error(`AI response validation failed: ${validation.errors.map(err => err.message).join(', ')}`);
+        e.status = 502;
+        e.validationErrors = validation.errors;
+        throw e;
+      }
       
-      return {
-        diagnosis: rawResult.diagnosis,
-        assessment: rawResult.assessment,
-        differentialDiagnosis: rawResult.differentialDiagnosis || []
-      };
+      console.log('✅ AI assessment validated and safe for persistence');
+      return validation.data;
+      
     } catch (error) {
-      console.error('OpenAI API error:', error);
+      console.error('OpenAI API error:', {
+        timestamp: new Date().toISOString(),
+        error: error.message,
+        status: error.status,
+        validationErrors: error.validationErrors
+      });
+      
       if (error.status) {
         throw error;
       }
@@ -198,7 +285,9 @@ class AIConsultationService {
         return patientMessage + disclaimerText;
       }
       
+      console.log('✅ Patient message generated with proper disclaimers');
       return patientMessage;
+      
     } catch (error) {
       console.error('OpenAI API error:', error);
       if (error.status) {
@@ -236,7 +325,8 @@ class AIConsultationService {
         4. Duration of treatment
         5. Important side effects to monitor
         
-        Format as JSON with fields: medications (array), monitoring, duration
+        Format as JSON with fields: medications (array with name, dose, frequency), monitoring, duration
+        Each medication must have: name, dose, frequency (all required strings)
       `;
 
       const response = await this.openai.chat.completions.create({
@@ -244,7 +334,7 @@ class AIConsultationService {
         messages: [
           {
             role: 'system',
-            content: 'You are a clinical decision support system providing medication recommendations. Always consider drug interactions and contraindications.'
+            content: 'You are a clinical decision support system providing medication recommendations. Always consider drug interactions and contraindications. Return valid JSON with exact fields requested.'
           },
           {
             role: 'user',
@@ -256,20 +346,35 @@ class AIConsultationService {
         response_format: { type: 'json_object' }
       });
 
-      const rawResult = JSON.parse(response.choices[0].message.content);
-      
-      // Validate medication recommendations schema
-      const validation = validateMedicationSchema(rawResult);
-      if (!validation.isValid) {
-        console.error('AI medication validation failed:', validation.errors);
-        const e = new Error('AI response validation failed');
+      // Safe JSON parsing with error handling
+      const parseResult = safeParseAIResponse(response.choices[0].message.content, 'medication');
+      if (!parseResult.success) {
+        const e = new Error(`AI response parsing failed: ${parseResult.error}`);
         e.status = 502;
         throw e;
       }
+
+      // Comprehensive schema validation
+      const validation = validateAIResponse(MedicationResponseSchema, parseResult.data, 'medication');
+      if (!validation.success) {
+        console.error('🚨 AI medication validation failed - potential medication safety risk');
+        const e = new Error(`AI medication response validation failed: ${validation.errors.map(err => err.message).join(', ')}`);
+        e.status = 502;
+        e.validationErrors = validation.errors;
+        throw e;
+      }
       
-      return rawResult;
+      console.log('✅ AI medication recommendations validated and safe for clinical use');
+      return validation.data;
+      
     } catch (error) {
-      console.error('OpenAI API error:', error);
+      console.error('OpenAI API error:', {
+        timestamp: new Date().toISOString(),
+        error: error.message,
+        status: error.status,
+        validationErrors: error.validationErrors
+      });
+      
       if (error.status) {
         throw error;
       }
@@ -322,9 +427,26 @@ class AIConsultationService {
         max_tokens: 1500
       });
 
-      return response.choices[0].message.content;
+      const soapNote = response.choices[0].message.content;
+      
+      // Basic validation for SOAP note structure
+      if (!soapNote || soapNote.trim().length < 50) {
+        console.error('🚨 AI SOAP note validation failed - insufficient content');
+        const e = new Error('AI generated SOAP note is too short or empty');
+        e.status = 502;
+        throw e;
+      }
+      
+      console.log('✅ AI SOAP note generated successfully');
+      return soapNote;
+      
     } catch (error) {
-      console.error('OpenAI API error:', error);
+      console.error('OpenAI API error:', {
+        timestamp: new Date().toISOString(),
+        error: error.message,
+        status: error.status
+      });
+      
       if (error.status) {
         throw error;
       }
