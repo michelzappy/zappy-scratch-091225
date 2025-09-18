@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { apiClient } from '@/lib/api';
 
 type UserRole = 'provider' | 'admin' | 'provider-admin' | 'super-admin';
 
@@ -24,6 +25,7 @@ export default function PatientsPage() {
   const [userRole, setUserRole] = useState<UserRole>('provider');
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const [selectedPatients, setSelectedPatients] = useState<Set<string>>(new Set());
@@ -45,94 +47,56 @@ export default function PatientsPage() {
     fetchPatients();
   }, []);
 
-  const fetchPatients = async () => {
-    // Mock data - add more patients for better demo
-    const mockPatients: Patient[] = [
-      {
-        id: '1',
-        name: 'Sarah Johnson',
-        email: 'sarah.j@email.com',
-        phone: '(555) 123-4567',
-        dateOfBirth: '1990-05-15',
-        status: 'active',
-        lastVisit: '2024-01-10',
-        nextAppointment: '2024-01-20',
-        conditions: ['Acne', 'Eczema']
-      },
-      {
-        id: '2',
-        name: 'Michael Chen',
-        email: 'mchen@email.com',
-        phone: '(555) 234-5678',
-        dateOfBirth: '1985-08-22',
-        status: 'active',
-        lastVisit: '2024-01-05',
-        conditions: ['Psoriasis']
-      },
-      {
-        id: '3',
-        name: 'Emily Davis',
-        email: 'emily.d@email.com',
-        phone: '(555) 345-6789',
-        dateOfBirth: '1995-03-10',
-        status: 'pending',
-        lastVisit: '2023-12-15',
-        conditions: ['Rosacea']
-      },
-      {
-        id: '4',
-        name: 'Robert Wilson',
-        email: 'rwilson@email.com',
-        phone: '(555) 456-7890',
-        dateOfBirth: '1978-11-28',
-        status: 'active',
-        lastVisit: '2024-01-12',
-        conditions: ['Hair Loss']
-      },
-      {
-        id: '5',
-        name: 'Jessica Martinez',
-        email: 'jmartinez@email.com',
-        phone: '(555) 567-8901',
-        dateOfBirth: '1992-07-03',
-        status: 'inactive',
-        lastVisit: '2023-11-20',
-        conditions: ['Acne']
-      },
-      {
-        id: '6',
-        name: 'David Thompson',
-        email: 'dthompson@email.com',
-        phone: '(555) 678-9012',
-        dateOfBirth: '1988-02-14',
-        status: 'active',
-        lastVisit: '2024-01-14',
-        conditions: ['Weight Loss']
-      },
-      {
-        id: '7',
-        name: 'Amanda White',
-        email: 'awhite@email.com',
-        phone: '(555) 789-0123',
-        dateOfBirth: '1983-09-25',
-        status: 'active',
-        lastVisit: '2024-01-13',
-        conditions: ["Men's Health"]
-      },
-      {
-        id: '8',
-        name: 'Christopher Lee',
-        email: 'clee@email.com',
-        phone: '(555) 890-1234',
-        dateOfBirth: '1991-04-17',
-        status: 'pending',
-        lastVisit: '2024-01-11',
-        conditions: ['TRT']
+  // Refetch when filters change
+  useEffect(() => {
+    fetchPatients();
+  }, [activeFilter, dateRange]);
+
+  // Debounced search
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (searchTerm !== '') {
+        fetchPatients();
       }
-    ];
-    
-    setPatients(mockPatients);
-    setLoading(false);
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm]);
+
+  const fetchPatients = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // For now, we'll use a generic API call since we don't have a specific patients list endpoint
+      // In a real implementation, this would be something like apiClient.patients.getAll()
+      const response = await apiClient.admin.getDashboard();
+      
+      // Extract patients data from dashboard or use a fallback
+      const patientsData = response.data?.patients || [];
+      
+      // Transform API data to match our interface
+      const transformedPatients: Patient[] = patientsData.map((item: any) => ({
+        id: item.id,
+        name: item.name || `${item.first_name || ''} ${item.last_name || ''}`.trim() || 'Unknown Patient',
+        email: item.email || 'No email',
+        phone: item.phone || item.phone_number || 'No phone',
+        dateOfBirth: item.date_of_birth || item.dob || '1990-01-01',
+        status: item.status || 'active',
+        lastVisit: item.last_visit || item.last_consultation || new Date().toISOString().split('T')[0],
+        nextAppointment: item.next_appointment || undefined,
+        conditions: item.conditions || item.medical_conditions || ['General Care']
+      }));
+      
+      setPatients(transformedPatients);
+      
+    } catch (err) {
+      console.error('Error fetching patients:', err);
+      setError('Failed to load patients');
+      setPatients([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Filter counts
@@ -141,7 +105,12 @@ export default function PatientsPage() {
     active: patients.filter(p => p.status === 'active').length,
     pending: patients.filter(p => p.status === 'pending').length,
     inactive: patients.filter(p => p.status === 'inactive').length,
-    new: 12 // Mock value for new this week
+    new: patients.filter(p => {
+      const lastVisit = new Date(p.lastVisit);
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      return lastVisit >= weekAgo;
+    }).length
   };
 
   // Apply filters
@@ -152,8 +121,11 @@ export default function PatientsPage() {
     let matchesFilter = true;
     if (activeFilter !== 'all') {
       if (activeFilter === 'new') {
-        // Mock logic - in reality would check dates
-        matchesFilter = ['1', '4', '6', '7'].includes(patient.id);
+        // Check if patient is new this week
+        const lastVisit = new Date(patient.lastVisit);
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        matchesFilter = lastVisit >= weekAgo;
       } else {
         matchesFilter = patient.status === activeFilter;
       }
@@ -184,6 +156,22 @@ export default function PatientsPage() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">{error}</p>
+          <button
+            onClick={fetchPatients}
+            className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800"
+          >
+            Retry
+          </button>
+        </div>
       </div>
     );
   }

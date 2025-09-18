@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Card from '@/components/Card';
+import { apiClient } from '@/lib/api';
 
 // Common medications database
 const medicationDatabase = {
@@ -35,6 +36,7 @@ export default function ConsultationReviewPage() {
 
   const [consultation, setConsultation] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState('hpi');
   const [sending, setSending] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
@@ -73,82 +75,44 @@ export default function ConsultationReviewPage() {
 
   const fetchConsultation = async () => {
     try {
-      // Mock consultation data - in production this would be an API call
-      const mockConsultation = {
-        id: consultationId,
-        patientId: '123',
-        first_name: 'Emily',
-        last_name: 'Johnson',
-        email: 'emily.johnson@email.com',
-        phone: '(555) 123-4567',
-        date_of_birth: '1996-03-15',
-        age: 28,
-        gender: 'Female',
+      setLoading(true);
+      setError(null);
+      
+      const response = await apiClient.consultations.getById(consultationId as string);
+      const consultationData = response.data;
+      
+      setConsultation(consultationData);
 
-        // Medical history
-        allergies: 'Penicillin, Sulfa drugs',
-        current_medications: 'Birth control (Yaz), Vitamin D 2000 IU daily',
-        past_medical_history: 'PCOS diagnosed 2019, Anxiety',
+      // Pre-fill HPI from patient data if available
+      if (consultationData) {
+        setHpi({
+          chiefComplaint: consultationData.chief_complaint || '',
+          onset: consultationData.symptom_onset || '',
+          location: consultationData.symptom_location || '',
+          duration: consultationData.symptom_duration || '',
+          characteristics: consultationData.symptoms || '',
+          aggravatingFactors: consultationData.aggravating_factors || '',
+          relievingFactors: consultationData.relieving_factors || '',
+          timing: consultationData.timing || '',
+          severity: consultationData.severity ? `${consultationData.severity}/10` : '',
+          context: consultationData.previous_treatments || ''
+        });
 
-        // Current consultation
-        chief_complaint: 'Persistent acne on face and back for 6 months',
-        symptoms: 'Inflammatory acne with scarring, worse during menstrual cycle',
-        symptom_duration: '6 months',
-        severity: 7,
-        submitted_at: new Date(Date.now() - 45 * 60000).toISOString(),
+        // Pre-fill existing assessment if available
+        setDiagnosis(consultationData.diagnosis || '');
+        setTreatmentNotes(consultationData.treatment_notes || '');
+        setPatientVisibleNote(consultationData.patient_message || '');
+        setInternalProviderNote(consultationData.provider_notes || '');
+        
+        // Load existing medications if available
+        if (consultationData.medications && consultationData.medications.length > 0) {
+          setSelectedMedications(consultationData.medications);
+        }
+      }
 
-        // Additional intake data
-        symptom_onset: 'Gradual over past 6 months',
-        symptom_location: 'Face (mainly forehead and cheeks), upper back',
-        aggravating_factors: 'Stress, menstrual cycle, dairy products',
-        relieving_factors: 'Salicylic acid face wash provides temporary relief',
-        previous_treatments: 'OTC benzoyl peroxide, salicylic acid - minimal improvement',
-
-        // Shipping
-        shipping_address: '123 Main St, Apt 4B, San Francisco, CA 94102'
-      };
-
-      setConsultation(mockConsultation);
-
-      // Pre-fill HPI from patient data
-      setHpi({
-        chiefComplaint: mockConsultation.chief_complaint,
-        onset: mockConsultation.symptom_onset,
-        location: mockConsultation.symptom_location,
-        duration: mockConsultation.symptom_duration,
-        characteristics: mockConsultation.symptoms,
-        aggravatingFactors: mockConsultation.aggravating_factors,
-        relievingFactors: mockConsultation.relieving_factors,
-        timing: 'Worse during menstrual cycle',
-        severity: `${mockConsultation.severity}/10`,
-        context: mockConsultation.previous_treatments
-      });
-
-      // Pre-fill with AI suggestions
-      setDiagnosis('Acne vulgaris, moderate to severe, with hormonal component');
-      setTreatmentNotes('Start combination therapy with topical retinoid and oral antibiotic. Counsel on skin care routine and sun protection. Follow up in 6-8 weeks.');
-
-      // Pre-select common medications
-      setSelectedMedications([
-        { ...medicationDatabase.acne[0], qty: 1, instructions: 'Apply thin layer to affected areas at bedtime' },
-        { ...medicationDatabase.acne[2], qty: 60, instructions: 'Take 100mg twice daily with food' }
-      ]);
-
-      // Pre-fill patient message
-      setPatientVisibleNote(
-        `Dear Emily,\n\n` +
-        `After reviewing your consultation, I've diagnosed you with moderate to severe acne with a hormonal component. ` +
-        `This is very common and treatable.\n\n` +
-        `I'm prescribing:\n` +
-        `1. Tretinoin 0.025% cream - Apply at bedtime to help with cell turnover\n` +
-        `2. Doxycycline 100mg - Take twice daily with food to reduce inflammation\n\n` +
-        `Please be patient as it may take 6-8 weeks to see improvement. Use sunscreen daily as these medications can increase sun sensitivity.\n\n` +
-        `We'll follow up in 6-8 weeks to assess your progress.\n\n` +
-        `Best regards,\nDr. Smith`
-      );
-
-    } catch (error) {
-      console.error('Error:', error);
+    } catch (err) {
+      console.error('Error fetching consultation:', err);
+      setError('Failed to load consultation details');
     } finally {
       setLoading(false);
     }
@@ -196,9 +160,7 @@ export default function ConsultationReviewPage() {
   const sendTreatmentPlan = async () => {
     setSending(true);
     try {
-      // In production, this would send to backend API
       const payload = {
-        consultationId,
         hpi,
         diagnosis,
         treatmentNotes,
@@ -208,16 +170,13 @@ export default function ConsultationReviewPage() {
         status: 'completed'
       };
 
-      console.log('Sending treatment plan:', payload);
-      
-      // Mock API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await apiClient.consultations.complete(consultationId as string, payload);
       
       alert('Treatment plan sent to patient and pharmacy!');
       router.push('/portal/consultations');
-    } catch (error) {
-      console.error('Error:', error);
-      alert('Error sending treatment plan');
+    } catch (err) {
+      console.error('Error sending treatment plan:', err);
+      alert('Error sending treatment plan. Please try again.');
     } finally {
       setSending(false);
     }
@@ -227,6 +186,30 @@ export default function ConsultationReviewPage() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">{error}</p>
+          <button
+            onClick={fetchConsultation}
+            className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!consultation) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-gray-600">Consultation not found</p>
       </div>
     );
   }

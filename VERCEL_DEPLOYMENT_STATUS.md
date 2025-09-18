@@ -48,19 +48,36 @@ The project cannot currently build due to npm installation failures caused by sp
 
 ### Recommended Solutions
 
-#### Option 1: Move Project (Recommended)
+#### Option 1: Use Provided Fix Scripts (Immediate)
+**PowerShell Script** (Recommended):
+```powershell
+.\Fix-NpmInstall.ps1
+```
+
+**Batch Script** (Alternative):
+```cmd
+fix-npm-install.bat
+```
+
+These scripts attempt multiple workarounds:
+- Clean npm cache and remove corrupted node_modules
+- Use `--no-optional --legacy-peer-deps` flags
+- Try yarn as alternative package manager
+- Attempt build after successful install
+
+#### Option 2: Move Project (Long-term)
 ```bash
 # Move project to path without spaces
 C:\Projects\zappy-telehealth\
 ```
 
-#### Option 2: Use Short Path Names
+#### Option 3: Use Short Path Names
 ```bash
 # Use Windows short path names
 cd /d "C:\Users\willi\DOWNLO~1\DOWNLO~1\ZAPPYM~1\zappy-scratch-091225"
 ```
 
-#### Option 3: Deploy from Clean Environment
+#### Option 4: Deploy from Clean Environment
 - Clone repository to new location without spaces
 - Run npm install in clean environment
 - Deploy from there

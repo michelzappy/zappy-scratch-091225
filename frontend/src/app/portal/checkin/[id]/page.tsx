@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Card from '@/components/Card';
+import { apiClient } from '@/lib/api';
 
 type UserRole = 'provider' | 'admin' | 'provider-admin' | 'super-admin';
 
@@ -69,12 +70,14 @@ export default function CheckInDetailPage() {
   const [userRole, setUserRole] = useState<UserRole>('provider');
   const [checkIn, setCheckIn] = useState<CheckIn | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [assessment, setAssessment] = useState('');
   const [plan, setPlan] = useState('');
   const [messageToPatient, setMessageToPatient] = useState('');
   const [recommendation, setRecommendation] = useState<'continue' | 'increase' | 'decrease' | 'switch' | 'discontinue'>('continue');
   const [newDose, setNewDose] = useState('');
   const [alternativeMed, setAlternativeMed] = useState('');
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -98,97 +101,83 @@ export default function CheckInDetailPage() {
   }, [router]);
 
   const fetchCheckInDetails = async () => {
-    // Mock data
-    const mockCheckIn: CheckIn = {
-      id: checkInId as string,
-      patientId: '123',
-      patientName: 'Sarah Johnson',
-      submittedAt: '2024-01-15T09:00:00',
-      type: 'monthly',
-      status: 'pending',
+    try {
+      setLoading(true);
+      setError(null);
       
-      intervalHistory: {
-        chiefComplaint: 'Acne improving but still having occasional breakouts',
-        symptomChanges: 'Significant improvement in forehead acne, but still getting cystic acne on chin area',
-        sideEffects: ['Mild dryness', 'Initial purging resolved'],
-        adherence: '95% - Missed only 2 days this month',
-        lifestyleChanges: 'Started new skincare routine, reduced dairy intake',
-        newMedicalConditions: 'None',
-        hospitalizations: 'None'
-      },
+      const response = await apiClient.checkins.getById(checkInId as string);
+      const checkInData = response.data;
       
-      progressMarkers: [
-        {
-          date: '2023-11-15',
-          weight: 145,
-          photoUrls: ['before1.jpg', 'before2.jpg'],
-          notes: 'Baseline - severe cystic acne'
-        },
-        {
-          date: '2023-12-15',
-          weight: 143,
-          photoUrls: ['progress1.jpg', 'progress2.jpg'],
-          notes: 'Initial improvement, purging phase'
-        },
-        {
-          date: '2024-01-15',
-          weight: 142,
-          photoUrls: ['current1.jpg', 'current2.jpg'],
-          notes: 'Significant clearing on forehead'
-        }
-      ],
+      setCheckIn(checkInData);
+      setAssessment(checkInData.assessment || '');
+      setPlan(checkInData.plan || '');
+      setRecommendation(checkInData.recommendation || 'continue');
+      setNewDose(checkInData.recommendedDose || '');
+      setAlternativeMed(checkInData.alternativeMedication || '');
       
-      currentWeight: 142,
-      weightChange: -3,
-      
-      photoComparison: {
-        before: 'before_photo.jpg',
-        current: 'current_photo.jpg'
-      },
-      
-      currentMedications: [
-        {
-          name: 'Tretinoin',
-          dose: '0.025%',
-          frequency: 'Once daily at bedtime',
-          startDate: '2023-11-15',
-          effectiveness: 'good'
-        },
-        {
-          name: 'Doxycycline',
-          dose: '100mg',
-          frequency: 'Twice daily',
-          startDate: '2023-11-15',
-          effectiveness: 'moderate'
-        }
-      ],
-      
-      assessment: '',
-      plan: '',
-      recommendation: 'continue'
-    };
-    
-    setCheckIn(mockCheckIn);
-    setAssessment('Patient showing good response to current treatment regimen. Forehead acne has cleared significantly. Chin area still showing some cystic lesions but improving.');
-    setPlan('Continue current medications for another month. Consider increasing tretinoin to 0.05% if plateau in improvement.');
-    setLoading(false);
+    } catch (err) {
+      console.error('Error fetching check-in details:', err);
+      setError('Failed to load check-in details');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleSaveAndComplete = () => {
-    // Save the assessment and complete the check-in
-    if (checkIn) {
-      const updatedCheckIn = {
-        ...checkIn,
+  const handleSaveAndComplete = async () => {
+    if (!checkIn) return;
+    
+    try {
+      setSaving(true);
+      
+      const completionData = {
         assessment,
         plan,
         recommendation,
         recommendedDose: newDose,
         alternativeMedication: alternativeMed,
+        messageToPatient
+      };
+      
+      await apiClient.checkins.complete(checkIn.id, completionData);
+      
+      // Update local state
+      const updatedCheckIn = {
+        ...checkIn,
+        ...completionData,
         status: 'completed' as const
       };
       setCheckIn(updatedCheckIn);
+      
       alert('Check-in completed successfully!');
-      router.push('/portal/checkin-reviews');
+      router.push('/portal/dashboard');
+      
+    } catch (err) {
+      console.error('Error completing check-in:', err);
+      alert('Failed to complete check-in. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleRequestMoreInfo = async () => {
+    if (!checkIn || !messageToPatient.trim()) {
+      alert('Please enter a message to request more information.');
+      return;
+    }
+    
+    try {
+      setSaving(true);
+      
+      await apiClient.checkins.requestMoreInfo(checkIn.id, messageToPatient);
+      
+      alert('Request for more information sent to patient.');
+      setMessageToPatient('');
+      
+    } catch (err) {
+      console.error('Error requesting more info:', err);
+      alert('Failed to send request. Please try again.');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -202,10 +191,34 @@ export default function CheckInDetailPage() {
     }
   };
 
-  if (loading || !checkIn) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">{error}</p>
+          <button
+            onClick={fetchCheckInDetails}
+            className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!checkIn) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-gray-600">Check-in not found</p>
       </div>
     );
   }
