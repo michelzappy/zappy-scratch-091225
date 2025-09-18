@@ -33,6 +33,13 @@ import webhookRoutes from './routes/webhooks.js';
 import treatmentPlanRoutes from './routes/treatment-plans.js';
 import aiConsultationRoutes from './routes/ai-consultation.js';
 
+// Import mock routes (fallback when database is unavailable)
+import mockConsultationRoutes from './routes/mock-consultations.js';
+import mockAdminRoutes from './routes/mock-admin.js';
+import mockMessageRoutes from './routes/mock-messages.js';
+import mockOrderRoutes from './routes/mock-orders.js';
+import mockManagementRoutes from './routes/mock-management.js';
+
 // Import socket handlers
 import { setupSocketHandlers } from './sockets/index.js';
 
@@ -124,6 +131,15 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/admin/patients', adminPatientsRoutes);
 app.use('/api/treatment-plans', treatmentPlanRoutes);
 app.use('/api/ai-consultation', aiConsultationRoutes);
+
+// Mock API routes (fallback when database is unavailable)
+app.use('/api/mock/consultations', mockConsultationRoutes);
+app.use('/api/mock/admin', mockAdminRoutes);
+app.use('/api/mock/messages', mockMessageRoutes);
+app.use('/api/mock/orders', mockOrderRoutes);
+
+// Mock management and monitoring routes
+app.use('/api/mock-management', mockManagementRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {
