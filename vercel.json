@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "backend/server.js",
+      "src": "backend/package.json",
       "use": "@vercel/node",
       "config": {
         "includeFiles": ["backend/**"]
@@ -10,16 +10,13 @@
     },
     {
       "src": "frontend/package.json",
-      "use": "@vercel/next",
-      "config": {
-        "distDir": "frontend/.next"
-      }
+      "use": "@vercel/next"
     }
   ],
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/backend/server.js"
+      "dest": "/backend/src/app.js"
     },
     {
       "src": "/(.*)",
@@ -30,7 +27,7 @@
     "NODE_ENV": "production"
   },
   "functions": {
-    "backend/server.js": {
+    "backend/src/app.js": {
       "maxDuration": 30
     }
   }
