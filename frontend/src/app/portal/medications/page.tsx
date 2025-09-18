@@ -1,7 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import NotificationPopup from '@/components/NotificationPopup';
+import ConfirmDialog from '@/components/ConfirmDialog';
 
 type UserRole = 'provider' | 'admin' | 'provider-admin' | 'super-admin';
 
@@ -47,6 +49,12 @@ export default function MedicationsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMedications, setSelectedMedications] = useState<Set<string>>(new Set());
   const [stockFilter, setStockFilter] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showAddShippingModal, setShowAddShippingModal] = useState(false);
+  const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
+  const [newShippingFrequency, setNewShippingFrequency] = useState('');
+  const [toast, setToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [medToDelete, setMedToDelete] = useState<Medication | null>(null);
   
   const [medications, setMedications] = useState<Medication[]>([
     {
@@ -293,6 +301,127 @@ export default function MedicationsPage() {
     }
   };
 
+  const exportMedications = () => {
+    // Prepare data for export
+    const dataToExport = selectedMedications.size > 0 
+      ? filteredMedications.filter(m => selectedMedications.has(m.id))
+      : filteredMedications;
+
+    if (dataToExport.length === 0) {
+      setToast({ type: 'error', text: 'No medications to export.' });
+      return;
+    }
+
+    // Convert to CSV format
+    const headers = ['SKU', 'Name', 'Generic Name', 'Category', 'Dosages', 'Base Price', 'Cost', 'Stock', 'Status', 'Plans'];
+    const csvContent = [
+      headers.join(','),
+      ...dataToExport.map(medication => [
+        medication.sku,
+        medication.name,
+        medication.genericName,
+        medication.category,
+        `"${medication.dosages.join('; ')}"`,
+        medication.basePrice.toFixed(2),
+        medication.cost.toFixed(2),
+        medication.stock,
+        medication.status,
+        `"${medication.plans.map(p => `${p.name} ($${p.price})`).join('; ')}"`
+      ].join(','))
+    ].join('\n');
+
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    const filename = `medications_export_${new Date().toISOString().split('T')[0]}.csv`;
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.display = 'none';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Clean up
+    URL.revokeObjectURL(url);
+  };
+
+  const importMedications = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
+      setToast({ type: 'error', text: 'Please select a CSV file.' });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const csv = e.target?.result as string;
+        const lines = csv.split('\n');
+        const headers = lines[0].split(',').map(h => h.trim());
+        
+        // Expected headers: SKU, Name, Generic Name, Category, Dosages, Base Price, Cost, Stock, Status
+        const requiredHeaders = ['SKU', 'Name', 'Generic Name', 'Category', 'Base Price', 'Cost', 'Stock'];
+        const missingHeaders = requiredHeaders.filter(h => !headers.some(header => header.toLowerCase().includes(h.toLowerCase())));
+        
+        if (missingHeaders.length > 0) {
+          setToast({ type: 'error', text: `Missing required columns: ${missingHeaders.join(', ')}` });
+          return;
+        }
+
+        const importedMedications: Medication[] = [];
+        
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line) continue;
+          
+          const values = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+          
+          const medication: Medication = {
+            id: `imported-${Date.now()}-${i}`,
+            sku: values[0] || '',
+            name: values[1] || '',
+            genericName: values[2] || '',
+            category: values[3] || 'other',
+            dosages: values[4] ? values[4].split(';').map(d => d.trim()) : [],
+            basePrice: parseFloat(values[5]) || 0,
+            cost: parseFloat(values[6]) || 0,
+            stock: parseInt(values[7]) || 0,
+            status: (values[8] as 'active' | 'inactive') || 'active',
+            plans: [],
+            shippingOptions: [{ frequency: 'monthly', default: true }]
+          };
+          
+          if (medication.sku && medication.name) {
+            importedMedications.push(medication);
+          }
+        }
+        
+        if (importedMedications.length > 0) {
+          setMedications(prev => [...prev, ...importedMedications]);
+          setToast({ type: 'success', text: `Imported ${importedMedications.length} medications.` });
+        } else {
+          setToast({ type: 'error', text: 'No valid medications found in the CSV file.' });
+        }
+        
+      } catch (error) {
+        console.error('Error importing CSV:', error);
+        setToast({ type: 'error', text: 'Error importing CSV. Check the format and try again.' });
+      }
+    };
+    
+    reader.readAsText(file);
+    event.target.value = ''; // Clear the input
+  };
+
   const handleManagePlans = (medication: Medication) => {
     setSelectedMedication(medication);
     setShowPlanModal(true);
@@ -300,6 +429,105 @@ export default function MedicationsPage() {
 
   const calculateInventoryValue = () => {
     return medications.reduce((sum, med) => sum + (med.stock * med.cost), 0);
+  };
+
+  const handleEditPlan = (plan: Plan) => {
+    setEditingPlan(plan);
+  };
+
+  const handleRemovePlan = (planId: string) => {
+    if (selectedMedication) {
+      setMedications(prev => prev.map(med => 
+        med.id === selectedMedication.id 
+          ? { ...med, plans: med.plans.filter(p => p.id !== planId) }
+          : med
+      ));
+      setSelectedMedication(prev => prev ? {
+        ...prev,
+        plans: prev.plans.filter(p => p.id !== planId)
+      } : null);
+      setToast({ type: 'success', text: 'Plan removed.' });
+    }
+  };
+
+  const handleRemoveShippingOption = (index: number) => {
+    if (selectedMedication) {
+      const updatedOptions = selectedMedication.shippingOptions.filter((_, i) => i !== index);
+      
+      // Ensure at least one option remains default
+      if (updatedOptions.length > 0 && !updatedOptions.some(opt => opt.default)) {
+        updatedOptions[0].default = true;
+      }
+      
+      setMedications(prev => prev.map(med => 
+        med.id === selectedMedication.id 
+          ? { ...med, shippingOptions: updatedOptions }
+          : med
+      ));
+      setSelectedMedication(prev => prev ? {
+        ...prev,
+        shippingOptions: updatedOptions
+      } : null);
+      setToast({ type: 'success', text: 'Shipping option removed.' });
+    }
+  };
+
+  const handleAddShippingOption = () => {
+    if (newShippingFrequency.trim()) {
+      const newOption: ShippingOption = {
+        frequency: newShippingFrequency.trim(),
+        default: selectedMedication?.shippingOptions.length === 0
+      };
+      
+      if (selectedMedication) {
+        setMedications(prev => prev.map(med => 
+          med.id === selectedMedication.id 
+            ? { ...med, shippingOptions: [...med.shippingOptions, newOption] }
+            : med
+        ));
+        setSelectedMedication(prev => prev ? {
+          ...prev,
+          shippingOptions: [...prev.shippingOptions, newOption]
+        } : null);
+      }
+      
+      setNewShippingFrequency('');
+      setShowAddShippingModal(false);
+    }
+  };
+
+  const handleSetDefaultShipping = (index: number) => {
+    if (selectedMedication) {
+      const updatedOptions = selectedMedication.shippingOptions.map((opt, i) => ({
+        ...opt,
+        default: i === index
+      }));
+      
+      setMedications(prev => prev.map(med => 
+        med.id === selectedMedication.id 
+          ? { ...med, shippingOptions: updatedOptions }
+          : med
+      ));
+      setSelectedMedication(prev => prev ? {
+        ...prev,
+        shippingOptions: updatedOptions
+      } : null);
+    }
+  };
+
+  const handleUpdatePlan = (updatedPlan: Plan) => {
+    if (selectedMedication) {
+      setMedications(prev => prev.map(med => 
+        med.id === selectedMedication.id 
+          ? { ...med, plans: med.plans.map(p => p.id === updatedPlan.id ? updatedPlan : p) }
+          : med
+      ));
+      setSelectedMedication(prev => prev ? {
+        ...prev,
+        plans: prev.plans.map(p => p.id === updatedPlan.id ? updatedPlan : p)
+      } : null);
+      setEditingPlan(null);
+    }
   };
 
   const lowStockCount = medications.filter(m => m.stock < 100 && m.stock > 0).length;
@@ -412,14 +640,18 @@ export default function MedicationsPage() {
         <div className="flex-1"></div>
 
         {/* Action Buttons */}
-        <button className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 font-medium text-gray-700">
+        <button 
+          onClick={importMedications}
+          className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 font-medium text-gray-700">
           <svg className="w-4 h-4 inline mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
           </svg>
           Import CSV
         </button>
         
-        <button className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 font-medium text-gray-700">
+        <button 
+          onClick={() => exportMedications()}
+          className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 font-medium text-gray-700">
           <svg className="w-4 h-4 inline mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
           </svg>
@@ -442,7 +674,7 @@ export default function MedicationsPage() {
           </span>
           <button className="text-sm text-gray-600 hover:text-gray-900">Update Stock</button>
           <button className="text-sm text-gray-600 hover:text-gray-900">Change Category</button>
-          <button className="text-sm text-gray-600 hover:text-gray-900">Export</button>
+          <button onClick={() => exportMedications()} className="text-sm text-gray-600 hover:text-gray-900">Export</button>
           <button className="text-sm text-red-600 hover:text-red-700">Deactivate</button>
           <div className="flex-1"></div>
           <button 
@@ -572,6 +804,12 @@ export default function MedicationsPage() {
                     >
                       Edit
                     </button>
+                    <button
+                      onClick={() => setMedToDelete(med)}
+                      className="ml-2 text-red-600 hover:text-red-800"
+                    >
+                      Delete
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -595,6 +833,169 @@ export default function MedicationsPage() {
       </div>
 
       {/* Manage Plans Modal - keeping this as is since it's a modal */}
+      {/* Add Medication Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={() => setShowAddModal(false)}></div>
+            
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+              <div className="bg-white px-6 py-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Add New Medication</h3>
+                  <button
+                    onClick={() => setShowAddModal(false)}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  const formData = new FormData(e.target as HTMLFormElement);
+                  
+                  const newMedication: Medication = {
+                    id: `med-${Date.now()}`,
+                    sku: formData.get('sku') as string,
+                    name: formData.get('name') as string,
+                    genericName: formData.get('genericName') as string,
+                    category: formData.get('category') as FilterType,
+                    dosages: (formData.get('dosages') as string).split(',').map(d => d.trim()),
+                    basePrice: parseFloat(formData.get('basePrice') as string),
+                    cost: parseFloat(formData.get('cost') as string),
+                    stock: parseInt(formData.get('stock') as string),
+                    status: 'active',
+                    plans: [],
+                    shippingOptions: [{ frequency: 'monthly', default: true }]
+                  };
+                  
+                  setMedications(prev => [...prev, newMedication]);
+                  setShowAddModal(false);
+                }}>
+                  <div className="grid grid-cols-1 gap-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">SKU</label>
+                        <input
+                          type="text"
+                          name="sku"
+                          required
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+                          placeholder="e.g., TRE-025-CR"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                        <select
+                          name="category"
+                          required
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+                        >
+                          <option value="acne">Acne</option>
+                          <option value="hairLoss">Hair Loss</option>
+                          <option value="ed">ED</option>
+                          <option value="weightLoss">Weight Loss</option>
+                        </select>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Medication Name</label>
+                      <input
+                        type="text"
+                        name="name"
+                        required
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+                        placeholder="e.g., Tretinoin Cream"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Generic Name</label>
+                      <input
+                        type="text"
+                        name="genericName"
+                        required
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+                        placeholder="e.g., Tretinoin"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Dosages (comma-separated)</label>
+                      <input
+                        type="text"
+                        name="dosages"
+                        required
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+                        placeholder="e.g., 0.025%, 0.05%, 0.1%"
+                      />
+                    </div>
+                    
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Base Price ($)</label>
+                        <input
+                          type="number"
+                          name="basePrice"
+                          step="0.01"
+                          required
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+                          placeholder="0.00"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Cost ($)</label>
+                        <input
+                          type="number"
+                          name="cost"
+                          step="0.01"
+                          required
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+                          placeholder="0.00"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Initial Stock</label>
+                        <input
+                          type="number"
+                          name="stock"
+                          required
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+                          placeholder="0"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-6 flex justify-end space-x-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowAddModal(false)}
+                      className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800"
+                    >
+                      Add Medication
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showPlanModal && selectedMedication && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
@@ -624,8 +1025,18 @@ export default function MedicationsPage() {
                           </p>
                         </div>
                         <div className="flex space-x-2">
-                          <button className="text-sm text-gray-600 hover:text-gray-900">Edit</button>
-                          <button className="text-sm text-red-600 hover:text-red-700">Remove</button>
+                          <button 
+                            onClick={() => handleEditPlan(plan)}
+                            className="text-sm text-gray-600 hover:text-gray-900"
+                          >
+                            Edit
+                          </button>
+                          <button 
+                            onClick={() => handleRemovePlan(plan.id)}
+                            className="text-sm text-red-600 hover:text-red-700"
+                          >
+                            Remove
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -641,9 +1052,10 @@ export default function MedicationsPage() {
                     <div key={index} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
                       <div className="flex items-center">
                         <input
-                          type="checkbox"
+                          type="radio"
+                          name="defaultShipping"
                           checked={option.default}
-                          onChange={() => {}}
+                          onChange={() => handleSetDefaultShipping(index)}
                           className="mr-3"
                         />
                         <span className="text-sm">{option.frequency}</span>
@@ -653,12 +1065,18 @@ export default function MedicationsPage() {
                           </span>
                         )}
                       </div>
-                      <button className="text-sm text-gray-600 hover:text-gray-700">
+                      <button 
+                        onClick={() => handleRemoveShippingOption(index)}
+                        className="text-sm text-gray-600 hover:text-gray-700"
+                      >
                         Remove
                       </button>
                     </div>
                   ))}
-                  <button className="w-full py-2 border-2 border-dashed border-gray-300 text-gray-600 rounded-lg hover:border-gray-400">
+                  <button 
+                    onClick={() => setShowAddShippingModal(true)}
+                    className="w-full py-2 border-2 border-dashed border-gray-300 text-gray-600 rounded-lg hover:border-gray-400"
+                  >
                     + Add Shipping Option
                   </button>
                 </div>
@@ -684,6 +1102,185 @@ export default function MedicationsPage() {
           </div>
         </div>
       )}
+
+      {/* Hidden file input for CSV import */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileImport}
+        accept=".csv"
+        style={{ display: 'none' }}
+      />
+
+      {/* Add Shipping Option Modal */}
+      {showAddShippingModal && selectedMedication && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-lg font-semibold mb-4">Add Shipping Option</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Shipping Frequency
+                </label>
+                <input
+                  type="text"
+                  value={newShippingFrequency}
+                  onChange={(e) => setNewShippingFrequency(e.target.value)}
+                  placeholder="e.g., 45 days, 2 months"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+                  autoFocus
+                />
+              </div>
+            </div>
+            
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowAddShippingModal(false);
+                  setNewShippingFrequency('');
+                }}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddShippingOption}
+                className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800"
+              >
+                Add Option
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Plan Modal */}
+      {editingPlan && selectedMedication && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-lg w-full">
+            <h3 className="text-lg font-semibold mb-4">Edit Plan</h3>
+            
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.target as HTMLFormElement);
+              
+              const updatedPlan: Plan = {
+                ...editingPlan,
+                name: formData.get('name') as string,
+                price: parseFloat(formData.get('price') as string),
+                frequency: formData.get('frequency') as string,
+                discount: parseFloat(formData.get('discount') as string) || 0,
+                description: formData.get('description') as string
+              };
+              
+              handleUpdatePlan(updatedPlan);
+            }}>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Plan Name</label>
+                  <input
+                    type="text"
+                    name="name"
+                    defaultValue={editingPlan.name}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Price ($)</label>
+                    <input
+                      type="number"
+                      name="price"
+                      step="0.01"
+                      defaultValue={editingPlan.price}
+                      required
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Discount (%)</label>
+                    <input
+                      type="number"
+                      name="discount"
+                      step="1"
+                      min="0"
+                      max="100"
+                      defaultValue={editingPlan.discount}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Frequency</label>
+                  <select
+                    name="frequency"
+                    defaultValue={editingPlan.frequency}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+                  >
+                    <option value="once">One-time</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="quarterly">Quarterly</option>
+                    <option value="biannual">Every 6 months</option>
+                    <option value="annual">Annual</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                  <textarea
+                    name="description"
+                    rows={3}
+                    defaultValue={editingPlan.description}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+                  />
+                </div>
+              </div>
+              
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => setEditingPlan(null)}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Passive Notification */}
+      <NotificationPopup message={toast} onClose={() => setToast(null)} />
+
+      {/* Confirm delete medication */}
+      <ConfirmDialog
+        open={medToDelete !== null}
+        title="Delete medication?"
+        description={`Remove ${medToDelete?.name} from the database. This action cannot be undone.`}
+        confirmText="Delete"
+        tone="danger"
+        onCancel={() => setMedToDelete(null)}
+        onConfirm={() => {
+          if (medToDelete) {
+            setMedications(prev => prev.filter(m => m.id !== medToDelete.id));
+            setToast({ type: 'success', text: 'Medication deleted.' });
+          }
+          setMedToDelete(null);
+        }}
+      />
     </div>
   );
 }

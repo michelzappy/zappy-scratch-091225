@@ -382,7 +382,7 @@ export default function UnifiedDashboardPage() {
                       <p className="text-xs text-gray-500 mt-1">{issue.time}</p>
                     </div>
                     <button 
-                      onClick={() => router.push(`/portal/patient/${issue.id}`)}
+                      onClick={() => router.push(`/portal/support/${issue.id}`)}
                       className="ml-3 text-sm font-medium text-blue-600 hover:text-blue-700"
                     >
                       Handle

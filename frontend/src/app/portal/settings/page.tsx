@@ -3,10 +3,12 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Card from '@/components/Card';
+import NotificationPopup from '@/components/NotificationPopup';
 
 export default function SettingsPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('general');
+  const [toast, setToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   
   const [generalSettings, setGeneralSettings] = useState({
     platformName: 'TeleHealth Platform',
@@ -75,7 +77,7 @@ export default function SettingsPage() {
   }, [router]);
 
   const handleSaveSettings = () => {
-    alert('Settings saved successfully!');
+    setToast({ type: 'success', text: 'Settings saved successfully.' });
   };
 
   return (
@@ -416,6 +418,7 @@ export default function SettingsPage() {
           </div>
         </Card>
       )}
+      <NotificationPopup message={toast} onClose={() => setToast(null)} />
     </div>
   );
 }

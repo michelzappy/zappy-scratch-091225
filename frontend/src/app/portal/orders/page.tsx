@@ -206,6 +206,54 @@ export default function OrdersPage() {
     }
   };
 
+  const exportOrders = () => {
+    // Prepare data for export
+    const dataToExport = selectedOrders.size > 0 
+      ? filteredOrders.filter(o => selectedOrders.has(o.id))
+      : filteredOrders;
+
+    if (dataToExport.length === 0) {
+      alert('No orders to export');
+      return;
+    }
+
+    // Convert to CSV format
+    const headers = ['Order Number', 'Patient Name', 'Patient Email', 'Items', 'Total', 'Status', 'Payment Status', 'Date', 'Shipping Address', 'Fulfillment Partner', 'Tracking Number'];
+    const csvContent = [
+      headers.join(','),
+      ...dataToExport.map(order => [
+        order.orderNumber,
+        order.patientName,
+        order.patientEmail,
+        `"${order.items.map(item => `${item.name} x${item.quantity}`).join('; ')}"`,
+        order.total.toFixed(2),
+        order.status,
+        order.paymentStatus,
+        new Date(order.date).toLocaleString(),
+        `"${order.shippingAddress}"`,
+        order.fulfillmentPartner || 'N/A',
+        order.trackingNumber || 'N/A'
+      ].join(','))
+    ].join('\n');
+
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    const filename = `orders_export_${new Date().toISOString().split('T')[0]}.csv`;
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.display = 'none';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Clean up
+    URL.revokeObjectURL(url);
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending': return 'bg-yellow-100 text-yellow-800';
@@ -333,7 +381,9 @@ export default function OrdersPage() {
         <div className="flex-1"></div>
 
         {/* Action Buttons */}
-        <button className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 font-medium text-gray-700">
+        <button 
+          onClick={() => exportOrders()}
+          className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 font-medium text-gray-700">
           <svg className="w-4 h-4 inline mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
           </svg>
@@ -355,7 +405,7 @@ export default function OrdersPage() {
             {selectedOrders.size} selected
           </span>
           <button className="text-sm text-gray-600 hover:text-gray-900">Print Labels</button>
-          <button className="text-sm text-gray-600 hover:text-gray-900">Export</button>
+          <button onClick={() => exportOrders()} className="text-sm text-gray-600 hover:text-gray-900">Export</button>
           <button className="text-sm text-gray-600 hover:text-gray-900">Update Status</button>
           <button className="text-sm text-red-600 hover:text-red-700">Cancel</button>
           <div className="flex-1"></div>
@@ -421,7 +471,7 @@ export default function OrdersPage() {
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap">
                     <button
-                      onClick={() => router.push(`/portal/order/${order.id}`)}
+                      onClick={() => router.push(`/portal/orders/${order.id}`)}
                       className="text-left hover:text-blue-600"
                     >
                       <div className="text-sm font-medium text-gray-900">{order.orderNumber}</div>
@@ -468,7 +518,7 @@ export default function OrdersPage() {
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap text-right text-sm">
                     <button 
-                      onClick={() => router.push(`/portal/order/${order.id}`)}
+                      onClick={() => router.push(`/portal/orders/${order.id}`)}
                       className="text-gray-600 hover:text-gray-900 mr-2"
                     >
                       View
