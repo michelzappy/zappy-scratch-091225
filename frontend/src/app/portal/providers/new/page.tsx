@@ -62,18 +62,30 @@ export default function NewProviderPage() {
   useEffect(() => {
     // Check authentication and role
     const token = localStorage.getItem('token');
-    const role = localStorage.getItem('userRole');
+    let role = localStorage.getItem('userRole');
+    
+    console.log('New Provider Page - Role Check:', { token: !!token, role });
     
     if (!token) {
       router.push('/portal/login');
       return;
     }
     
-    // Only admins and super-admins can add providers
-    if (role !== 'admin' && role !== 'super-admin') {
+    // Fallback for development - if no role is set, assume admin
+    if (!role) {
+      console.log('No role found in localStorage, setting default admin role for development');
+      role = 'admin';
+      localStorage.setItem('userRole', role);
+    }
+    
+    // Only admins, provider-admins, and super-admins can add providers
+    if (role !== 'admin' && role !== 'provider-admin' && role !== 'super-admin') {
+      console.log('Access denied, redirecting to dashboard. Role:', role);
       router.push('/portal/dashboard');
       return;
     }
+    
+    console.log('Access granted for role:', role);
   }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 
 // Simple date formatter to avoid date-fns issues on Vercel
 const formatDate = (dateString: string) => {
@@ -313,6 +314,16 @@ export default function PatientDetailsContent({ patientId }: PatientDetailsConte
 
   return (
     <div className="space-y-3">
+      {/* Back Button */}
+      <div className="mb-4">
+        <Link 
+          href="/portal/patients"
+          className="text-gray-500 hover:text-gray-700 flex items-center text-sm"
+        >
+          ← Back to Patients
+        </Link>
+      </div>
+      
       {/* Compact Patient Header */}
       <div className="bg-white border border-gray-200 rounded-lg px-4 py-3">
         <div className="flex justify-between items-start">

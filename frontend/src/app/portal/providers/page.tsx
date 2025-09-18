@@ -169,6 +169,52 @@ export default function ProvidersPage() {
     }
   };
 
+  const exportProviders = () => {
+    // Prepare data for export
+    const dataToExport = selectedProviders.size > 0 
+      ? filteredProviders.filter(p => selectedProviders.has(p.id))
+      : filteredProviders;
+
+    if (dataToExport.length === 0) {
+      alert('No providers to export');
+      return;
+    }
+
+    // Convert to CSV format
+    const headers = ['Name', 'Email', 'Specialty', 'License Number', 'Status', 'Patients Count', 'Joined Date', 'Rating', 'Consultations Today'];
+    const csvContent = [
+      headers.join(','),
+      ...dataToExport.map(provider => [
+        provider.name,
+        provider.email,
+        provider.specialty,
+        provider.licenseNumber,
+        provider.status,
+        provider.patientsCount,
+        provider.joinedDate,
+        provider.rating || 'N/A',
+        provider.consultationsToday || 0
+      ].join(','))
+    ].join('\n');
+
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    const filename = `providers_export_${new Date().toISOString().split('T')[0]}.csv`;
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.display = 'none';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Clean up
+    URL.revokeObjectURL(url);
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active': return 'bg-green-100 text-green-800';
@@ -282,7 +328,9 @@ export default function ProvidersPage() {
         <div className="flex-1"></div>
 
         {/* Action Buttons */}
-        <button className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 font-medium text-gray-700">
+        <button 
+          onClick={() => exportProviders()}
+          className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 font-medium text-gray-700">
           <svg className="w-4 h-4 inline mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
           </svg>
@@ -305,7 +353,7 @@ export default function ProvidersPage() {
           </span>
           <button className="text-sm text-gray-600 hover:text-gray-900">Activate</button>
           <button className="text-sm text-gray-600 hover:text-gray-900">Deactivate</button>
-          <button className="text-sm text-gray-600 hover:text-gray-900">Export</button>
+          <button onClick={() => exportProviders()} className="text-sm text-gray-600 hover:text-gray-900">Export</button>
           <button className="text-sm text-gray-600 hover:text-gray-900">Send Message</button>
           <div className="flex-1"></div>
           <button 

@@ -18,6 +18,7 @@ export default function ProtocolsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingProtocol, setEditingProtocol] = useState<any>(null);
+  const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
 
   const conditions = getAllConditions();
 
@@ -55,11 +56,41 @@ export default function ProtocolsPage() {
     setShowEditModal(true);
   };
 
+  const handleAddProtocol = () => {
+    // Create a new empty protocol template
+    setEditingProtocol({
+      condition: selectedCondition || conditions[0] || 'acne',
+      protocolKey: '',
+      name: '',
+      description: '',
+      duration: '',
+      followUp: '',
+      medications: [],
+      total: 0,
+      isNew: true // Flag to indicate this is a new protocol
+    });
+    setShowEditModal(true);
+  };
+
   const handleSaveProtocol = () => {
-    // Save protocol logic
-    alert('Protocol saved successfully!');
+    if (editingProtocol.isNew) {
+      // Handle new protocol creation
+      setNotification({
+        message: `New protocol "${editingProtocol.name}" created successfully!`,
+        type: 'success'
+      });
+    } else {
+      // Handle existing protocol update
+      setNotification({
+        message: 'Protocol saved successfully!',
+        type: 'success'
+      });
+    }
     setShowEditModal(false);
     setEditingProtocol(null);
+    
+    // Auto-hide notification after 3 seconds
+    setTimeout(() => setNotification(null), 3000);
   };
 
   const calculateTotalProtocols = () => {
@@ -104,6 +135,28 @@ export default function ProtocolsPage() {
 
   return (
     <div className="space-y-6">
+      {/* Passive Notification */}
+      {notification && (
+        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg transition-all duration-300 ${
+          notification.type === 'success' 
+            ? 'bg-green-100 border border-green-400 text-green-700' 
+            : 'bg-red-100 border border-red-400 text-red-700'
+        }`}>
+          <div className="flex items-center space-x-2">
+            <div className={`w-2 h-2 rounded-full ${
+              notification.type === 'success' ? 'bg-green-500' : 'bg-red-500'
+            }`}></div>
+            <span className="text-sm font-medium">{notification.message}</span>
+            <button 
+              onClick={() => setNotification(null)}
+              className="ml-2 text-gray-400 hover:text-gray-600"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+      
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
@@ -111,7 +164,7 @@ export default function ProtocolsPage() {
           <p className="text-gray-600 mt-1">Comprehensive treatment protocols for all conditions</p>
         </div>
         <button
-          onClick={() => alert('Add new protocol')}
+          onClick={handleAddProtocol}
           className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition"
         >
           Add Protocol
@@ -282,9 +335,40 @@ export default function ProtocolsPage() {
       {showEditModal && editingProtocol && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-bold mb-4">Edit Protocol</h2>
+            <h2 className="text-xl font-bold mb-4">
+              {editingProtocol.isNew ? 'Add New Protocol' : 'Edit Protocol'}
+            </h2>
             
             <div className="space-y-4">
+              {editingProtocol.isNew && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Condition</label>
+                    <select
+                      value={editingProtocol.condition}
+                      onChange={(e) => setEditingProtocol({...editingProtocol, condition: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500"
+                    >
+                      {conditions.map(condition => (
+                        <option key={condition} value={condition}>
+                          {conditionDisplayNames[condition] || condition}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Protocol Key</label>
+                    <input
+                      type="text"
+                      value={editingProtocol.protocolKey}
+                      onChange={(e) => setEditingProtocol({...editingProtocol, protocolKey: e.target.value})}
+                      placeholder="e.g., mild, moderate, severe"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500"
+                    />
+                  </div>
+                </div>
+              )}
+              
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Protocol Name</label>
                 <input
@@ -292,6 +376,7 @@ export default function ProtocolsPage() {
                   value={editingProtocol.name}
                   onChange={(e) => setEditingProtocol({...editingProtocol, name: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500"
+                  placeholder="Enter protocol name"
                 />
               </div>
               
@@ -456,7 +541,7 @@ export default function ProtocolsPage() {
                 onClick={handleSaveProtocol}
                 className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800"
               >
-                Save Protocol
+                {editingProtocol.isNew ? 'Create Protocol' : 'Save Protocol'}
               </button>
             </div>
           </div>

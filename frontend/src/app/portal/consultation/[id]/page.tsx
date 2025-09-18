@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Card from '@/components/Card';
+import NotificationPopup from '@/components/NotificationPopup';
 
 // Common medications database
 const medicationDatabase = {
@@ -61,6 +62,9 @@ export default function ConsultationReviewPage() {
   // Patient Communication
   const [patientVisibleNote, setPatientVisibleNote] = useState('');
   const [internalProviderNote, setInternalProviderNote] = useState('');
+  
+  // Notification state
+  const [notification, setNotification] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -179,7 +183,7 @@ export default function ConsultationReviewPage() {
       }
     } catch (error) {
       console.error('AI generation error:', error);
-      alert('AI suggestions temporarily unavailable');
+      setNotification({ type: 'error', text: 'AI suggestions temporarily unavailable' });
     } finally {
       setAiLoading(false);
     }
@@ -213,11 +217,15 @@ export default function ConsultationReviewPage() {
       // Mock API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      alert('Treatment plan sent to patient and pharmacy!');
-      router.push('/portal/consultations');
+      setNotification({ type: 'success', text: 'Treatment plan sent to patient and pharmacy!' });
+      
+      // Navigate after a short delay to let user see the notification
+      setTimeout(() => {
+        router.push('/portal/consultations');
+      }, 2000);
     } catch (error) {
       console.error('Error:', error);
-      alert('Error sending treatment plan');
+      setNotification({ type: 'error', text: 'Error sending treatment plan. Please try again.' });
     } finally {
       setSending(false);
     }
@@ -235,6 +243,13 @@ export default function ConsultationReviewPage() {
 
   return (
     <div className="space-y-6">
+      {/* Notification Popup */}
+      <NotificationPopup
+        message={notification}
+        onClose={() => setNotification(null)}
+        duration={4000}
+      />
+
       {/* Header */}
       <div className="flex justify-between items-start">
         <div className="flex items-center space-x-4">
