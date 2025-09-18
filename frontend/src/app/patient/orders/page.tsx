@@ -1,8 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 interface OrderItem {
+  id?: string;
   name: string;
   instructions: string;
   warnings: string;
@@ -21,6 +23,13 @@ interface Order {
 
 export default function OrdersPage() {
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
+  const [refillRequested, setRefillRequested] = useState<{ [key: string]: boolean }>({});
+  const router = useRouter();
+  
+  const handleRefillRequest = (prescriptionId: string) => {
+    // Navigate directly to the refill checkin page with prescription ID
+    router.push(`/patient/refill-checkin?prescriptionId=${prescriptionId}`);
+  };
   
   const orders: Order[] = [
     {
@@ -29,6 +38,7 @@ export default function OrdersPage() {
       status: 'delivered',
       items: [
         {
+          id: 'RX001',
           name: 'Tretinoin Cream 0.025%',
           instructions: 'Apply at bedtime to clean skin',
           warnings: 'Use sunscreen daily',
@@ -36,6 +46,7 @@ export default function OrdersPage() {
           refills: '2 refills left'
         },
         {
+          id: 'RX002',
           name: 'Doxycycline 100mg',
           instructions: 'Take twice daily with food',
           warnings: 'Avoid sun exposure',
@@ -52,6 +63,7 @@ export default function OrdersPage() {
       status: 'delivered',
       items: [
         {
+          id: 'RX003',
           name: 'Finasteride 1mg',
           instructions: 'Take 1 tablet daily',
           warnings: 'Keep away from pregnant women',
@@ -98,7 +110,10 @@ export default function OrdersPage() {
             />
           </div>
           
-          <button className="text-sm text-white/90 underline">
+          <button 
+            onClick={() => window.open(`https://tools.usps.com/go/TrackConfirmAction?qtc_tLabels1=${activeShipment.tracking}`, '_blank')}
+            className="text-sm text-white/90 underline hover:text-white transition-colors"
+          >
             Track: {activeShipment.tracking}
           </button>
         </div>
@@ -122,7 +137,10 @@ export default function OrdersPage() {
               
               <div className="flex items-center justify-between pt-3 border-t border-slate-100">
                 <span className="text-xs text-slate-500">{med.refills}</span>
-                <button className="text-xs font-medium text-medical-600 hover:text-medical-700">
+                <button 
+                  onClick={() => handleRefillRequest(med.id || '')}
+                  className="text-xs font-medium text-medical-600 hover:text-medical-700 transition-colors"
+                >
                   Request Refill →
                 </button>
               </div>
@@ -193,16 +211,38 @@ export default function OrdersPage() {
                           <p className="text-orange-600">
                             <span className="font-medium">Warning:</span> {item.warnings}
                           </p>
-                          <div className="flex justify-between pt-2">
+                          <div className="flex justify-between items-center pt-2">
                             <span className="text-slate-500">{item.quantity}</span>
-                            <span className="text-medical-600 font-medium">{item.refills}</span>
+                            <div className="flex items-center gap-3">
+                              <span className="text-medical-600 font-medium">{item.refills}</span>
+                              {parseInt(item.refills) > 0 && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleRefillRequest(item.id || '');
+                                  }}
+                                  className="text-xs font-medium text-medical-600 hover:text-medical-700 transition-colors"
+                                >
+                                  Request Refill
+                                </button>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
                     ))}
                     <div className="pt-2 border-t border-slate-200">
                       <p className="text-xs text-slate-600">
-                        Tracking: <span className="font-mono">{order.tracking}</span>
+                        Tracking:{' '}
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.open(`https://tools.usps.com/go/TrackConfirmAction?qtc_tLabels1=${order.tracking}`, '_blank');
+                          }}
+                          className="font-mono underline hover:text-slate-800 transition-colors"
+                        >
+                          {order.tracking}
+                        </button>
                       </p>
                     </div>
                   </div>
