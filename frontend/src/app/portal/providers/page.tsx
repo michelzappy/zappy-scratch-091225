@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { apiClient } from '@/lib/api';
 
 type UserRole = 'provider' | 'admin' | 'provider-admin' | 'super-admin';
 
@@ -25,10 +26,46 @@ export default function ProvidersPage() {
   const [userRole, setUserRole] = useState<UserRole>('admin');
   const [providers, setProviders] = useState<Provider[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProviders, setSelectedProviders] = useState<Set<string>>(new Set());
   const [specialtyFilter, setSpecialtyFilter] = useState('');
+
+  const fetchProviders = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Get providers from API
+      const response = await apiClient.providers.getAll();
+      
+      const providersData = response.data || [];
+      
+      // Transform API data to match our interface
+      const transformedProviders: Provider[] = providersData.map((item: any) => ({
+        id: item.id || item.provider_id,
+        name: item.name || item.full_name || `${item.first_name || ''} ${item.last_name || ''}`.trim() || 'Unknown Provider',
+        email: item.email || item.contact_email || '',
+        specialty: item.specialty || item.specialization || item.medical_specialty || 'General',
+        licenseNumber: item.license_number || item.medical_license || item.license || '',
+        status: item.status || item.account_status || 'active',
+        patientsCount: item.patients_count || item.patient_count || item.total_patients || 0,
+        joinedDate: item.joined_date || item.created_at || item.registration_date || new Date().toISOString().split('T')[0],
+        rating: item.rating || item.average_rating || item.provider_rating || 0,
+        consultationsToday: item.consultations_today || item.todays_consultations || item.daily_consultations || 0
+      }));
+      
+      setProviders(transformedProviders);
+      
+    } catch (err) {
+      console.error('Error fetching providers:', err);
+      setError('Failed to load providers');
+      setProviders([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -55,74 +92,6 @@ export default function ProvidersPage() {
       router.push('/portal/dashboard');
     }
   }, [router]);
-
-  const fetchProviders = async () => {
-    const mockProviders: Provider[] = [
-      {
-        id: '1',
-        name: 'Dr. Jane Smith',
-        email: 'jane.smith@clinic.com',
-        specialty: 'Dermatology',
-        licenseNumber: 'MD123456',
-        status: 'active',
-        patientsCount: 142,
-        joinedDate: '2023-01-15',
-        rating: 4.8,
-        consultationsToday: 8
-      },
-      {
-        id: '2',
-        name: 'Dr. John Brown',
-        email: 'john.brown@clinic.com',
-        specialty: 'Internal Medicine',
-        licenseNumber: 'MD789012',
-        status: 'active',
-        patientsCount: 98,
-        joinedDate: '2023-03-20',
-        rating: 4.7,
-        consultationsToday: 5
-      },
-      {
-        id: '3',
-        name: 'Dr. Sarah Jones',
-        email: 'sarah.jones@clinic.com',
-        specialty: 'Endocrinology',
-        licenseNumber: 'MD345678',
-        status: 'active',
-        patientsCount: 76,
-        joinedDate: '2023-06-10',
-        rating: 4.9,
-        consultationsToday: 6
-      },
-      {
-        id: '4',
-        name: 'Dr. Michael Lee',
-        email: 'michael.lee@clinic.com',
-        specialty: 'Psychiatry',
-        licenseNumber: 'MD901234',
-        status: 'pending',
-        patientsCount: 0,
-        joinedDate: '2024-01-10',
-        rating: 0,
-        consultationsToday: 0
-      },
-      {
-        id: '5',
-        name: 'Dr. Emily Wilson',
-        email: 'emily.wilson@clinic.com',
-        specialty: 'Weight Management',
-        licenseNumber: 'MD567890',
-        status: 'inactive',
-        patientsCount: 45,
-        joinedDate: '2022-11-05',
-        rating: 4.6,
-        consultationsToday: 0
-      }
-    ];
-    
-    setProviders(mockProviders);
-    setLoading(false);
-  };
 
   // Filter counts
   const filterCounts = {
@@ -186,6 +155,22 @@ export default function ProvidersPage() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">{error}</p>
+          <button
+            onClick={fetchProviders}
+            className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800"
+          >
+            Retry
+          </button>
+        </div>
       </div>
     );
   }

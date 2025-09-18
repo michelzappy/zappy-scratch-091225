@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Card from '@/components/Card';
+import { apiClient } from '@/lib/api';
 
 // Condition types available in the system
 const CONDITIONS = [
@@ -32,8 +33,44 @@ export default function TreatmentPlansPage() {
   const [selectedCondition, setSelectedCondition] = useState('weightLoss');
   const [plans, setPlans] = useState<TreatmentPlan[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [editingPlan, setEditingPlan] = useState<TreatmentPlan | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+
+  const loadPlans = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Get treatment plans from API
+      const response = await apiClient.treatmentPlans.getByCondition(selectedCondition);
+      
+      const plansData = response.data || [];
+      
+      // Transform API data to match our interface
+      const transformedPlans: TreatmentPlan[] = plansData.map((item: any) => ({
+        id: item.id,
+        condition: item.condition || selectedCondition,
+        plan_tier: item.plan_tier || item.tier || 'basic',
+        name: item.name || item.plan_name || 'Unnamed Plan',
+        price: item.price || item.monthly_price || 0,
+        billing_period: item.billing_period || item.billing_cycle || 'month',
+        features: item.features || item.plan_features || [],
+        medications: item.medications || item.included_medications || [],
+        is_popular: item.is_popular || item.popular || false,
+        active_subscribers: item.active_subscribers || item.subscriber_count || 0
+      }));
+      
+      setPlans(transformedPlans);
+      
+    } catch (err) {
+      console.error('Error loading plans:', err);
+      setError('Failed to load treatment plans');
+      setPlans([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Load plans from backend
   useEffect(() => {
@@ -59,201 +96,25 @@ export default function TreatmentPlansPage() {
       // Default redirect if no valid role
       router.push('/portal/dashboard');
     }
-  }, [router, selectedCondition]);
+  }, [router]);
 
-  const loadPlans = async () => {
-    try {
-      setLoading(true);
-      // In production, this would fetch from API
-      // const response = await fetch(`/api/treatment-plans?condition=${selectedCondition}`);
-      // const data = await response.json();
-      
-      // Mock data matching database structure
-      const mockPlans: TreatmentPlan[] = [
-        // Weight Loss Plans
-        ...(selectedCondition === 'weightLoss' ? [
-          {
-            id: 'wl-basic',
-            condition: 'weightLoss',
-            plan_tier: 'basic' as const,
-            name: 'Starter Plan',
-            price: 99.00,
-            billing_period: 'month',
-            features: [
-              'Semaglutide or Tirzepatide',
-              'Monthly provider consultations',
-              'Basic nutritional guidance',
-              'Email support'
-            ],
-            is_popular: false,
-            active_subscribers: 234
-          },
-          {
-            id: 'wl-standard',
-            condition: 'weightLoss',
-            plan_tier: 'standard' as const,
-            name: 'Accelerated Plan',
-            price: 149.00,
-            billing_period: 'month',
-            features: [
-              'Premium GLP-1 medications',
-              'Bi-weekly check-ins',
-              'Personalized meal plans',
-              'Priority support',
-              'Progress tracking app'
-            ],
-            is_popular: true,
-            active_subscribers: 567
-          },
-          {
-            id: 'wl-premium',
-            condition: 'weightLoss',
-            plan_tier: 'premium' as const,
-            name: 'Comprehensive Plan',
-            price: 249.00,
-            billing_period: 'month',
-            features: [
-              'All medications included',
-              'Weekly 1-on-1 coaching',
-              'Custom exercise plans',
-              'Nutritionist consultations',
-              '24/7 support',
-              'Lab work monitoring'
-            ],
-            is_popular: false,
-            active_subscribers: 123
-          }
-        ] : []),
-        
-        // Hair Loss Plans
-        ...(selectedCondition === 'hairLoss' ? [
-          {
-            id: 'hl-basic',
-            condition: 'hairLoss',
-            plan_tier: 'basic' as const,
-            name: 'Essential',
-            price: 22.00,
-            billing_period: 'month',
-            features: [
-              'Finasteride (generic)',
-              'Quarterly consultations',
-              'Basic progress tracking'
-            ],
-            is_popular: false,
-            active_subscribers: 890
-          },
-          {
-            id: 'hl-standard',
-            condition: 'hairLoss',
-            plan_tier: 'standard' as const,
-            name: 'Advanced',
-            price: 45.00,
-            billing_period: 'month',
-            features: [
-              'Finasteride + Minoxidil',
-              'Monthly consultations',
-              'Biotin supplements',
-              'Progress photos analysis'
-            ],
-            is_popular: true,
-            active_subscribers: 1234
-          },
-          {
-            id: 'hl-premium',
-            condition: 'hairLoss',
-            plan_tier: 'premium' as const,
-            name: 'Complete Care',
-            price: 79.00,
-            billing_period: 'month',
-            features: [
-              'All medications',
-              'DHT blocking shampoo',
-              'Micro-needling kit',
-              'Weekly check-ins',
-              'Dermatologist consultations'
-            ],
-            is_popular: false,
-            active_subscribers: 345
-          }
-        ] : []),
-        
-        // Men's Health Plans
-        ...(selectedCondition === 'mensHealth' ? [
-          {
-            id: 'mh-basic',
-            condition: 'mensHealth',
-            plan_tier: 'basic' as const,
-            name: 'Essential ED',
-            price: 2.00,
-            billing_period: 'dose',
-            features: [
-              'Sildenafil (generic Viagra)',
-              '10 doses per month',
-              'Online consultations'
-            ],
-            is_popular: false,
-            active_subscribers: 2345
-          },
-          {
-            id: 'mh-standard',
-            condition: 'mensHealth',
-            plan_tier: 'standard' as const,
-            name: 'Performance Plus',
-            price: 5.00,
-            billing_period: 'dose',
-            features: [
-              'Cialis or Viagra brand',
-              '20 doses per month',
-              'Monthly consultations',
-              'Discreet packaging'
-            ],
-            is_popular: true,
-            active_subscribers: 3456
-          },
-          {
-            id: 'mh-premium',
-            condition: 'mensHealth',
-            plan_tier: 'premium' as const,
-            name: 'Total Vitality',
-            price: 199.00,
-            billing_period: 'month',
-            features: [
-              'All ED medications',
-              'Testosterone support',
-              'Libido enhancers',
-              'Weekly consultations',
-              'Lab work included'
-            ],
-            is_popular: false,
-            active_subscribers: 456
-          }
-        ] : []),
-        
-        // Add similar structures for other conditions...
-      ];
-      
-      setPlans(mockPlans);
-    } catch (error) {
-      console.error('Error loading plans:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Reload plans when condition changes
+  useEffect(() => {
+    loadPlans();
+  }, [selectedCondition]);
 
   const handleSavePlan = async () => {
     if (!editingPlan) return;
     
     try {
       // API call to update plan
-      // await fetch(`/api/treatment-plans/${editingPlan.id}`, {
-      //   method: 'PUT',
-      //   body: JSON.stringify(editingPlan)
-      // });
+      await apiClient.treatmentPlans.update(editingPlan.id, editingPlan);
       
       setPlans(plans.map(p => p.id === editingPlan.id ? editingPlan : p));
       setEditingPlan(null);
     } catch (error) {
       console.error('Error saving plan:', error);
+      alert('Failed to save plan. Please try again.');
     }
   };
 
@@ -313,6 +174,18 @@ export default function TreatmentPlansPage() {
       {loading ? (
         <div className="flex justify-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+        </div>
+      ) : error ? (
+        <div className="flex justify-center py-12">
+          <div className="text-center">
+            <p className="text-red-600 mb-4">{error}</p>
+            <button
+              onClick={loadPlans}
+              className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800"
+            >
+              Retry
+            </button>
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -412,7 +285,7 @@ export default function TreatmentPlansPage() {
         <Card className="p-6">
           <h3 className="text-sm font-medium text-gray-500">Avg. Plan Value</h3>
           <p className="text-2xl font-bold text-gray-900 mt-2">
-            ${(plans.reduce((sum, p) => sum + p.price, 0) / plans.length).toFixed(2)}
+            ${plans.length > 0 ? (plans.reduce((sum, p) => sum + p.price, 0) / plans.length).toFixed(2) : '0.00'}
           </p>
           <p className="text-sm text-gray-600 mt-1">Per {plans[0]?.billing_period || 'month'}</p>
         </Card>

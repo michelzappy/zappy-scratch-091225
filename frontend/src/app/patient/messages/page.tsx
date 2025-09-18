@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { apiClient } from '@/lib/api';
 
 interface Message {
   id: string;
@@ -24,7 +25,6 @@ interface Conversation {
   unreadCount: number;
   consultationType: string;
 }
-
 export default function PatientMessages() {
   const router = useRouter();
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
@@ -33,110 +33,91 @@ export default function PatientMessages() {
   const [isTyping, setIsTyping] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [showConversations, setShowConversations] = useState(true); // Mobile toggle
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Mock conversations
-  const [conversations] = useState<Conversation[]>([
-    {
-      id: '1',
-      patientName: 'John Doe',
-      providerName: 'Dr. Sarah Smith',
-      lastMessage: 'Your test results look good',
-      lastMessageTime: '2 hours ago',
-      unreadCount: 2,
-      consultationType: 'General Medicine'
-    },
-    {
-      id: '2',
-      patientName: 'John Doe',
-      providerName: 'Dr. Michael Johnson',
-      lastMessage: 'Please schedule a follow-up',
-      lastMessageTime: '1 day ago',
-      unreadCount: 0,
-      consultationType: 'Dermatology'
-    }
-  ]);
-
+  // Load conversations on component mount
+  // Load conversations on component mount
   useEffect(() => {
-    // Auto-scroll to bottom when new messages arrive
+    const fetchConversations = async () => {
+      try {
+        setLoading(true);
+        const response = await apiClient.messages.getMyConversations();
+        setConversations(response.data || []);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching conversations:', err);
+        setError('Failed to load conversations');
+        setConversations([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchConversations();
+  }, []);
+
+  // Load messages when conversation is selected
+  useEffect(() => {
+    const fetchMessages = async () => {
+      if (selectedConversation) {
+        try {
+          const response = await apiClient.messages.getConversationMessages(selectedConversation.id);
+          setMessages(response.data || []);
+          
+          // Hide conversations list on mobile when selecting
+          if (window.innerWidth < 768) {
+            setShowConversations(false);
+          }
+        } catch (err) {
+          console.error('Error fetching messages:', err);
+          setMessages([]);
+        }
+      }
+    };
+
+    fetchMessages();
+  }, [selectedConversation]);
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  useEffect(() => {
-    // Load messages when conversation is selected
-    if (selectedConversation) {
-      const mockMessages: Message[] = [
-        {
-          id: '1',
-          senderId: '2',
-          senderName: selectedConversation.providerName,
-          senderType: 'provider',
-          content: 'Hello! I\'ve reviewed your consultation request.',
-          timestamp: '10:00 AM',
-          isRead: true
-        },
-        {
-          id: '2',
-          senderId: '1',
-          senderName: 'You',
-          senderType: 'patient',
-          content: 'Thank you for getting back to me, Doctor.',
-          timestamp: '10:05 AM',
-          isRead: true
-        },
-        {
-          id: '3',
-          senderId: '2',
-          senderName: selectedConversation.providerName,
-          senderType: 'provider',
-          content: 'Based on your symptoms, I recommend the following treatment plan.',
-          timestamp: '10:10 AM',
-          isRead: true
-        }
-      ];
-      setMessages(mockMessages);
-      // Hide conversations list on mobile when selecting
-      if (window.innerWidth < 768) {
-        setShowConversations(false);
-      }
+  const handleSendMessage = async () => {
+    if (!selectedConversation || (!newMessage.trim() && attachedFiles.length === 0)) {
+      return;
     }
-  }, [selectedConversation]);
 
-  const handleSendMessage = () => {
-    if (newMessage.trim() || attachedFiles.length > 0) {
-      const message: Message = {
-        id: Date.now().toString(),
-        senderId: '1',
-        senderName: 'You',
-        senderType: 'patient',
-        content: newMessage,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        isRead: false,
-        attachments: attachedFiles.map(f => f.name)
-      };
+    try {
+      // Create FormData for message with potential attachments
+      const formData = new FormData();
+      formData.append('content', newMessage);
+      formData.append('senderType', 'patient');
       
-      setMessages(prev => [...prev, message]);
+      // Add attachments if any
+      attachedFiles.forEach((file, index) => {
+        formData.append(`attachments`, file);
+      });
+
+      // Send message via API
+      const response = await apiClient.messages.sendMessage(selectedConversation.id, formData);
+      
+      // Add the sent message to local state
+      if (response.data) {
+        setMessages(prev => [...prev, response.data]);
+      }
+      
+      // Clear input
       setNewMessage('');
       setAttachedFiles([]);
       
-      // Simulate provider typing
-      setTimeout(() => {
-        setIsTyping(true);
-        setTimeout(() => {
-          setIsTyping(false);
-          const reply: Message = {
-            id: (Date.now() + 1).toString(),
-            senderId: '2',
-            senderName: selectedConversation?.providerName || 'Provider',
-            senderType: 'provider',
-            content: 'I\'ve received your message and will respond shortly.',
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            isRead: false
-          };
-          setMessages(prev => [...prev, reply]);
-        }, 2000);
-      }, 1000);
+    } catch (err) {
+      console.error('Error sending message:', err);
+      // Could add error toast here
     }
   };
 

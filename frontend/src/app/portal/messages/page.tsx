@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Card from '@/components/Card';
+import { apiClient } from '@/lib/api';
 
 type UserRole = 'provider' | 'admin' | 'provider-admin' | 'super-admin';
 
@@ -23,6 +24,7 @@ export default function MessagesPage() {
   const [userRole, setUserRole] = useState<UserRole>('provider');
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'unread' | 'patient' | 'provider' | 'system'>('all');
 
   useEffect(() => {
@@ -41,46 +43,46 @@ export default function MessagesPage() {
     fetchMessages();
   }, []);
 
+  // Refetch when filter changes
+  useEffect(() => {
+    fetchMessages();
+  }, [filter]);
+
   const fetchMessages = async () => {
-    // Mock data
-    const mockMessages: Message[] = [
-      {
-        id: '1',
-        from: 'Sarah Johnson',
-        to: 'Dr. Smith',
-        subject: 'Question about prescription',
-        preview: 'Hi Dr. Smith, I have a question about my new prescription...',
-        date: '2024-01-15T14:30:00',
-        read: false,
-        priority: 'normal',
-        type: 'patient'
-      },
-      {
-        id: '2',
-        from: 'Dr. Jones',
-        to: 'Dr. Smith',
-        subject: 'Patient referral',
-        preview: 'I have a patient who needs specialized care...',
-        date: '2024-01-15T12:00:00',
-        read: true,
-        priority: 'high',
-        type: 'provider'
-      },
-      {
-        id: '3',
-        from: 'System',
-        to: 'Dr. Smith',
-        subject: 'New lab results available',
-        preview: 'Lab results for patient Michael Chen are now available...',
-        date: '2024-01-15T10:00:00',
-        read: false,
-        priority: 'urgent',
-        type: 'system'
-      },
-    ];
-    
-    setMessages(mockMessages);
-    setLoading(false);
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Get messages from API
+      const response = await apiClient.messages.getAll({
+        type: filter !== 'all' && filter !== 'unread' ? filter : undefined,
+        unread: filter === 'unread' ? true : undefined
+      });
+      
+      const messagesData = response.data || [];
+      
+      // Transform API data to match our interface
+      const transformedMessages: Message[] = messagesData.map((item: any) => ({
+        id: item.id,
+        from: item.sender_name || item.from_name || 'Unknown Sender',
+        to: item.recipient_name || item.to_name || 'Unknown Recipient',
+        subject: item.subject || 'No Subject',
+        preview: item.preview || item.content?.substring(0, 100) || 'No preview available',
+        date: item.created_at || item.sent_at || new Date().toISOString(),
+        read: item.read || item.is_read || false,
+        priority: item.priority || 'normal',
+        type: item.type || item.message_type || 'system'
+      }));
+      
+      setMessages(transformedMessages);
+      
+    } catch (err) {
+      console.error('Error fetching messages:', err);
+      setError('Failed to load messages');
+      setMessages([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const filteredMessages = messages.filter(message => {
@@ -99,6 +101,22 @@ export default function MessagesPage() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">{error}</p>
+          <button
+            onClick={fetchMessages}
+            className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800"
+          >
+            Retry
+          </button>
+        </div>
       </div>
     );
   }
@@ -197,7 +215,21 @@ export default function MessagesPage() {
             className={`p-4 hover:bg-gray-50 cursor-pointer transition ${
               !message.read ? 'bg-blue-50' : ''
             }`}
-            onClick={() => router.push(`/portal/messages/${message.id}`)}
+            onClick={async () => {
+              // Mark message as read when clicked
+              if (!message.read) {
+                try {
+                  await apiClient.messages.markRead(message.id);
+                  // Update local state
+                  setMessages(prev => prev.map(m => 
+                    m.id === message.id ? { ...m, read: true } : m
+                  ));
+                } catch (err) {
+                  console.error('Error marking message as read:', err);
+                }
+              }
+              router.push(`/portal/messages/${message.id}`);
+            }}
           >
             <div className="flex items-start justify-between">
               <div className="flex-1">
@@ -206,8 +238,20 @@ export default function MessagesPage() {
                     <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
                   )}
                   <button
-                    onClick={(e) => {
+                    onClick={async (e) => {
                       e.stopPropagation();
+                      // Mark message as read when clicked
+                      if (!message.read) {
+                        try {
+                          await apiClient.messages.markRead(message.id);
+                          // Update local state
+                          setMessages(prev => prev.map(m => 
+                            m.id === message.id ? { ...m, read: true } : m
+                          ));
+                        } catch (err) {
+                          console.error('Error marking message as read:', err);
+                        }
+                      }
                       router.push(`/portal/messages/${message.id}`);
                     }}
                     className="text-sm font-medium text-gray-900 hover:text-blue-600 hover:underline"
