@@ -22,7 +22,28 @@ export async function connectDatabase() {
     });
 
     // Initialize Drizzle ORM
-    db = drizzle(connection, { schema });
+    const drizzleDb = drizzle(connection, { schema });
+
+    // Create database wrapper that supports both Drizzle ORM and raw SQL
+    db = {
+      // Drizzle ORM methods
+      ...drizzleDb,
+      
+      // Raw SQL query method for backwards compatibility
+      query: async (sql, params = []) => {
+        const result = await connection.unsafe(sql, params);
+        return { rows: result };
+      },
+      
+      // Raw SQL method for complex queries
+      raw: async (sql, params = []) => {
+        const result = await connection.unsafe(sql, params);
+        return { rows: result };
+      },
+      
+      // Direct access to connection for advanced use cases
+      connection: connection
+    };
 
     // Test connection
     await connection`SELECT 1`;
@@ -39,6 +60,13 @@ export function getDatabase() {
     throw new Error('Database not initialized. Call connectDatabase() first.');
   }
   return db;
+}
+
+export function getRawConnection() {
+  if (!connection) {
+    throw new Error('Database not initialized. Call connectDatabase() first.');
+  }
+  return connection;
 }
 
 export async function closeDatabase() {

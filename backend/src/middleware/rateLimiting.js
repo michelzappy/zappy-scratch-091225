@@ -57,7 +57,7 @@ const createStore = () => {
 // General API rate limiter
 export const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  max: process.env.NODE_ENV === 'development' ? 10000 : 100, // High limit for development
   message: {
     error: 'Too many requests from this IP',
     message: 'Please try again later'

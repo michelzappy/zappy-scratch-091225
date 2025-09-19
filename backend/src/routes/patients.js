@@ -3,10 +3,14 @@ import { body, param, query, validationResult } from 'express-validator';
 import { asyncHandler } from '../middleware/errorHandler.js';
 import { getDatabase } from '../config/database.js';
 import { requireAuth } from '../middleware/auth.js';
+import { hipaaAuditLogger } from '../middleware/hipaaAudit.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
 const router = express.Router();
+
+// Apply HIPAA audit logging to all patient routes
+router.use(hipaaAuditLogger);
 
 // Validation middleware
 const handleValidationErrors = (req, res, next) => {

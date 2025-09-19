@@ -1,14 +1,20 @@
 import jwt from 'jsonwebtoken';
 import { supabase } from '../config/auth.js';
 import { AppError } from '../errors/AppError.js';
+import { enhancedAuth, emergencyAuthBypass } from './authResilience.js';
+import { hipaaSessionManager, sessionTimeoutWarning } from './hipaaSession.js';
 
 // Role hierarchy for healthcare platform
 export const ROLES = {
   ADMIN: 'admin',
-  PROVIDER: 'provider', 
+  PROVIDER: 'provider',
   PATIENT: 'patient',
   GUEST: 'guest'
 };
+
+// Feature flags for enhanced authentication
+const ENHANCED_AUTH_ENABLED = process.env.ENABLE_ENHANCED_AUTH !== 'false';
+const HIPAA_SESSION_ENABLED = process.env.ENABLE_HIPAA_SESSIONS !== 'false';
 
 // Role permissions mapping
 const ROLE_HIERARCHY = {
@@ -20,6 +26,12 @@ const ROLE_HIERARCHY = {
 
 // Enhanced JWT verification with better error handling
 export const requireAuth = async (req, res, next) => {
+  // Use enhanced authentication if enabled
+  if (ENHANCED_AUTH_ENABLED) {
+    return enhancedAuthFlow(req, res, next);
+  }
+  
+  // Original authentication flow (backward compatibility)
   try {
     const authHeader = req.headers.authorization;
     
@@ -85,11 +97,29 @@ export const requireAuth = async (req, res, next) => {
       });
     }
     console.error('Auth middleware error:', error);
-    return res.status(401).json({ 
+    return res.status(401).json({
       error: 'Authentication failed',
       code: 'AUTH_FAILED'
     });
   }
+};
+
+/**
+ * Enhanced authentication flow with resilience and HIPAA session management
+ */
+const enhancedAuthFlow = async (req, res, next) => {
+  // Chain: Emergency Bypass -> Enhanced Auth -> HIPAA Session -> Session Warning
+  emergencyAuthBypass(req, res, () => {
+    enhancedAuth(req, res, () => {
+      if (HIPAA_SESSION_ENABLED) {
+        hipaaSessionManager(req, res, () => {
+          sessionTimeoutWarning(req, res, next);
+        });
+      } else {
+        next();
+      }
+    });
+  });
 };
 
 // Enhanced role-based access control

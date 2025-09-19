@@ -13,8 +13,9 @@ import { setupRedis } from './config/redis.js';
 
 // Import middleware
 import { globalErrorHandler } from './middleware/errorHandler.js';
-import { hipaaAuditLogger } from './middleware/hipaaLogging.js';
+import { hipaaAuditLogger } from './middleware/hipaaAudit.js';
 import { generalLimiter } from './middleware/rateLimiting.js';
+import { startSessionCleanup } from './middleware/hipaaSession.js';
 
 // Import routes
 import authRoutes from './routes/auth.js';
@@ -32,6 +33,7 @@ import adminPatientsRoutes from './routes/admin-patients.js';
 import webhookRoutes from './routes/webhooks.js';
 import treatmentPlanRoutes from './routes/treatment-plans.js';
 import aiConsultationRoutes from './routes/ai-consultation.js';
+import authHealthRoutes from './routes/auth-health.js';
 
 // Import socket handlers
 import { setupSocketHandlers } from './sockets/index.js';
@@ -111,6 +113,7 @@ app.get('/health', (req, res) => {
 
 // API routes
 app.use('/api/auth', authRoutes);
+app.use('/api/auth-system', authHealthRoutes);
 app.use('/api/consultations', consultationRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/patients', patientRoutes);
@@ -124,6 +127,15 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/admin/patients', adminPatientsRoutes);
 app.use('/api/treatment-plans', treatmentPlanRoutes);
 app.use('/api/ai-consultation', aiConsultationRoutes);
+
+// Frontend compatibility routes (without /api prefix)
+// These provide compatibility for frontend requests expecting routes without /api prefix
+app.use('/auth', authRoutes);
+app.use('/patients', patientRoutes);
+app.use('/consultations', consultationRoutes);
+app.use('/messages', messageRoutes);
+app.use('/orders', orderRoutes);
+app.use('/providers', providerRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {
@@ -162,13 +174,22 @@ async function startServer() {
     setupSocketHandlers(io);
     console.log('✅ Socket.io handlers initialized');
 
+    // Start HIPAA session cleanup
+    const sessionCleanupStop = startSessionCleanup();
+    console.log('✅ HIPAA session management initialized');
+    
+    // Store cleanup function for graceful shutdown
+    app.set('sessionCleanupStop', sessionCleanupStop);
+
     // Start server
     const PORT = process.env.PORT || 3001;
     server.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log(`🔗 API Base URL: http://localhost:${PORT}/api`);
-      console.log('⚠️  Note: Running without database/Redis - some features may not work');
+      console.log(`🔒 Authentication Health: http://localhost:${PORT}/api/auth-system/health`);
+      console.log(`🛡️  Enhanced Security: ${process.env.ENABLE_ENHANCED_AUTH !== 'false' ? 'Enabled' : 'Disabled'}`);
+      console.log(`📋 HIPAA Sessions: ${process.env.ENABLE_HIPAA_SESSIONS !== 'false' ? 'Enabled' : 'Disabled'}`);
     });
 
   } catch (error) {
@@ -178,21 +199,24 @@ async function startServer() {
 }
 
 // Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('Received SIGTERM, shutting down gracefully');
+const gracefulShutdown = (signal) => {
+  console.log(`Received ${signal}, shutting down gracefully`);
+  
+  // Stop session cleanup
+  const sessionCleanupStop = app.get('sessionCleanupStop');
+  if (sessionCleanupStop) {
+    sessionCleanupStop();
+    console.log('✅ Session cleanup stopped');
+  }
+  
   server.close(() => {
     console.log('Server closed');
     process.exit(0);
   });
-});
+};
 
-process.on('SIGINT', () => {
-  console.log('Received SIGINT, shutting down gracefully');
-  server.close(() => {
-    console.log('Server closed');
-    process.exit(0);
-  });
-});
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 // Start the application
 startServer();
