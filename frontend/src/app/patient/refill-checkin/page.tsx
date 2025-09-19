@@ -138,9 +138,20 @@ export default function RefillCheckIn() {
         {/* Progress Bar */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
-            <h1 className="text-2xl font-bold text-gray-900">
-              {config?.title || 'Medication Check-in'}
-            </h1>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => router.back()}
+                className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                <span className="text-sm font-medium">Back</span>
+              </button>
+              <h1 className="text-2xl font-bold text-gray-900">
+                {config?.title || 'Medication Check-in'}
+              </h1>
+            </div>
             <span className="text-sm text-gray-500">
               Step {step} of {config?.steps || 4}
             </span>

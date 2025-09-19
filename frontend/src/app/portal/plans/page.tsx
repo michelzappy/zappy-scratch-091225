@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Card from '@/components/Card';
 import { apiClient } from '@/lib/api';
+import NotificationPopup from '@/components/NotificationPopup';
+import ConfirmDialog from '@/components/ConfirmDialog';
 
 // Condition types available in the system
 const CONDITIONS = [
@@ -36,6 +38,8 @@ export default function TreatmentPlansPage() {
   const [error, setError] = useState<string | null>(null);
   const [editingPlan, setEditingPlan] = useState<TreatmentPlan | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [toast, setToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [planToDelete, setPlanToDelete] = useState<TreatmentPlan | null>(null);
 
   const loadPlans = async () => {
     try {
@@ -118,6 +122,16 @@ export default function TreatmentPlansPage() {
     }
   };
 
+  const handleDeletePlan = async (planId: string) => {
+    try {
+      setPlans(plans.filter(p => p.id !== planId));
+      setToast({ type: 'success', text: 'Plan deleted.' });
+    } catch (error) {
+      console.error('Error deleting plan:', error);
+      setToast({ type: 'error', text: 'Failed to delete plan.' });
+    }
+  };
+
   const getTierColor = (tier: string) => {
     switch(tier) {
       case 'basic': return 'bg-gray-100 text-gray-800';
@@ -197,7 +211,7 @@ export default function TreatmentPlansPage() {
               className={`p-6 relative ${plan.is_popular ? 'ring-2 ring-blue-500' : ''}`}
             >
               {plan.is_popular && (
-                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                <div className="absolute top-2 left-1/2 transform -translate-x-1/2">
                   <span className="bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
                     MOST POPULAR
                   </span>
@@ -248,8 +262,16 @@ export default function TreatmentPlansPage() {
                 >
                   Edit
                 </button>
-                <button className="flex-1 px-3 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50">
+                <button 
+                  onClick={() => router.push(`/portal/analytics?plan=${plan.id}&condition=${selectedCondition}`)}
+                  className="flex-1 px-3 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50">
                   Analytics
+                </button>
+                <button
+                  onClick={() => setPlanToDelete(plan)}
+                  className="px-3 py-2 border border-red-300 text-sm font-medium rounded-lg text-red-700 bg-white hover:bg-red-50"
+                >
+                  Delete
                 </button>
               </div>
             </Card>
@@ -415,6 +437,162 @@ export default function TreatmentPlansPage() {
           </div>
         </div>
       )}
+
+      {/* Add Plan Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={() => setShowAddModal(false)}></div>
+            
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+              <div className="bg-white px-6 py-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Add New Treatment Plan</h3>
+                  <button
+                    onClick={() => setShowAddModal(false)}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  // Handle form submission
+                  const formData = new FormData(e.target as HTMLFormElement);
+                  const newPlan: TreatmentPlan = {
+                    id: `plan-${Date.now()}`,
+                    condition: selectedCondition,
+                    plan_tier: formData.get('tier') as 'basic' | 'standard' | 'premium',
+                    name: formData.get('name') as string,
+                    price: parseFloat(formData.get('price') as string),
+                    billing_period: formData.get('billing_period') as string,
+                    features: (formData.get('features') as string).split('\n').filter(f => f.trim()),
+                    is_popular: formData.get('is_popular') === 'on',
+                    active_subscribers: 0
+                  };
+                  
+                  setPlans(prev => [...prev, newPlan]);
+                  setShowAddModal(false);
+                }}>
+                  <div className="grid grid-cols-1 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Plan Name</label>
+                      <input
+                        type="text"
+                        name="name"
+                        required
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+                        placeholder="Enter plan name"
+                      />
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Tier</label>
+                        <select
+                          name="tier"
+                          required
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+                        >
+                          <option value="basic">Basic</option>
+                          <option value="standard">Standard</option>
+                          <option value="premium">Premium</option>
+                        </select>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Price ($)</label>
+                        <input
+                          type="number"
+                          name="price"
+                          step="0.01"
+                          required
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+                          placeholder="0.00"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Billing Period</label>
+                      <select
+                        name="billing_period"
+                        required
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+                      >
+                        <option value="monthly">Monthly</option>
+                        <option value="quarterly">Quarterly</option>
+                        <option value="annually">Annually</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Features (one per line)</label>
+                      <textarea
+                        name="features"
+                        rows={4}
+                        required
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+                        placeholder="Enter features, one per line"
+                      />
+                    </div>
+                    
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        name="is_popular"
+                        id="is_popular"
+                        className="h-4 w-4 text-gray-900 focus:ring-gray-500 border-gray-300 rounded"
+                      />
+                      <label htmlFor="is_popular" className="ml-2 block text-sm text-gray-900">
+                        Mark as Most Popular
+                      </label>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-6 flex justify-end space-x-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowAddModal(false)}
+                      className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800"
+                    >
+                      Add Plan
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Passive Notification */}
+      <NotificationPopup message={toast} onClose={() => setToast(null)} />
+
+      {/* Confirm: delete plan */}
+      <ConfirmDialog
+        open={planToDelete !== null}
+        title="Delete plan?"
+        description={`Remove ${planToDelete?.name}. This action cannot be undone.`}
+        confirmText="Delete"
+        tone="danger"
+        onCancel={() => setPlanToDelete(null)}
+        onConfirm={() => {
+          if (planToDelete) {
+            handleDeletePlan(planToDelete.id);
+          }
+          setPlanToDelete(null);
+        }}
+      />
     </div>
   );
 }

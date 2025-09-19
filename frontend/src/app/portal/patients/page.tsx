@@ -152,6 +152,51 @@ export default function PatientsPage() {
     }
   };
 
+  const exportPatients = () => {
+    // Prepare data for export
+    const dataToExport = selectedPatients.size > 0 
+      ? filteredPatients.filter(p => selectedPatients.has(p.id))
+      : filteredPatients;
+
+    if (dataToExport.length === 0) {
+      alert('No patients to export');
+      return;
+    }
+
+    // Convert to CSV format
+    const headers = ['Name', 'Email', 'Phone', 'Date of Birth', 'Status', 'Last Visit', 'Next Appointment', 'Conditions'];
+    const csvContent = [
+      headers.join(','),
+      ...dataToExport.map(patient => [
+        patient.name,
+        patient.email,
+        patient.phone,
+        patient.dateOfBirth,
+        patient.status,
+        patient.lastVisit,
+        patient.nextAppointment || 'N/A',
+        patient.conditions.join('; ')
+      ].map(field => `"${field}"`).join(','))
+    ].join('\n');
+
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    const filename = `patients_export_${new Date().toISOString().split('T')[0]}.csv`;
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.display = 'none';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Clean up
+    URL.revokeObjectURL(url);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -261,7 +306,9 @@ export default function PatientsPage() {
         <div className="flex-1"></div>
 
         {/* Action Buttons */}
-        <button className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 font-medium text-gray-700">
+        <button 
+          onClick={() => exportPatients()}
+          className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 font-medium text-gray-700">
           <svg className="w-4 h-4 inline mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
           </svg>
@@ -283,7 +330,7 @@ export default function PatientsPage() {
             {selectedPatients.size} selected
           </span>
           <button className="text-sm text-gray-600 hover:text-gray-900">Edit</button>
-          <button className="text-sm text-gray-600 hover:text-gray-900">Export</button>
+          <button onClick={() => exportPatients()} className="text-sm text-gray-600 hover:text-gray-900">Export</button>
           <button className="text-sm text-gray-600 hover:text-gray-900">Archive</button>
           <button className="text-sm text-red-600 hover:text-red-700">Delete</button>
           <div className="flex-1"></div>

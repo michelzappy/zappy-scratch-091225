@@ -161,6 +161,49 @@ export default function ConsultationsPage() {
     }
   };
 
+  const exportConsultations = () => {
+    // Prepare data for export
+    const dataToExport = selectedConsultations.size > 0 
+      ? filteredConsultations.filter(c => selectedConsultations.has(c.id))
+      : filteredConsultations;
+
+    if (dataToExport.length === 0) {
+      alert('No consultations to export');
+      return;
+    }
+
+    // Convert to CSV format
+    const headers = ['Patient Name', 'Type', 'Status', 'Priority', 'Provider', 'Date/Time'];
+    const csvContent = [
+      headers.join(','),
+      ...dataToExport.map(consultation => [
+        consultation.patientName,
+        consultation.type,
+        consultation.status,
+        consultation.priority,
+        consultation.provider || 'N/A',
+        new Date(consultation.date).toLocaleString()
+      ].join(','))
+    ].join('\n');
+
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    const filename = `consultations_export_${new Date().toISOString().split('T')[0]}.csv`;
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.display = 'none';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Clean up
+    URL.revokeObjectURL(url);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -271,7 +314,9 @@ export default function ConsultationsPage() {
         <div className="flex-1"></div>
 
         {/* Action Buttons */}
-        <button className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 font-medium text-gray-700">
+        <button 
+          onClick={() => exportConsultations()}
+          className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 font-medium text-gray-700">
           <svg className="w-4 h-4 inline mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
           </svg>
@@ -279,7 +324,7 @@ export default function ConsultationsPage() {
         </button>
         
         <button 
-          onClick={() => router.push('/patient/new-consultation')}
+          onClick={() => router.push('/portal/consultations/new')}
           className="px-3 py-1.5 bg-gray-900 text-white text-sm rounded-lg hover:bg-gray-800 font-medium"
         >
           New Consultation
@@ -294,7 +339,7 @@ export default function ConsultationsPage() {
           </span>
           <button className="text-sm text-gray-600 hover:text-gray-900">Reassign</button>
           <button className="text-sm text-gray-600 hover:text-gray-900">Reschedule</button>
-          <button className="text-sm text-gray-600 hover:text-gray-900">Export</button>
+          <button onClick={() => exportConsultations()} className="text-sm text-gray-600 hover:text-gray-900">Export</button>
           <button className="text-sm text-red-600 hover:text-red-700">Cancel</button>
           <div className="flex-1"></div>
           <button 

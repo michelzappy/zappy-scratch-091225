@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 
@@ -22,6 +22,16 @@ export default function UnifiedPortalLayout({ children }: { children: React.Reac
   const [userRole, setUserRole] = useState<UserRole>('provider');
   const [userName, setUserName] = useState('');
   const [userTitle, setUserTitle] = useState('');
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState<Array<{
+    id: string;
+    title: string;
+    message: string;
+    time: string;
+    read: boolean;
+    type: 'info' | 'success' | 'warning' | 'error';
+  }>>([]);
+  const notificationRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // Get user role from localStorage or auth context
@@ -44,6 +54,78 @@ export default function UnifiedPortalLayout({ children }: { children: React.Reac
       setUserTitle('');
     }
   }, [pathname]); // Re-run when pathname changes to catch navigation from login
+
+  // Initialize sample notifications
+  useEffect(() => {
+    if (notifications.length === 0) {
+      setNotifications([
+        {
+          id: '1',
+          title: 'New Order Received',
+          message: 'Order #ORD-2025-001 has been placed by John Doe',
+          time: '5 minutes ago',
+          read: false,
+          type: 'info'
+        },
+        {
+          id: '2',
+          title: 'Prescription Expiring Soon',
+          message: '3 patients have prescriptions expiring in the next 7 days',
+          time: '1 hour ago',
+          read: false,
+          type: 'warning'
+        },
+        {
+          id: '3',
+          title: 'System Update',
+          message: 'The portal will undergo maintenance on Sunday at 2 AM EST',
+          time: '2 hours ago',
+          read: true,
+          type: 'info'
+        },
+        {
+          id: '4',
+          title: 'Consultation Completed',
+          message: 'Dr. Smith has completed consultation #CON-2025-123',
+          time: 'Yesterday',
+          read: true,
+          type: 'success'
+        }
+      ]);
+    }
+  }, []);
+
+  // Handle click outside notifications
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+        setShowNotifications(false);
+      }
+    };
+
+    if (showNotifications) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [showNotifications]);
+
+  const markAsRead = (notificationId: string) => {
+    setNotifications(prev => 
+      prev.map(notif => 
+        notif.id === notificationId ? { ...notif, read: true } : notif
+      )
+    );
+  };
+
+  const markAllAsRead = () => {
+    setNotifications(prev => 
+      prev.map(notif => ({ ...notif, read: true }))
+    );
+  };
+
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   // Skip layout for login pages
   if (pathname?.includes('/login')) {
@@ -228,7 +310,7 @@ export default function UnifiedPortalLayout({ children }: { children: React.Reac
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Unified Sidebar */}
-      <div className={`${sidebarCollapsed ? 'w-16' : 'w-56'} bg-white border-r border-gray-200 transition-all duration-300 flex flex-col`}>
+      <div className={`${sidebarCollapsed ? 'w-16' : 'w-56'} bg-white border-r border-gray-200 transition-all duration-300 flex flex-col sticky top-0 h-screen`}>
         {/* Logo */}
         <div className="h-16 px-4 flex items-center justify-between border-b border-gray-200">
           {!sidebarCollapsed && (
@@ -250,7 +332,7 @@ export default function UnifiedPortalLayout({ children }: { children: React.Reac
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-3 py-4 overflow-y-auto">
+        <nav className="flex-1 px-3 py-4 overflow-y-auto min-h-0 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
           {/* For Provider role - just show items without section headers */}
           {userRole === 'provider' && (
             <div className="space-y-1">
@@ -459,9 +541,9 @@ export default function UnifiedPortalLayout({ children }: { children: React.Reac
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col h-screen overflow-hidden">
         {/* Top Bar */}
-        <header className="h-16 bg-white border-b border-gray-200">
+        <header className="h-16 bg-white border-b border-gray-200 flex-shrink-0">
           <div className="h-full px-6 flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <h1 className="text-lg font-semibold text-gray-900">
@@ -486,12 +568,88 @@ export default function UnifiedPortalLayout({ children }: { children: React.Reac
             
             <div className="flex items-center space-x-4">
               {/* Notifications */}
-              <button className="relative p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                </svg>
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-400 rounded-full"></span>
-              </button>
+              <div className="relative" ref={notificationRef}>
+                <button 
+                  onClick={() => setShowNotifications(!showNotifications)}
+                  className="relative p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                  </svg>
+                  {unreadCount > 0 && (
+                    <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-400 rounded-full"></span>
+                  )}
+                </button>
+                
+                {/* Notification Dropdown */}
+                {showNotifications && (
+                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                    <div className="px-4 py-3 border-b border-gray-200">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
+                        {unreadCount > 0 && (
+                          <button
+                            onClick={markAllAsRead}
+                            className="text-xs text-blue-600 hover:text-blue-700"
+                          >
+                            Mark all as read
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="max-h-96 overflow-y-auto">
+                      {notifications.length === 0 ? (
+                        <div className="px-4 py-8 text-center text-gray-500 text-sm">
+                          No notifications
+                        </div>
+                      ) : (
+                        notifications.map((notification) => (
+                          <div
+                            key={notification.id}
+                            onClick={() => markAsRead(notification.id)}
+                            className={`px-4 py-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${
+                              !notification.read ? 'bg-blue-50' : ''
+                            }`}
+                          >
+                            <div className="flex items-start">
+                              <div className={`flex-shrink-0 w-2 h-2 mt-1.5 rounded-full ${
+                                notification.type === 'error' ? 'bg-red-400' :
+                                notification.type === 'warning' ? 'bg-yellow-400' :
+                                notification.type === 'success' ? 'bg-green-400' :
+                                'bg-blue-400'
+                              }`}></div>
+                              <div className="ml-3 flex-1">
+                                <p className="text-sm font-medium text-gray-900">
+                                  {notification.title}
+                                </p>
+                                <p className="text-xs text-gray-500 mt-0.5">
+                                  {notification.message}
+                                </p>
+                                <p className="text-xs text-gray-400 mt-1">
+                                  {notification.time}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                    
+                    <div className="px-4 py-3 border-t border-gray-200">
+                      <button 
+                        onClick={() => {
+                          setShowNotifications(false);
+                          router.push('/portal/notifications');
+                        }}
+                        className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                      >
+                        View all notifications
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
               
               {/* Help */}
               <button className="p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100">
@@ -504,7 +662,7 @@ export default function UnifiedPortalLayout({ children }: { children: React.Reac
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 p-6 bg-gray-50">
+        <main className="flex-1 p-6 bg-gray-50 overflow-y-auto">
           {children}
         </main>
       </div>
