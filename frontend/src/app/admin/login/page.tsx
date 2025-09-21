@@ -2,12 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { authService } from '@/lib/auth';
 
 export default function AdminLoginPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
+    email: 'dev@admin.com', // Pre-fill with dev account for testing
+    password: 'dev123456',   // Pre-fill with dev password for testing
     rememberMe: false,
     twoFactorCode: ''
   });
@@ -17,10 +18,7 @@ export default function AdminLoginPage() {
 
   useEffect(() => {
     // Check if already authenticated as admin
-    const token = localStorage.getItem('token');
-    const userRole = localStorage.getItem('userRole');
-    
-    if (token && (userRole === 'admin' || userRole === 'super-admin')) {
+    if (authService.isAuthenticated() && authService.isAdmin()) {
       router.push('/portal/dashboard');
     }
   }, [router]);
@@ -31,50 +29,32 @@ export default function AdminLoginPage() {
     setError('');
 
     try {
-      // TODO: Implement admin authentication API call
-      const response = await fetch('/api/auth/admin/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-          twoFactorCode: formData.twoFactorCode,
-          userType: 'admin'
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        
-        // Check if 2FA is required
-        if (data.requiresTwoFactor && !showTwoFactor) {
-          setShowTwoFactor(true);
-          setError('');
-          setLoading(false);
-          return;
-        }
-        
-        // Store authentication data
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('userRole', data.role);
-        localStorage.setItem('userName', data.user.name);
-        localStorage.setItem('userId', data.user.id);
-
-        // Redirect to portal dashboard
-        router.push('/portal/dashboard');
-      } else {
-        const errorData = await response.json();
-        
-        if (errorData.code === 'INVALID_2FA') {
-          setError('Invalid two-factor authentication code.');
-        } else {
-          setError(errorData.message || 'Invalid credentials. Please try again.');
-        }
+      const result = await authService.loginAdmin(
+        formData.email,
+        formData.password,
+        formData.twoFactorCode || undefined
+      );
+      
+      // Check if 2FA is required
+      if ('requiresTwoFactor' in result) {
+        setShowTwoFactor(true);
+        setError('');
+        setLoading(false);
+        return;
       }
-    } catch (err) {
-      setError('Network error. Please check your connection and try again.');
+      
+      // Success - redirect to portal dashboard
+      router.push('/portal/dashboard');
+      
+    } catch (err: any) {
+      const errorMessage = err.message || 'Invalid credentials. Please try again.';
+      
+      if (errorMessage.includes('2FA') || errorMessage.includes('two-factor')) {
+        setError('Invalid two-factor authentication code.');
+      } else {
+        setError(errorMessage);
+      }
+      
       console.error('Admin login error:', err);
     } finally {
       setLoading(false);

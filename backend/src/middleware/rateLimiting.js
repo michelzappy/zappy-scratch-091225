@@ -57,7 +57,7 @@ const createStore = () => {
 // General API rate limiter
 export const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === 'development' ? 10000 : 100, // High limit for development
+  max: process.env.NODE_ENV === 'development' ? 999999 : 100, // Very high limit for development
   message: {
     error: 'Too many requests from this IP',
     message: 'Please try again later'
@@ -67,7 +67,9 @@ export const generalLimiter = rateLimit({
   keyGenerator: (req) => {
     // Use user ID if authenticated, otherwise IP
     return req.user?.id || req.ip;
-  }
+  },
+  // Skip rate limiting entirely in development
+  skip: (req) => process.env.NODE_ENV === 'development'
 });
 
 // Strict limiter for sensitive endpoints

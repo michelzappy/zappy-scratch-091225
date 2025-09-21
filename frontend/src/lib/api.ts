@@ -1,5 +1,10 @@
-import axios, { AxiosInstance, AxiosError } from 'axios';
+import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { authService } from './auth';
+
+// Extend the Axios request config to include _retry flag
+interface ExtendedAxiosRequestConfig extends InternalAxiosRequestConfig {
+  _retry?: boolean;
+}
 
 class ApiClient {
   public client: AxiosInstance;
@@ -34,18 +39,35 @@ class ApiClient {
     this.client.interceptors.response.use(
       (response) => response,
       async (error: AxiosError) => {
-        if (error.response?.status === 401) {
+        const originalRequest = error.config as ExtendedAxiosRequestConfig;
+        
+        if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
+          // Mark this request as retried to prevent infinite loops
+          originalRequest._retry = true;
+          
+          // Don't try to refresh if this is already a logout request
+          if (originalRequest.url?.includes('/auth/logout')) {
+            return Promise.reject(error);
+          }
+          
           // Try to refresh token
           const refreshed = await authService.refreshToken();
           
-          if (refreshed && error.config) {
+          if (refreshed) {
             // Retry the original request with new token
-            error.config.headers.Authorization = `Bearer ${refreshed.accessToken}`;
-            return this.client.request(error.config);
+            originalRequest.headers.Authorization = `Bearer ${refreshed.accessToken}`;
+            return this.client.request(originalRequest);
           }
           
-          // If refresh failed, logout and redirect
-          await authService.logout();
+          // If refresh failed, clear auth locally to prevent logout API loop
+          // Don't call authService.logout() as it makes API calls that trigger this interceptor
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('telehealth_access_token');
+            localStorage.removeItem('telehealth_refresh_token');
+            localStorage.removeItem('telehealth_user');
+            // Redirect to home page
+            window.location.href = '/';
+          }
         }
         
         return Promise.reject(error);

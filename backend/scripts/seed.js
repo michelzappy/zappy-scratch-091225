@@ -101,4 +101,4 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   runSeeds().catch(console.error);
 }
 
-export { runSeeds, executeSeedFile };
+export { runSeeds };

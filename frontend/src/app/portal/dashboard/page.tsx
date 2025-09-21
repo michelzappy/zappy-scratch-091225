@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Card from '@/components/Card';
 import LineChart from '@/components/LineChart';
+import { authService, UserRole as AuthUserRole } from '@/lib/auth';
 
 type UserRole = 'provider' | 'admin' | 'provider-admin' | 'super-admin';
 
@@ -37,29 +38,31 @@ export default function UnifiedDashboardPage() {
   const [pendingConsultations, setPendingConsultations] = useState<PendingConsultation[]>([]);
 
   useEffect(() => {
-    // Check if user is authenticated
-    const token = localStorage.getItem('token');
-    if (!token) {
+    // Check if user is authenticated using auth service
+    if (!authService.isAuthenticated()) {
       router.push('/portal/login');
       return;
     }
 
-    // Get user data
-    const storedRole = localStorage.getItem('userRole') as UserRole;
-    const storedUserData = localStorage.getItem('userData');
+    // Get user data from auth service
+    const user = authService.getUser();
     
-    if (storedRole) {
-      setUserRole(storedRole);
-      
-      // Load admin-specific data
-      if (storedRole === 'admin' || storedRole === 'provider-admin' || storedRole === 'super-admin') {
+    if (user) {
+      // Map role properly (handle variations)
+      let mappedRole: UserRole = 'provider';
+      if (user.role === AuthUserRole.ADMIN ||
+          user.role === AuthUserRole.PROVIDER_ADMIN ||
+          user.role === AuthUserRole.SUPER_ADMIN) {
+        if (user.role === AuthUserRole.ADMIN) mappedRole = 'admin';
+        else if (user.role === AuthUserRole.PROVIDER_ADMIN) mappedRole = 'provider-admin';
+        else if (user.role === AuthUserRole.SUPER_ADMIN) mappedRole = 'super-admin';
         loadAdminData();
+      } else if (user.role === AuthUserRole.PROVIDER) {
+        mappedRole = 'provider';
       }
-    }
-    
-    if (storedUserData) {
-      const userData = JSON.parse(storedUserData);
-      setUserName(userData.name || 'User');
+      
+      setUserRole(mappedRole);
+      setUserName(`${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'User');
     }
 
     setLoading(false);

@@ -71,7 +71,7 @@ class AuthService {
       }
 
       // Update last login
-      await this.updateLastLogin(user.id);
+      await this.updateLastLogin(user.id, user.role);
 
       // Generate token
       const token = this.generateToken(user);
@@ -94,13 +94,12 @@ class AuthService {
    */
   async adminLogin(email, password) {
     try {
-      // Find admin user
-      const result = await this.db.query(
-        'SELECT * FROM admins WHERE email = $1 LIMIT 1',
-        [email]
-      );
+      // Find admin user - fix table name to match our schema
+      const result = await this.db`
+        SELECT * FROM admin_users WHERE email = ${email} LIMIT 1
+      `;
       
-      const admin = result.rows[0];
+      const admin = result[0];
       
       if (!admin) {
         throw new AppError('Invalid credentials', 401);
@@ -118,10 +117,9 @@ class AuthService {
       }
 
       // Update last login
-      await this.db.query(
-        'UPDATE admins SET last_login = NOW() WHERE id = $1',
-        [admin.id]
-      );
+      await this.db`
+        UPDATE admin_users SET last_login = NOW() WHERE id = ${admin.id}
+      `;
 
       // Generate JWT token
       const token = jwt.sign(
@@ -159,13 +157,12 @@ class AuthService {
    */
   async providerLogin(email, password) {
     try {
-      // Find provider
-      const result = await this.db.query(
-        'SELECT * FROM providers WHERE email = $1 LIMIT 1',
-        [email]
-      );
+      // Find provider - use postgres template literals
+      const result = await this.db`
+        SELECT * FROM providers WHERE email = ${email} LIMIT 1
+      `;
       
-      const provider = result.rows[0];
+      const provider = result[0];
       
       if (!provider) {
         throw new AppError('Invalid credentials', 401);
@@ -177,16 +174,15 @@ class AuthService {
         throw new AppError('Invalid credentials', 401);
       }
 
-      // Check if active
-      if (provider.status !== 'active') {
+      // Check if active - fix field name to match our schema
+      if (!provider.is_active) {
         throw new AppError('Account is not active', 403);
       }
 
       // Update last login
-      await this.db.query(
-        'UPDATE providers SET last_login = NOW() WHERE id = $1',
-        [provider.id]
-      );
+      await this.db`
+        UPDATE providers SET last_login = NOW() WHERE id = ${provider.id}
+      `;
 
       // Generate JWT token
       const token = jwt.sign(
@@ -224,13 +220,12 @@ class AuthService {
    */
   async patientLogin(email, password) {
     try {
-      // Find patient
-      const result = await this.db.query(
-        'SELECT * FROM patients WHERE email = $1 LIMIT 1',
-        [email]
-      );
+      // Find patient - use postgres template literals
+      const result = await this.db`
+        SELECT * FROM patients WHERE email = ${email} LIMIT 1
+      `;
       
-      const patient = result.rows[0];
+      const patient = result[0];
       
       if (!patient) {
         throw new AppError('Invalid credentials', 401);
@@ -248,10 +243,9 @@ class AuthService {
       }
 
       // Update last login
-      await this.db.query(
-        'UPDATE patients SET last_login = NOW() WHERE id = $1',
-        [patient.id]
-      );
+      await this.db`
+        UPDATE patients SET last_login = NOW() WHERE id = ${patient.id}
+      `;
 
       // Generate JWT token
       const token = jwt.sign(
@@ -282,32 +276,64 @@ class AuthService {
   }
 
   /**
-   * Find user by email
+   * Find user by email across all user tables
    * @param {string} email - User email
    * @returns {Promise<Object|null>} User object or null
    */
   async findUserByEmail(email) {
     try {
-      const query = `
+      // Check patients table
+      let result = await this.db`
         SELECT 
-          u.id, u.email, u.password, u.role, u.created_at,
-          p.first_name, p.last_name, p.phone, p.date_of_birth,
-          pr.license_number, pr.specialty
-        FROM users u
-        LEFT JOIN patients p ON u.id = p.user_id AND u.role = 'patient'
-        LEFT JOIN providers pr ON u.id = pr.user_id AND u.role = 'provider'
-        WHERE u.email = $1
+          id, email, password_hash as password, first_name, last_name, 
+          phone, date_of_birth, created_at, 'patient' as role,
+          subscription_tier, is_active
+        FROM patients 
+        WHERE email = ${email}
+        LIMIT 1
       `;
       
-      const result = await this.db.query(query, [email]);
-      return result.rows[0] || null;
+      if (result.length > 0) {
+        return result[0];
+      }
+
+      // Check providers table
+      result = await this.db`
+        SELECT 
+          id, email, password_hash as password, first_name, last_name, 
+          phone, license_number, created_at, 'provider' as role,
+          is_active
+        FROM providers 
+        WHERE email = ${email}
+        LIMIT 1
+      `;
+      
+      if (result.length > 0) {
+        return result[0];
+      }
+
+      // Check admin_users table
+      result = await this.db`
+        SELECT 
+          id, email, password_hash as password, first_name, last_name, 
+          role, permissions, created_at, is_active
+        FROM admin_users 
+        WHERE email = ${email}
+        LIMIT 1
+      `;
+      
+      if (result.length > 0) {
+        return result[0];
+      }
+
+      return null;
     } catch (error) {
       throw new AppError('Database query failed', 500, error.message);
     }
   }
 
   /**
-   * Create a new user
+   * Create a new user in the appropriate table based on role
    * @param {Object} userData - User data
    * @returns {Promise<Object>} Created user
    */
@@ -315,55 +341,72 @@ class AuthService {
     const { email, password, role, firstName, lastName, phone, dateOfBirth } = userData;
 
     try {
-      await this.db.query('BEGIN');
+      const createdAt = new Date();
+      let result;
 
-      // Insert into users table
-      const userQuery = `
-        INSERT INTO users (email, password, role)
-        VALUES ($1, $2, $3)
-        RETURNING id, email, role, created_at
-      `;
-      const userResult = await this.db.query(userQuery, [email, password, role]);
-      const user = userResult.rows[0];
-
-      // Insert into role-specific table
+      // Insert directly into role-specific table
       if (role === 'patient') {
-        const patientQuery = `
-          INSERT INTO patients (user_id, first_name, last_name, phone, date_of_birth)
-          VALUES ($1, $2, $3, $4, $5)
+        result = await this.db`
+          INSERT INTO patients (
+            email, password_hash, first_name, last_name, phone, date_of_birth, created_at
+          ) VALUES (
+            ${email}, ${password}, ${firstName}, ${lastName}, ${phone}, ${dateOfBirth}, ${createdAt}
+          )
+          RETURNING id, email, first_name, last_name, phone, date_of_birth, created_at
         `;
-        await this.db.query(patientQuery, [user.id, firstName, lastName, phone, dateOfBirth]);
       } else if (role === 'provider') {
-        const providerQuery = `
-          INSERT INTO providers (user_id, first_name, last_name, phone, license_number)
-          VALUES ($1, $2, $3, $4, $5)
+        result = await this.db`
+          INSERT INTO providers (
+            email, password_hash, first_name, last_name, phone, created_at
+          ) VALUES (
+            ${email}, ${password}, ${firstName}, ${lastName}, ${phone}, ${createdAt}
+          )
+          RETURNING id, email, first_name, last_name, phone, created_at
         `;
-        await this.db.query(providerQuery, [user.id, firstName, lastName, phone, '']);
+      } else if (role === 'admin') {
+        result = await this.db`
+          INSERT INTO admin_users (
+            email, password_hash, first_name, last_name, role, created_at
+          ) VALUES (
+            ${email}, ${password}, ${firstName}, ${lastName}, ${role}, ${createdAt}
+          )
+          RETURNING id, email, first_name, last_name, role, created_at
+        `;
+      } else {
+        throw new AppError('Invalid user role', 400);
       }
 
-      await this.db.query('COMMIT');
-
+      const user = result[0];
       return {
         ...user,
-        firstName,
-        lastName,
+        role,
+        firstName: user.first_name,
+        lastName: user.last_name,
         phone,
         dateOfBirth
       };
     } catch (error) {
-      await this.db.query('ROLLBACK');
-      throw error;
+      if (error instanceof AppError) throw error;
+      throw new AppError('User creation failed', 500, error.message);
     }
   }
 
   /**
-   * Update user's last login timestamp
-   * @param {number} userId - User ID
+   * Update user's last login timestamp in appropriate table
+   * @param {string} userId - User ID
+   * @param {string} role - User role to determine which table to update
    */
-  async updateLastLogin(userId) {
+  async updateLastLogin(userId, role) {
     try {
-      const query = 'UPDATE users SET last_login = NOW() WHERE id = $1';
-      await this.db.query(query, [userId]);
+      const lastLogin = new Date();
+      
+      if (role === 'patient') {
+        await this.db`UPDATE patients SET last_login = ${lastLogin} WHERE id = ${userId}`;
+      } else if (role === 'provider') {
+        await this.db`UPDATE providers SET last_login = ${lastLogin} WHERE id = ${userId}`;
+      } else if (role === 'admin') {
+        await this.db`UPDATE admin_users SET last_login = ${lastLogin} WHERE id = ${userId}`;
+      }
     } catch (error) {
       console.error('Failed to update last login:', error);
       // Non-critical error, don't throw
@@ -411,24 +454,35 @@ class AuthService {
   }
 
   /**
-   * Change user password
-   * @param {number} userId - User ID
+   * Change user password in appropriate table
+   * @param {string} userId - User ID
+   * @param {string} role - User role
    * @param {string} oldPassword - Current password
    * @param {string} newPassword - New password
    * @returns {Promise<boolean>} Success status
    */
-  async changePassword(userId, oldPassword, newPassword) {
+  async changePassword(userId, role, oldPassword, newPassword) {
     try {
-      // Get user
-      const query = 'SELECT password FROM users WHERE id = $1';
-      const result = await this.db.query(query, [userId]);
+      let currentPasswordHash;
       
-      if (!result.rows[0]) {
+      // Get current password based on role
+      if (role === 'patient') {
+        const result = await this.db`SELECT password_hash FROM patients WHERE id = ${userId}`;
+        currentPasswordHash = result[0]?.password_hash;
+      } else if (role === 'provider') {
+        const result = await this.db`SELECT password_hash FROM providers WHERE id = ${userId}`;
+        currentPasswordHash = result[0]?.password_hash;
+      } else if (role === 'admin') {
+        const result = await this.db`SELECT password_hash FROM admin_users WHERE id = ${userId}`;
+        currentPasswordHash = result[0]?.password_hash;
+      }
+
+      if (!currentPasswordHash) {
         throw new AppError('User not found', 404);
       }
 
       // Verify old password
-      const isValid = await bcrypt.compare(oldPassword, result.rows[0].password);
+      const isValid = await bcrypt.compare(oldPassword, currentPasswordHash);
       if (!isValid) {
         throw new AppError('Invalid current password', 401);
       }
@@ -436,9 +490,14 @@ class AuthService {
       // Hash new password
       const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-      // Update password
-      const updateQuery = 'UPDATE users SET password = $1 WHERE id = $2';
-      await this.db.query(updateQuery, [hashedPassword, userId]);
+      // Update password in appropriate table
+      if (role === 'patient') {
+        await this.db`UPDATE patients SET password_hash = ${hashedPassword} WHERE id = ${userId}`;
+      } else if (role === 'provider') {
+        await this.db`UPDATE providers SET password_hash = ${hashedPassword} WHERE id = ${userId}`;
+      } else if (role === 'admin') {
+        await this.db`UPDATE admin_users SET password_hash = ${hashedPassword} WHERE id = ${userId}`;
+      }
 
       return true;
     } catch (error) {
@@ -462,22 +521,15 @@ class AuthService {
       const hashedPassword = await bcrypt.hash(newPassword, 10);
 
       // Update password based on user role
-      let updateQuery;
-      switch (decoded.role) {
-        case 'admin':
-          updateQuery = 'UPDATE admins SET password_hash = $1 WHERE id = $2';
-          break;
-        case 'provider':
-          updateQuery = 'UPDATE providers SET password_hash = $1 WHERE id = $2';
-          break;
-        case 'patient':
-          updateQuery = 'UPDATE patients SET password_hash = $1 WHERE id = $2';
-          break;
-        default:
-          throw new AppError('Invalid user role', 400);
+      if (decoded.role === 'admin') {
+        await this.db`UPDATE admin_users SET password_hash = ${hashedPassword} WHERE id = ${decoded.id}`;
+      } else if (decoded.role === 'provider') {
+        await this.db`UPDATE providers SET password_hash = ${hashedPassword} WHERE id = ${decoded.id}`;
+      } else if (decoded.role === 'patient') {
+        await this.db`UPDATE patients SET password_hash = ${hashedPassword} WHERE id = ${decoded.id}`;
+      } else {
+        throw new AppError('Invalid user role', 400);
       }
-
-      await this.db.query(updateQuery, [hashedPassword, decoded.id]);
 
       return true;
     } catch (error) {
@@ -494,24 +546,21 @@ class AuthService {
    */
   async requestPasswordReset(email, role) {
     try {
+      let user;
+      
       // Find user based on role
-      let query;
-      switch (role) {
-        case 'admin':
-          query = 'SELECT id, email FROM admins WHERE email = $1';
-          break;
-        case 'provider':
-          query = 'SELECT id, email FROM providers WHERE email = $1';
-          break;
-        case 'patient':
-          query = 'SELECT id, email FROM patients WHERE email = $1';
-          break;
-        default:
-          throw new AppError('Invalid user role', 400);
+      if (role === 'admin') {
+        const result = await this.db`SELECT id, email FROM admin_users WHERE email = ${email}`;
+        user = result[0];
+      } else if (role === 'provider') {
+        const result = await this.db`SELECT id, email FROM providers WHERE email = ${email}`;
+        user = result[0];
+      } else if (role === 'patient') {
+        const result = await this.db`SELECT id, email FROM patients WHERE email = ${email}`;
+        user = result[0];
+      } else {
+        throw new AppError('Invalid user role', 400);
       }
-
-      const result = await this.db.query(query, [email]);
-      const user = result.rows[0];
 
       if (!user) {
         // Don't reveal if email exists

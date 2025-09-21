@@ -3,8 +3,30 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Alert from '@/components/Alert';
+import { authService } from '@/lib/auth';
 
 type UserRole = 'provider' | 'admin' | 'provider-admin' | 'super-admin';
+
+// JWT utility for demo tokens
+const createDemoJWT = (user: any) => {
+  // Simple JWT creation for demo purposes (not cryptographically secure)
+  const header = btoa(JSON.stringify({ typ: 'JWT', alg: 'HS256' }));
+  const payload = btoa(JSON.stringify({
+    id: user.id,
+    email: user.email,
+    role: user.role,
+    metadata: user.metadata || {},
+    verified: user.verified,
+    created_at: user.created_at || new Date().toISOString(),
+    iat: Math.floor(Date.now() / 1000),
+    exp: Math.floor(Date.now() / 1000) + (3600 * 24) // 24 hours
+  }));
+  
+  // Demo signature - in production this would be HMAC-SHA256
+  const signature = btoa('demo-signature-' + user.id);
+  
+  return `${header}.${payload}.${signature}`;
+};
 
 export default function UnifiedLoginPage() {
   const router = useRouter();
@@ -19,48 +41,48 @@ export default function UnifiedLoginPage() {
     setLoading(true);
 
     try {
-      // API call to authenticate user
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Invalid credentials');
-      }
-
-      const data = await response.json();
+      // Use auth service for proper API communication
+      const response = await authService.login(email, password, 'provider');
       
-      // Store user data and role
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('userRole', data.role);
-      localStorage.setItem('userData', JSON.stringify({
-        name: data.name,
-        email: data.email,
-        title: data.title,
-      }));
-
-      // Redirect to dashboard
+      // Redirect to dashboard - auth service handles token storage
       router.push('/portal/dashboard');
-    } catch (err) {
-      setError('Invalid email or password. Please try again.');
+    } catch (err: any) {
+      setError(err.message || 'Invalid email or password. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  // Demo login functions for testing
+  // Demo login functions for testing - using auth service
   const demoLogin = (role: UserRole, name: string, title: string) => {
-    localStorage.setItem('token', 'demo-token');
-    localStorage.setItem('userRole', role);
-    localStorage.setItem('userData', JSON.stringify({
-      name,
-      email: email || `demo@zappyhealth.com`,
-      title,
-    }));
+    // Create mock user data in the correct format
+    const mockUser = {
+      id: `demo-${role}-${Date.now()}`,
+      email: email || `${role}@zappyhealth.com`,
+      firstName: name.split(' ')[0] || 'Demo',
+      lastName: name.split(' ').slice(1).join(' ') || 'User',
+      role: role, // Keep the role as is
+      verified: true,
+      metadata: {
+        title: title,
+        providerStatus: role.includes('provider') ? 'active' : undefined
+      },
+      created_at: new Date().toISOString()
+    };
+
+    // Create proper JWT tokens for demo mode
+    const accessToken = createDemoJWT(mockUser);
+    const refreshToken = createDemoJWT({
+      ...mockUser,
+      tokenVersion: 0,
+      exp: Math.floor(Date.now() / 1000) + (30 * 24 * 3600) // 30 days
+    });
+
+    // Store auth data using the same keys as auth service
+    localStorage.setItem('telehealth_access_token', accessToken);
+    localStorage.setItem('telehealth_refresh_token', refreshToken);
+    localStorage.setItem('telehealth_user', JSON.stringify(mockUser));
+    
     router.push('/portal/dashboard');
   };
 

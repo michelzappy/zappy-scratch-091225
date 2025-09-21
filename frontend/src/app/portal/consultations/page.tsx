@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api';
+import { authService } from '@/lib/auth';
 
 type UserRole = 'provider' | 'admin' | 'provider-admin' | 'super-admin';
 
@@ -30,16 +31,23 @@ export default function ConsultationsPage() {
   const [dateRange, setDateRange] = useState('today');
 
   useEffect(() => {
-    // Try to get role from localStorage, but don't redirect if not found
-    const role = localStorage.getItem('userRole') as UserRole;
+    // Get user data from auth service
+    const user = authService.getUser();
     
-    if (role) {
-      setUserRole(role);
+    if (user) {
+      // Map auth service roles to layout roles
+      const roleMapping: { [key: string]: UserRole } = {
+        'provider': 'provider',
+        'admin': 'admin',
+        'provider-admin': 'provider-admin',
+        'super-admin': 'super-admin'
+      };
+      
+      const mappedRole = roleMapping[user.role] || 'provider';
+      setUserRole(mappedRole);
     } else {
-      // Default to provider if no role is set
+      // Default to provider if no user is found
       setUserRole('provider');
-      // Set default role in localStorage for consistency
-      localStorage.setItem('userRole', 'provider');
     }
 
     fetchConsultations();
@@ -66,6 +74,14 @@ export default function ConsultationsPage() {
       setLoading(true);
       setError(null);
       
+      // Check if user is authenticated before making API calls
+      if (!authService.isAuthenticated()) {
+        console.log('User not authenticated, showing empty consultations');
+        setConsultations([]);
+        setLoading(false);
+        return;
+      }
+      
       // Use provider queue endpoint to get consultations for providers
       const response = await apiClient.consultations.getProviderQueue({
         status: activeFilter !== 'all' ? activeFilter : undefined,
@@ -88,10 +104,37 @@ export default function ConsultationsPage() {
       
       setConsultations(transformedConsultations);
       
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error fetching consultations:', err);
-      setError('Failed to load consultations');
-      setConsultations([]);
+      
+      // Handle authentication errors gracefully without triggering app reset
+      if (err.status === 401 || err.message?.includes('auth')) {
+        setError('Authentication required. Using demo mode with sample data.');
+        // Set some demo data instead of empty array to show UI functionality
+        setConsultations([
+          {
+            id: 'demo-1',
+            patientName: 'Demo Patient 1',
+            type: 'Dermatology Consultation',
+            status: 'pending',
+            priority: 'medium',
+            date: new Date().toISOString(),
+            provider: 'Unassigned'
+          },
+          {
+            id: 'demo-2',
+            patientName: 'Demo Patient 2',
+            type: 'General Consultation',
+            status: 'in-progress',
+            priority: 'high',
+            date: new Date(Date.now() - 3600000).toISOString(),
+            provider: 'Dr. Demo'
+          }
+        ]);
+      } else {
+        setError('Failed to load consultations. Please try again.');
+        setConsultations([]);
+      }
     } finally {
       setLoading(false);
     }

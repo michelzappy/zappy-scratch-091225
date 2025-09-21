@@ -1,6 +1,7 @@
--- REMOVED: This file has been archived to database/archived/direct-model-schema.sql.bak
--- Reason: Simplified version conflicts with complete-schema.sql 
--- Date: 2025-09-20
+-- ARCHIVED: This schema is simplified version, conflicts with complete-schema.sql
+-- Moved on 2025-09-20 during schema consolidation
+
+-- Direct Telehealth Model Database Schema
 -- For free consultations with paid medication fulfillment
 
 -- Enable UUID extension

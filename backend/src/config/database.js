@@ -1,8 +1,5 @@
-import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
-import * as schema from '../models/index.js';
 
-let db;
 let connection;
 
 export async function connectDatabase() {
@@ -21,34 +18,11 @@ export async function connectDatabase() {
       ssl: process.env.NODE_ENV === 'production' ? 'require' : false
     });
 
-    // Initialize Drizzle ORM
-    const drizzleDb = drizzle(connection, { schema });
-
-    // Create database wrapper that supports both Drizzle ORM and raw SQL
-    db = {
-      // Drizzle ORM methods
-      ...drizzleDb,
-      
-      // Raw SQL query method for backwards compatibility
-      query: async (sql, params = []) => {
-        const result = await connection.unsafe(sql, params);
-        return { rows: result };
-      },
-      
-      // Raw SQL method for complex queries
-      raw: async (sql, params = []) => {
-        const result = await connection.unsafe(sql, params);
-        return { rows: result };
-      },
-      
-      // Direct access to connection for advanced use cases
-      connection: connection
-    };
-
     // Test connection
     await connection`SELECT 1`;
+    console.log('✅ Database connected successfully');
 
-    return db;
+    return connection;
   } catch (error) {
     console.error('Database connection failed:', error);
     throw error;
@@ -56,10 +30,10 @@ export async function connectDatabase() {
 }
 
 export function getDatabase() {
-  if (!db) {
+  if (!connection) {
     throw new Error('Database not initialized. Call connectDatabase() first.');
   }
-  return db;
+  return connection;
 }
 
 export function getRawConnection() {

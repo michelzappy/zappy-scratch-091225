@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { authService, User } from '@/lib/auth';
 
 type UserRole = 'provider' | 'admin' | 'provider-admin' | 'super-admin';
 
@@ -34,22 +35,28 @@ export default function UnifiedPortalLayout({ children }: { children: React.Reac
   const notificationRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Get user role from localStorage or auth context
-    const storedRole = localStorage.getItem('userRole') as UserRole;
-    const storedUserData = localStorage.getItem('userData');
+    // Get user data from auth service
+    const user = authService.getUser();
     
-    if (storedRole) {
-      setUserRole(storedRole);
+    if (user) {
+      // Map auth service roles to layout roles
+      const roleMapping: { [key: string]: UserRole } = {
+        'provider': 'provider',
+        'admin': 'admin',
+        'provider-admin': 'provider-admin',
+        'super-admin': 'super-admin'
+      };
+      
+      const mappedRole = roleMapping[user.role] || 'provider';
+      setUserRole(mappedRole);
+      
+      // Set user display information
+      const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+      setUserName(fullName || user.email || 'User');
+      setUserTitle(''); // Could add title field to User interface later
     } else {
-      // If no role is set, default to provider
+      // If no user is found, default to provider
       setUserRole('provider');
-    }
-    
-    if (storedUserData) {
-      const userData = JSON.parse(storedUserData);
-      setUserName(userData.name || 'User');
-      setUserTitle(userData.title || '');
-    } else {
       setUserName('User');
       setUserTitle('');
     }
@@ -292,11 +299,10 @@ export default function UnifiedPortalLayout({ children }: { children: React.Reac
     item.section === 'admin'
   );
 
-  const handleLogout = () => {
-    localStorage.removeItem('userRole');
-    localStorage.removeItem('userData');
-    localStorage.removeItem('token');
-    router.push('/portal/login');
+  const handleLogout = async () => {
+    // Use auth service logout which handles all cleanup
+    await authService.logout();
+    // No need to manually redirect - auth service handles this
   };
 
   // Get user initials for avatar

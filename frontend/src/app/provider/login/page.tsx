@@ -2,23 +2,21 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { authService } from '@/lib/auth';
 
 export default function ProviderLoginPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
+    email: 'dev@provider.com', // Pre-fill with dev account
+    password: 'dev123456',     // Pre-fill with dev password
     rememberMe: false
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    // Check if already authenticated
-    const token = localStorage.getItem('token');
-    const userRole = localStorage.getItem('userRole');
-    
-    if (token && (userRole === 'provider' || userRole === 'provider-admin' || userRole === 'admin' || userRole === 'super-admin')) {
+    // Check if already authenticated as provider
+    if (authService.isAuthenticated() && authService.isProvider()) {
       router.push('/portal/dashboard');
     }
   }, [router]);
@@ -29,36 +27,14 @@ export default function ProviderLoginPage() {
     setError('');
 
     try {
-      // TODO: Implement provider authentication API call
-      const response = await fetch('/api/auth/provider/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-          userType: 'provider'
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        
-        // Store authentication data
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('userRole', data.role);
-        localStorage.setItem('userName', data.user.name);
-        localStorage.setItem('userId', data.user.id);
-
-        // Redirect to portal dashboard
-        router.push('/portal/dashboard');
-      } else {
-        const errorData = await response.json();
-        setError(errorData.message || 'Invalid credentials. Please try again.');
-      }
-    } catch (err) {
-      setError('Network error. Please check your connection and try again.');
+      await authService.loginProvider(formData.email, formData.password);
+      
+      // Success - redirect to portal dashboard
+      router.push('/portal/dashboard');
+      
+    } catch (err: any) {
+      const errorMessage = err.message || 'Invalid credentials. Please try again.';
+      setError(errorMessage);
       console.error('Provider login error:', err);
     } finally {
       setLoading(false);

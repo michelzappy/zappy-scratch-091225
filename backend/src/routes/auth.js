@@ -749,13 +749,13 @@ router.post('/login',
         break;
     }
 
-    const result = await db.query(query, [email]);
+    const result = await db.unsafe(query, [email]);
 
-    if (result.rows.length === 0) {
+    if (result.length === 0) {
       throw new AppError('Invalid email or password', 401, 'INVALID_CREDENTIALS');
     }
 
-    user = result.rows[0];
+    user = result[0];
 
     // Check account status for providers and admins
     if ((role === ROLES.PROVIDER || role === ROLES.ADMIN) && user.status !== 'active') {
@@ -788,7 +788,7 @@ router.post('/login',
     });
 
     // Update last login
-    await db.query(
+    await db.unsafe(
       `UPDATE ${tableName} SET last_login = NOW() WHERE id = $1`,
       [user.id]
     );

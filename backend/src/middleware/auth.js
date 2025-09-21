@@ -24,6 +24,28 @@ const ROLE_HIERARCHY = {
   guest: ['guest']
 };
 
+// Demo token validation for development
+const validateDemoToken = (token) => {
+  try {
+    // Demo tokens have format: header.payload.signature
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    
+    // Decode the payload (second part) using Node.js Buffer
+    const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf-8'));
+    
+    // Check if it's a demo token and validate structure
+    if (payload.id && payload.email && payload.id.startsWith('demo-')) {
+      return payload;
+    }
+    
+    return null;
+  } catch (error) {
+    console.warn('Demo token validation failed:', error.message);
+    return null;
+  }
+};
+
 // Enhanced JWT verification with better error handling
 export const requireAuth = async (req, res, next) => {
   // Use enhanced authentication if enabled
@@ -40,6 +62,24 @@ export const requireAuth = async (req, res, next) => {
     }
 
     const token = authHeader.substring(7);
+    
+    // Check for demo token first (development mode)
+    if (process.env.NODE_ENV === 'development' || process.env.ENABLE_DEMO_AUTH === 'true') {
+      const demoPayload = validateDemoToken(token);
+      if (demoPayload) {
+        req.user = {
+          id: demoPayload.id,
+          email: demoPayload.email,
+          role: demoPayload.role || ROLES.PATIENT,
+          metadata: demoPayload.metadata || {},
+          verified: demoPayload.verified || false,
+          created_at: demoPayload.created_at || new Date().toISOString()
+        };
+        req.authMethod = 'demo';
+        console.log(`Demo authentication successful for ${demoPayload.role}: ${demoPayload.email}`);
+        return next();
+      }
+    }
     
     // Try Supabase authentication first
     if (supabase) {
@@ -86,6 +126,7 @@ export const requireAuth = async (req, res, next) => {
       if (jwtError.name === 'TokenExpiredError') {
         throw new AppError('Token expired', 401, 'TOKEN_EXPIRED');
       }
+      console.error('Both Supabase and JWT authentication failed');
       throw new AppError('Invalid authentication token', 401, 'INVALID_TOKEN');
     }
     

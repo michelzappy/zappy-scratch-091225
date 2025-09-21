@@ -1,6 +1,8 @@
--- REMOVED: This file has been archived to database/archived/unified-portal-schema.sql.bak
--- Reason: Conflicts with complete-schema.sql (references non-existent 'users' table)
--- Date: 2025-09-20
+-- ARCHIVED: This schema conflicts with complete-schema.sql
+-- References non-existent 'users' table
+-- Moved on 2025-09-20 during schema consolidation
+
+-- Unified Portal Database Schema Updates
 -- This file contains the schema updates for the unified portal system
 
 -- Add role-based permissions for unified portal

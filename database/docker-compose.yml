@@ -1,0 +1,50 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: telehealth_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: telehealth_db
+      POSTGRES_USER: telehealth_user
+      POSTGRES_PASSWORD: secure_password_2025
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./apply-schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    networks:
+      - telehealth_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: telehealth_redis
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - telehealth_network
+    command: redis-server --appendonly yes
+
+  adminer:
+    image: adminer:latest
+    container_name: telehealth_adminer
+    restart: unless-stopped
+    ports:
+      - "8081:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+      ADMINER_DESIGN: dracula
+    networks:
+      - telehealth_network
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  telehealth_network:
+    driver: bridge

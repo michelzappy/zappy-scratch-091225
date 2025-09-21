@@ -11,6 +11,8 @@ export enum UserRole {
   PATIENT = 'patient',
   PROVIDER = 'provider',
   ADMIN = 'admin',
+  PROVIDER_ADMIN = 'provider-admin',
+  SUPER_ADMIN = 'super-admin',
   GUEST = 'guest'
 }
 
@@ -70,58 +72,59 @@ class AuthService {
     shippingState?: string;
     shippingZip?: string;
   }): Promise<AuthResponse> {
-    const response = await api.post('/auth/register/patient', data);
+    const response = await api.post('/api/auth/register/patient', data);
     
-    if (response.data?.data) {
-      this.setTokens(response.data.data);
-      this.setUser(response.data.data.user);
-      this.scheduleTokenRefresh(response.data.data.expiresIn);
-      return response.data.data;
+    if (response.data?.success && response.data?.data) {
+      const authData = response.data.data;
+      this.setTokens(authData);
+      this.setUser(authData.user);
+      this.scheduleTokenRefresh(authData.expiresIn || 3600);
+      return authData;
     }
     
-    throw new Error('Registration failed');
+    throw new Error(response.data?.message || 'Registration failed');
+  }
+
+  /**
+   * Universal Login (supports all user types)
+   */
+  async login(email: string, password: string, userType?: string): Promise<AuthResponse> {
+    const response = await api.post('/api/auth/login', { email, password, userType });
+    
+    if (response.data?.success && response.data?.data) {
+      const authData = response.data.data;
+      this.setTokens(authData);
+      this.setUser(authData.user);
+      this.scheduleTokenRefresh(authData.expiresIn || 3600); // Default 1 hour
+      return authData;
+    }
+    
+    throw new Error(response.data?.message || 'Login failed');
   }
 
   /**
    * Patient Login (Simple email/password)
    */
   async loginPatient(email: string, password: string): Promise<AuthResponse> {
-    const response = await api.post('/auth/login/patient', { email, password });
-    
-    if (response.data?.data) {
-      this.setTokens(response.data.data);
-      this.setUser(response.data.data.user);
-      this.scheduleTokenRefresh(response.data.data.expiresIn);
-      return response.data.data;
-    }
-    
-    throw new Error('Login failed');
+    return this.login(email, password, 'patient');
   }
 
   /**
    * Provider Login (Medical professionals)
    */
   async loginProvider(email: string, password: string): Promise<AuthResponse> {
-    const response = await api.post('/auth/login/provider', { email, password });
-    
-    if (response.data?.data) {
-      this.setTokens(response.data.data);
-      this.setUser(response.data.data.user);
-      this.scheduleTokenRefresh(response.data.data.expiresIn);
-      return response.data.data;
-    }
-    
-    throw new Error('Login failed');
+    return this.login(email, password, 'provider');
   }
 
   /**
    * Admin Login (with optional 2FA)
    */
   async loginAdmin(email: string, password: string, twoFactorCode?: string): Promise<AuthResponse | { requiresTwoFactor: boolean }> {
-    const response = await api.post('/auth/login/admin', { 
-      email, 
-      password, 
-      twoFactorCode 
+    // Try admin-specific endpoint for 2FA support
+    const response = await api.post('/api/auth/login/admin', {
+      email,
+      password,
+      twoFactorCode
     });
     
     // Check if 2FA is required
@@ -129,14 +132,15 @@ class AuthService {
       return { requiresTwoFactor: true };
     }
     
-    if (response.data?.data) {
-      this.setTokens(response.data.data);
-      this.setUser(response.data.data.user);
-      this.scheduleTokenRefresh(response.data.data.expiresIn);
-      return response.data.data;
+    if (response.data?.success && response.data?.data) {
+      const authData = response.data.data;
+      this.setTokens(authData);
+      this.setUser(authData.user);
+      this.scheduleTokenRefresh(authData.expiresIn || 3600);
+      return authData;
     }
     
-    throw new Error('Login failed');
+    throw new Error(response.data?.message || 'Login failed');
   }
 
   /**
@@ -165,7 +169,7 @@ class AuthService {
     submittedAt: string;
     message: string;
   }> {
-    const response = await api.post('/auth/intake', data);
+    const response = await api.post('/api/auth/intake', data);
     return response.data?.data || response.data;
   }
 
@@ -180,16 +184,20 @@ class AuthService {
     }
 
     try {
-      const response = await api.post('/auth/refresh', { refreshToken });
+      const response = await api.post('/api/auth/refresh', { refreshToken });
       
-      if (response.data?.data) {
-        this.setTokens(response.data.data);
-        this.scheduleTokenRefresh(response.data.data.expiresIn);
-        return response.data.data;
+      if (response.data?.success && response.data?.data) {
+        const tokenData = response.data.data;
+        this.setTokens(tokenData);
+        this.scheduleTokenRefresh(tokenData.expiresIn || 3600);
+        return tokenData;
       }
     } catch (error) {
-      // If refresh fails, clear auth and redirect to login
-      this.logout();
+      // If refresh fails, clear auth locally without making logout API call
+      // to prevent infinite loop with API interceptor
+      this.clearTokens();
+      this.clearUser();
+      this.clearRefreshTimer();
       return null;
     }
 
@@ -200,14 +208,14 @@ class AuthService {
    * Request password reset
    */
   async forgotPassword(email: string, userType: UserRole): Promise<void> {
-    await api.post('/auth/forgot-password', { email, userType });
+    await api.post('/api/auth/forgot-password', { email, userType });
   }
 
   /**
    * Reset password with token
    */
   async resetPassword(token: string, password: string, userType: UserRole): Promise<void> {
-    await api.post('/auth/reset-password', { token, password, userType });
+    await api.post('/api/auth/reset-password', { token, password, userType });
   }
 
   /**
@@ -222,9 +230,9 @@ class AuthService {
     }
 
     try {
-      const response = await api.get('/auth/me');
+      const response = await api.get('/api/auth/me');
       
-      if (response.data?.data) {
+      if (response.data?.success && response.data?.data) {
         this.setUser(response.data.data);
         return response.data.data;
       }
@@ -233,8 +241,8 @@ class AuthService {
       const refreshed = await this.refreshToken();
       
       if (refreshed) {
-        const response = await api.get('/auth/me');
-        if (response.data?.data) {
+        const response = await api.get('/api/auth/me');
+        if (response.data?.success && response.data?.data) {
           this.setUser(response.data.data);
           return response.data.data;
         }
@@ -250,15 +258,29 @@ class AuthService {
    * Logout user and clear all auth data
    */
   async logout(): Promise<void> {
-    try {
-      await api.post('/auth/logout');
-    } catch (error) {
-      // Continue with local logout even if API call fails
-    }
-
+    // Clear local auth state first to prevent loops
     this.clearTokens();
     this.clearUser();
     this.clearRefreshTimer();
+
+    try {
+      // Create a simple axios instance without interceptors for logout
+      const logoutClient = require('axios').create({
+        baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
+        timeout: 5000,
+      });
+      
+      // Add auth header manually if token exists
+      const token = localStorage.getItem('telehealth_access_token');
+      if (token) {
+        await logoutClient.post('/api/auth/logout', {}, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      }
+    } catch (error) {
+      // Continue with local logout even if API call fails
+      console.log('Logout API call failed, continuing with local logout');
+    }
     
     // Redirect to home page
     if (typeof window !== 'undefined') {

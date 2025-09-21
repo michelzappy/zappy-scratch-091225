@@ -7,8 +7,8 @@ import { authService, UserRole } from '@/lib/auth';
 import { toast } from 'react-hot-toast';
 
 export default function PatientLogin() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('dev@patient.com'); // Pre-fill with dev account
+  const [password, setPassword] = useState('dev123456');   // Pre-fill with dev password
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { api } from '@/lib/api';
+import { apiClient } from '@/lib/api';
 import NotificationPopup from '@/components/NotificationPopup';
 
 export default function PatientDashboard() {
@@ -57,13 +57,13 @@ export default function PatientDashboard() {
       try {
         setLoading(true);
         
-        // Fetch all data in parallel - using api instead of apiClient
+        // Fetch all data in parallel - using proper API client methods
         const [patient, programs, orders, measurements, stats] = await Promise.all([
-          api.get('/patients/me').catch(() => ({ data: null })),
-          api.get('/patients/me/programs').catch(() => ({ data: [] })),
-          api.get('/patients/me/orders?limit=5').catch(() => ({ data: [] })),
-          api.get('/patients/me/measurements?limit=5').catch(() => ({ data: [] })),
-          api.get('/patients/me/stats').catch(() => ({ data: {} }))
+          apiClient.patients.getProfile().catch(() => ({ data: null })),
+          apiClient.patients.getPrograms().catch(() => ({ data: [] })),
+          apiClient.patients.getOrders({ limit: 5 }).catch(() => ({ data: [] })),
+          apiClient.patients.getMeasurements({ limit: 5 }).catch(() => ({ data: [] })),
+          apiClient.patients.getStats().catch(() => ({ data: {} }))
         ]);
 
         // Set data from API responses
@@ -98,13 +98,13 @@ export default function PatientDashboard() {
       
       // Try API call first
       try {
-        await api.post('/patients/me/measurements', {
+        await apiClient.patients.logMeasurement({
           weight,
           measurement_date: new Date().toISOString()
         });
         
         // Refresh measurements from API
-        const response = await api.get('/patients/me/measurements?limit=5');
+        const response = await apiClient.patients.getMeasurements({ limit: 5 });
         setMeasurements(response.data);
       } catch (apiError) {
         // If API fails, use mock data for demo

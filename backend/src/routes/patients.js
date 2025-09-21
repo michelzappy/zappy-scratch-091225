@@ -29,15 +29,17 @@ router.get('/me',
   requireAuth,
   asyncHandler(async (req, res) => {
     const db = getDatabase();
-    const [patient] = await db
-      .select()
-      .from('patients')
-      .where({ id: req.user.id })
-      .limit(1);
+    const result = await db`
+      SELECT * FROM patients
+      WHERE id = ${req.user.id}
+      LIMIT 1
+    `;
 
-    if (!patient) {
+    if (result.length === 0) {
       return res.status(404).json({ error: 'Patient not found' });
     }
+
+    const patient = result[0];
 
     // Remove sensitive data
     delete patient.password_hash;
@@ -64,16 +66,17 @@ router.get('/:id',
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    const [patient] = await db
-      .select()
-      .from('patients')
-      .where({ id: req.params.id })
-      .limit(1);
+    const result = await db`
+      SELECT * FROM patients
+      WHERE id = ${req.params.id}
+      LIMIT 1
+    `;
 
-    if (!patient) {
+    if (result.length === 0) {
       return res.status(404).json({ error: 'Patient not found' });
     }
 
+    const patient = result[0];
     delete patient.password_hash;
     
     res.json({
@@ -89,8 +92,8 @@ router.get('/me/programs',
   asyncHandler(async (req, res) => {
     const db = getDatabase();
     
-    const programs = await db.raw(`
-      SELECT 
+    const programs = await db`
+      SELECT
         p.*,
         c.consultation_type as program_name,
         c.chief_complaint,
@@ -98,14 +101,14 @@ router.get('/me/programs',
       FROM prescriptions p
       JOIN consultations c ON p.consultation_id = c.id
       LEFT JOIN inventory i ON i.medication_name = p.medication_name
-      WHERE p.patient_id = ?
+      WHERE p.patient_id = ${req.user.id}
         AND p.status = 'active'
       ORDER BY p.created_at DESC
-    `, [req.user.id]);
+    `;
 
     res.json({
       success: true,
-      data: programs.rows || []
+      data: programs
     });
   })
 );
@@ -123,8 +126,8 @@ router.get('/me/orders',
     const limit = req.query.limit || 10;
     const offset = req.query.offset || 0;
 
-    const orders = await db.raw(`
-      SELECT 
+    const orders = await db`
+      SELECT
         o.*,
         array_agg(
           json_build_object(
@@ -136,15 +139,15 @@ router.get('/me/orders',
         ) as items
       FROM orders o
       LEFT JOIN order_items oi ON o.id = oi.order_id
-      WHERE o.patient_id = ?
+      WHERE o.patient_id = ${req.user.id}
       GROUP BY o.id
       ORDER BY o.created_at DESC
-      LIMIT ? OFFSET ?
-    `, [req.user.id, limit, offset]);
+      LIMIT ${limit} OFFSET ${offset}
+    `;
 
     res.json({
       success: true,
-      data: orders.rows || []
+      data: orders
     });
   })
 );
@@ -163,23 +166,40 @@ router.get('/me/measurements',
     const db = getDatabase();
     const { type, limit = 30, start_date, end_date } = req.query;
 
-    let query = db
-      .select()
-      .from('patient_measurements')
-      .where({ patient_id: req.user.id })
-      .orderBy('measurement_date', 'desc');
-
-    if (start_date) {
-      query = query.where('measurement_date', '>=', start_date);
+    let measurements;
+    if (start_date && end_date) {
+      measurements = await db`
+        SELECT * FROM patient_measurements
+        WHERE patient_id = ${req.user.id}
+          AND measurement_date >= ${start_date}
+          AND measurement_date <= ${end_date}
+        ORDER BY measurement_date DESC
+        LIMIT ${limit}
+      `;
+    } else if (start_date) {
+      measurements = await db`
+        SELECT * FROM patient_measurements
+        WHERE patient_id = ${req.user.id}
+          AND measurement_date >= ${start_date}
+        ORDER BY measurement_date DESC
+        LIMIT ${limit}
+      `;
+    } else if (end_date) {
+      measurements = await db`
+        SELECT * FROM patient_measurements
+        WHERE patient_id = ${req.user.id}
+          AND measurement_date <= ${end_date}
+        ORDER BY measurement_date DESC
+        LIMIT ${limit}
+      `;
+    } else {
+      measurements = await db`
+        SELECT * FROM patient_measurements
+        WHERE patient_id = ${req.user.id}
+        ORDER BY measurement_date DESC
+        LIMIT ${limit}
+      `;
     }
-    if (end_date) {
-      query = query.where('measurement_date', '<=', end_date);
-    }
-    if (limit) {
-      query = query.limit(limit);
-    }
-
-    const measurements = await query;
 
     res.json({
       success: true,
@@ -214,22 +234,25 @@ router.post('/me/measurements',
       bmi = req.body.weight / (heightInMeters * heightInMeters);
     }
 
-    const measurementData = {
-      patient_id: req.user.id,
-      ...req.body,
-      bmi,
-      measurement_date: req.body.measurement_date || new Date(),
-      created_at: new Date()
-    };
+    const measurementDate = req.body.measurement_date || new Date();
+    const createdAt = new Date();
 
-    const [measurement] = await db
-      .insert('patient_measurements')
-      .values(measurementData)
-      .returning();
+    const result = await db`
+      INSERT INTO patient_measurements (
+        patient_id, weight, height, blood_pressure_systolic, blood_pressure_diastolic,
+        heart_rate, temperature, glucose_level, measurement_date, notes, bmi, created_at
+      ) VALUES (
+        ${req.user.id}, ${req.body.weight}, ${req.body.height},
+        ${req.body.blood_pressure_systolic}, ${req.body.blood_pressure_diastolic},
+        ${req.body.heart_rate}, ${req.body.temperature}, ${req.body.glucose_level},
+        ${measurementDate}, ${req.body.notes}, ${bmi}, ${createdAt}
+      )
+      RETURNING *
+    `;
 
     res.status(201).json({
       success: true,
-      data: measurement,
+      data: result[0],
       message: 'Measurement logged successfully'
     });
   })
@@ -247,24 +270,35 @@ router.get('/me/consultations',
     const db = getDatabase();
     const { status, limit = 20 } = req.query;
 
-    let query = db
-      .select([
-        'consultations.*',
-        'providers.first_name as provider_first_name',
-        'providers.last_name as provider_last_name',
-        'providers.title as provider_title'
-      ])
-      .from('consultations')
-      .leftJoin('providers', 'consultations.provider_id', 'providers.id')
-      .where({ 'consultations.patient_id': req.user.id })
-      .orderBy('consultations.created_at', 'desc')
-      .limit(limit);
-
+    let consultations;
     if (status) {
-      query = query.where({ 'consultations.status': status });
+      consultations = await db`
+        SELECT
+          consultations.*,
+          providers.first_name as provider_first_name,
+          providers.last_name as provider_last_name,
+          providers.title as provider_title
+        FROM consultations
+        LEFT JOIN providers ON consultations.provider_id = providers.id
+        WHERE consultations.patient_id = ${req.user.id}
+          AND consultations.status = ${status}
+        ORDER BY consultations.created_at DESC
+        LIMIT ${limit}
+      `;
+    } else {
+      consultations = await db`
+        SELECT
+          consultations.*,
+          providers.first_name as provider_first_name,
+          providers.last_name as provider_last_name,
+          providers.title as provider_title
+        FROM consultations
+        LEFT JOIN providers ON consultations.provider_id = providers.id
+        WHERE consultations.patient_id = ${req.user.id}
+        ORDER BY consultations.created_at DESC
+        LIMIT ${limit}
+      `;
     }
-
-    const consultations = await query;
 
     res.json({
       success: true,
@@ -304,20 +338,49 @@ router.put('/me',
     delete req.body.total_spent;
     delete req.body.total_orders;
 
-    const [updated] = await db
-      .update('patients')
-      .set({
-        ...req.body,
-        updated_at: new Date()
-      })
-      .where({ id: req.user.id })
-      .returning();
+    const updatedAt = new Date();
+    const fieldsToUpdate = [];
+    const values = [req.user.id];
+    let paramIndex = 2;
 
-    delete updated.password_hash;
+    Object.entries(req.body).forEach(([key, value]) => {
+      if (value !== undefined) {
+        fieldsToUpdate.push(`${key} = $${paramIndex}`);
+        values.push(value);
+        paramIndex++;
+      }
+    });
+
+    if (fieldsToUpdate.length === 0) {
+      // No fields to update, just return current patient
+      const result = await db`
+        SELECT * FROM patients WHERE id = ${req.user.id}
+      `;
+      const patient = result[0];
+      delete patient.password_hash;
+      return res.json({
+        success: true,
+        data: patient,
+        message: 'No changes made'
+      });
+    }
+
+    fieldsToUpdate.push(`updated_at = $${paramIndex}`);
+    values.push(updatedAt);
+
+    const updateQuery = `
+      UPDATE patients
+      SET ${fieldsToUpdate.join(', ')}
+      WHERE id = $1
+      RETURNING *
+    `;
+
+    const updated = await db.unsafe(updateQuery, values);
+    delete updated[0].password_hash;
 
     res.json({
       success: true,
-      data: updated,
+      data: updated[0],
       message: 'Profile updated successfully'
     });
   })
@@ -329,22 +392,22 @@ router.get('/me/stats',
   asyncHandler(async (req, res) => {
     const db = getDatabase();
     
-    const stats = await db.raw(`
+    const stats = await db`
       SELECT
-        (SELECT COUNT(*) FROM consultations WHERE patient_id = ? AND status = 'completed') as total_consultations,
-        (SELECT COUNT(*) FROM orders WHERE patient_id = ?) as total_orders,
-        (SELECT COUNT(*) FROM prescriptions WHERE patient_id = ? AND status = 'active') as active_prescriptions,
+        (SELECT COUNT(*) FROM consultations WHERE patient_id = ${req.user.id} AND status = 'completed') as total_consultations,
+        (SELECT COUNT(*) FROM orders WHERE patient_id = ${req.user.id}) as total_orders,
+        (SELECT COUNT(*) FROM prescriptions WHERE patient_id = ${req.user.id} AND status = 'active') as active_prescriptions,
         (SELECT COUNT(*) FROM consultation_messages cm
          JOIN consultations c ON cm.consultation_id = c.id
-         WHERE c.patient_id = ? AND cm.is_read = false AND cm.sender_type != 'patient') as unread_messages,
-        (SELECT MAX(created_at) FROM consultations WHERE patient_id = ?) as last_consultation_date,
-        (SELECT subscription_tier FROM patients WHERE id = ?) as subscription_tier,
-        (SELECT subscription_active FROM patients WHERE id = ?) as subscription_active
-    `, [req.user.id, req.user.id, req.user.id, req.user.id, req.user.id, req.user.id, req.user.id]);
+         WHERE c.patient_id = ${req.user.id} AND cm.is_read = false AND cm.sender_type != 'patient') as unread_messages,
+        (SELECT MAX(created_at) FROM consultations WHERE patient_id = ${req.user.id}) as last_consultation_date,
+        (SELECT subscription_tier FROM patients WHERE id = ${req.user.id}) as subscription_tier,
+        (SELECT subscription_active FROM patients WHERE id = ${req.user.id}) as subscription_active
+    `;
 
     res.json({
       success: true,
-      data: stats.rows[0] || {}
+      data: stats[0] || {}
     });
   })
 );
@@ -368,34 +431,43 @@ router.get('/:id/consultations',
     }
 
     // Verify patient exists
-    const [patient] = await db
-      .select('id')
-      .from('patients')
-      .where({ id: req.params.id })
-      .limit(1);
+    const patientResult = await db`
+      SELECT id FROM patients WHERE id = ${req.params.id} LIMIT 1
+    `;
 
-    if (!patient) {
+    if (patientResult.length === 0) {
       return res.status(404).json({ error: 'Patient not found' });
     }
 
-    let query = db
-      .select([
-        'consultations.*',
-        'providers.first_name as provider_first_name',
-        'providers.last_name as provider_last_name',
-        'providers.title as provider_title'
-      ])
-      .from('consultations')
-      .leftJoin('providers', 'consultations.provider_id', 'providers.id')
-      .where({ 'consultations.patient_id': req.params.id })
-      .orderBy('consultations.created_at', 'desc')
-      .limit(limit);
-
+    let consultations;
     if (status) {
-      query = query.where({ 'consultations.status': status });
+      consultations = await db`
+        SELECT
+          consultations.*,
+          providers.first_name as provider_first_name,
+          providers.last_name as provider_last_name,
+          providers.title as provider_title
+        FROM consultations
+        LEFT JOIN providers ON consultations.provider_id = providers.id
+        WHERE consultations.patient_id = ${req.params.id}
+          AND consultations.status = ${status}
+        ORDER BY consultations.created_at DESC
+        LIMIT ${limit}
+      `;
+    } else {
+      consultations = await db`
+        SELECT
+          consultations.*,
+          providers.first_name as provider_first_name,
+          providers.last_name as provider_last_name,
+          providers.title as provider_title
+        FROM consultations
+        LEFT JOIN providers ON consultations.provider_id = providers.id
+        WHERE consultations.patient_id = ${req.params.id}
+        ORDER BY consultations.created_at DESC
+        LIMIT ${limit}
+      `;
     }
-
-    const consultations = await query;
 
     res.json({
       success: true,
@@ -436,13 +508,11 @@ router.put('/:id',
     }
 
     // Verify patient exists
-    const [existingPatient] = await db
-      .select()
-      .from('patients')
-      .where({ id: req.params.id })
-      .limit(1);
+    const existingResult = await db`
+      SELECT * FROM patients WHERE id = ${req.params.id} LIMIT 1
+    `;
 
-    if (!existingPatient) {
+    if (existingResult.length === 0) {
       return res.status(404).json({ error: 'Patient not found' });
     }
     
@@ -457,16 +527,42 @@ router.put('/:id',
     delete req.body.subscription_active;
     delete req.body.created_at;
 
-    const [updated] = await db
-      .update('patients')
-      .set({
-        ...req.body,
-        updated_at: new Date()
-      })
-      .where({ id: req.params.id })
-      .returning();
+    const updatedAt = new Date();
+    const fieldsToUpdate = [];
+    const values = [req.params.id];
+    let paramIndex = 2;
 
-    delete updated.password_hash;
+    Object.entries(req.body).forEach(([key, value]) => {
+      if (value !== undefined) {
+        fieldsToUpdate.push(`${key} = $${paramIndex}`);
+        values.push(value);
+        paramIndex++;
+      }
+    });
+
+    if (fieldsToUpdate.length === 0) {
+      // No fields to update, just return current patient
+      const patient = existingResult[0];
+      delete patient.password_hash;
+      return res.json({
+        success: true,
+        data: patient,
+        message: 'No changes made'
+      });
+    }
+
+    fieldsToUpdate.push(`updated_at = $${paramIndex}`);
+    values.push(updatedAt);
+
+    const updateQuery = `
+      UPDATE patients
+      SET ${fieldsToUpdate.join(', ')}
+      WHERE id = $1
+      RETURNING *
+    `;
+
+    const updated = await db.unsafe(updateQuery, values);
+    delete updated[0].password_hash;
 
     res.json({
       success: true,
@@ -493,11 +589,9 @@ router.post('/register',
     const { email, password, ...profileData } = req.body;
 
     // Check if email already exists
-    const existing = await db
-      .select()
-      .from('patients')
-      .where({ email })
-      .limit(1);
+    const existing = await db`
+      SELECT * FROM patients WHERE email = ${email} LIMIT 1
+    `;
 
     if (existing.length > 0) {
       return res.status(409).json({ error: 'Email already registered' });
@@ -507,15 +601,17 @@ router.post('/register',
     const password_hash = await bcrypt.hash(password, 10);
 
     // Create patient
-    const [patient] = await db
-      .insert('patients')
-      .values({
-        email,
-        password_hash,
-        ...profileData,
-        created_at: new Date()
-      })
-      .returning();
+    const createdAt = new Date();
+    const result = await db`
+      INSERT INTO patients (
+        email, password_hash, first_name, last_name, date_of_birth, phone, gender, created_at
+      ) VALUES (
+        ${email}, ${password_hash}, ${profileData.first_name}, ${profileData.last_name},
+        ${profileData.date_of_birth}, ${profileData.phone || null}, ${profileData.gender || null}, ${createdAt}
+      )
+      RETURNING *
+    `;
+    const patient = result[0];
 
     // Generate JWT token
     const token = jwt.sign(
@@ -553,15 +649,15 @@ router.post('/login',
     const { email, password } = req.body;
 
     // Find patient
-    const [patient] = await db
-      .select()
-      .from('patients')
-      .where({ email })
-      .limit(1);
+    const result = await db`
+      SELECT * FROM patients WHERE email = ${email} LIMIT 1
+    `;
 
-    if (!patient) {
+    if (result.length === 0) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
+
+    const patient = result[0];
 
     // Check password
     const isValid = await bcrypt.compare(password, patient.password_hash);
@@ -570,10 +666,10 @@ router.post('/login',
     }
 
     // Update last login
-    await db
-      .update('patients')
-      .set({ last_login: new Date() })
-      .where({ id: patient.id });
+    const lastLogin = new Date();
+    await db`
+      UPDATE patients SET last_login = ${lastLogin} WHERE id = ${patient.id}
+    `;
 
     // Generate JWT token
     const token = jwt.sign(
