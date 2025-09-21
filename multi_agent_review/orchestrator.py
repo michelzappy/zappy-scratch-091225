@@ -16,6 +16,10 @@ from .agents import (
     SecurityComplianceAgent,
     SynthesisAgent,
 )
+from .agents.crm_integration import CRMIntegrationAgent
+from .agents.communication_analytics import CommunicationAnalyticsAgent
+from .agents.customer_journey import CustomerJourneyAgent
+from .agents.api_integration import APIIntegrationAgent
 from .agents.base import BaseAgent
 from .models import SharedState
 from .repository import RepositoryContext
