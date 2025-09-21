@@ -1,17 +1,22 @@
 {
-  "name": "telehealth-platform",
+  "name": "patient-telehealth-platform",
   "version": "1.0.0",
-  "description": "Telehealth platform monorepo",
+  "description": "Patient-focused telehealth platform",
   "private": true,
   "scripts": {
     "install:backend": "cd backend && npm install",
     "install:frontend": "cd frontend && npm install",
-    "install": "npm run install:backend",
-    "build": "cd backend && npm install",
+    "install": "npm run install:backend && npm run install:frontend",
+    "build": "cd backend && npm install && cd ../frontend && npm run build",
     "start": "cd backend && npm start",
-    "dev": "cd backend && npm run dev"
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\""
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
   }
 }

@@ -21,17 +21,8 @@ import authRoutes from './routes/auth.js';
 import consultationRoutes from './routes/consultations.js';
 import messageRoutes from './routes/messages.js';
 import patientRoutes from './routes/patients.js';
-import providerRoutes from './routes/providers.js';
-import providerConsultationRoutes from './routes/provider-consultations.js';
 import orderRoutes from './routes/orders.js';
-import prescriptionRoutes from './routes/prescriptions.js';
 import medicationRoutes from './routes/medications.js';
-import fileRoutes from './routes/files.js';
-import adminRoutes from './routes/admin.js';
-import adminPatientsRoutes from './routes/admin-patients.js';
-import webhookRoutes from './routes/webhooks.js';
-import treatmentPlanRoutes from './routes/treatment-plans.js';
-import aiConsultationRoutes from './routes/ai-consultation.js';
 
 // Import socket handlers
 import { setupSocketHandlers } from './sockets/index.js';
@@ -89,10 +80,6 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Webhook routes (before rate limiting and audit logging)
-// These routes need raw body parsing and different middleware
-app.use('/webhooks', webhookRoutes);
-
 // Rate limiting
 app.use(generalLimiter);
 
@@ -114,16 +101,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/consultations', consultationRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/patients', patientRoutes);
-app.use('/api/providers', providerRoutes);
-app.use('/api/provider/consultations', providerConsultationRoutes);
 app.use('/api/orders', orderRoutes);
-app.use('/api/prescriptions', prescriptionRoutes);
 app.use('/api/medications', medicationRoutes);
-app.use('/api/files', fileRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/admin/patients', adminPatientsRoutes);
-app.use('/api/treatment-plans', treatmentPlanRoutes);
-app.use('/api/ai-consultation', aiConsultationRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {
