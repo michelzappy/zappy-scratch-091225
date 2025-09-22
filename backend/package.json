@@ -9,6 +9,8 @@
     "dev": "nodemon src/app.js",
     "test": "jest --detectOpenHandles",
     "test:watch": "jest --watch --detectOpenHandles",
+    "test:security": "jest --testPathPattern=security --detectOpenHandles",
+    "test:coverage": "jest --coverage --detectOpenHandles",
     "db:migrate": "bash ../database/migrations/run_all_migrations.sh up",
     "db:rollback": "bash ../database/migrations/run_all_migrations.sh down",
     "db:status": "bash ../database/migrations/run_all_migrations.sh status",
