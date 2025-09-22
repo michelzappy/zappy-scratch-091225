@@ -5,8 +5,17 @@ import { AppError } from '../errors/AppError.js';
 // HIPAA-compliant audit logging middleware
 // Logs patient data access without storing sensitive information
 
-// Salt for consistent patient ID hashing
-const AUDIT_SALT = process.env.HIPAA_AUDIT_SALT || '$2a$10$HIPAAAuditSaltForPatientIDs';
+// Salt for consistent patient ID hashing - MUST be set in environment
+const AUDIT_SALT = process.env.HIPAA_AUDIT_SALT;
+
+if (!AUDIT_SALT) {
+  throw new Error('HIPAA_AUDIT_SALT environment variable is required for patient data anonymization compliance');
+}
+
+// Validate salt format for bcrypt compatibility
+if (!AUDIT_SALT.startsWith('$2a$') && !AUDIT_SALT.startsWith('$2b$')) {
+  throw new Error('HIPAA_AUDIT_SALT must be a valid bcrypt salt format');
+}
 
 /**
  * Hash patient ID for HIPAA-compliant audit logging

@@ -6,6 +6,18 @@ import { AppError } from '../errors/AppError.js';
 class AuthService {
   constructor() {
     this.db = getDatabase();
+    
+    // Validate required JWT secret
+    if (!process.env.JWT_SECRET) {
+      throw new Error('JWT_SECRET environment variable is required for authentication security');
+    }
+    
+    // Validate JWT secret strength (minimum 32 characters)
+    if (process.env.JWT_SECRET.length < 32) {
+      throw new Error('JWT_SECRET must be at least 32 characters for security compliance');
+    }
+    
+    this.jwtSecret = process.env.JWT_SECRET;
   }
 
   /**
@@ -123,13 +135,13 @@ class AuthService {
 
       // Generate JWT token
       const token = jwt.sign(
-        { 
-          id: admin.id, 
+        {
+          id: admin.id,
           email: admin.email,
           role: 'admin',
           permissions: admin.permissions
         },
-        process.env.JWT_SECRET || 'secret',
+        this.jwtSecret,
         { expiresIn: '8h' }
       );
 
@@ -186,13 +198,13 @@ class AuthService {
 
       // Generate JWT token
       const token = jwt.sign(
-        { 
-          id: provider.id, 
+        {
+          id: provider.id,
           email: provider.email,
           role: 'provider',
           license_number: provider.license_number
         },
-        process.env.JWT_SECRET || 'secret',
+        this.jwtSecret,
         { expiresIn: '12h' }
       );
 
@@ -249,13 +261,13 @@ class AuthService {
 
       // Generate JWT token
       const token = jwt.sign(
-        { 
-          id: patient.id, 
+        {
+          id: patient.id,
           email: patient.email,
           role: 'patient',
           subscription_tier: patient.subscription_tier
         },
-        process.env.JWT_SECRET || 'secret',
+        this.jwtSecret,
         { expiresIn: '30d' }
       );
 
@@ -425,7 +437,7 @@ class AuthService {
       role: user.role
     };
 
-    return jwt.sign(payload, process.env.JWT_SECRET || 'your-secret-key', {
+    return jwt.sign(payload, this.jwtSecret, {
       expiresIn: '7d'
     });
   }
@@ -437,7 +449,7 @@ class AuthService {
    */
   verifyToken(token) {
     try {
-      return jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+      return jwt.verify(token, this.jwtSecret);
     } catch (error) {
       throw new AppError('Invalid token', 401);
     }
@@ -515,7 +527,7 @@ class AuthService {
   async resetPassword(token, newPassword) {
     try {
       // Verify reset token
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+      const decoded = jwt.verify(token, this.jwtSecret);
       
       // Hash new password
       const hashedPassword = await bcrypt.hash(newPassword, 10);
@@ -570,7 +582,7 @@ class AuthService {
       // Generate reset token
       const resetToken = jwt.sign(
         { id: user.id, email: user.email, role },
-        process.env.JWT_SECRET || 'your-secret-key',
+        this.jwtSecret,
         { expiresIn: '1h' }
       );
 

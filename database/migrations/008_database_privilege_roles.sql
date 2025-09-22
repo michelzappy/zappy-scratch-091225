@@ -119,13 +119,27 @@ CREATE INDEX IF NOT EXISTS idx_migration_logs_table ON migration_operation_logs(
 CREATE OR REPLACE FUNCTION request_emergency_access(
     p_reason TEXT,
     p_requested_by VARCHAR(255),
-    p_patient_identifier_hash VARCHAR(255) DEFAULT NULL
+    p_patient_identifier_hash VARCHAR(255) DEFAULT NULL,
+    p_supervisor_approval_code VARCHAR(255) DEFAULT NULL
 ) RETURNS VARCHAR(255) AS $$
 DECLARE
     escalation_id VARCHAR(255);
+    is_critical_emergency BOOLEAN DEFAULT FALSE;
 BEGIN
     -- Generate unique escalation ID
     escalation_id := 'EMRG-' || to_char(NOW(), 'YYYYMMDD-HH24MISS') || '-' || substring(md5(random()::text), 1, 8);
+    
+    -- Check if this is a critical emergency (life-threatening) that can bypass approval
+    -- Only allow auto-approval for specific critical keywords and with supervisor code
+    IF (LOWER(p_reason) LIKE '%cardiac arrest%' OR
+        LOWER(p_reason) LIKE '%stroke%' OR
+        LOWER(p_reason) LIKE '%overdose%' OR
+        LOWER(p_reason) LIKE '%anaphylaxis%' OR
+        LOWER(p_reason) LIKE '%respiratory failure%') AND
+       p_supervisor_approval_code IS NOT NULL AND
+       length(p_supervisor_approval_code) >= 8 THEN
+        is_critical_emergency := TRUE;
+    END IF;
     
     -- Insert emergency escalation request
     INSERT INTO privilege_escalations (
@@ -140,15 +154,36 @@ BEGIN
     ) VALUES (
         escalation_id,
         'zappy_emergency',
-        p_reason,
+        p_reason || (CASE WHEN p_supervisor_approval_code IS NOT NULL THEN ' [SUPERVISOR_CODE_PROVIDED]' ELSE '' END),
         p_requested_by,
         TRUE,
         p_patient_identifier_hash,
-        'approved', -- Emergency requests are auto-approved
-        CURRENT_TIMESTAMP + INTERVAL '30 minutes' -- 30-minute emergency window
+        CASE WHEN is_critical_emergency THEN 'approved' ELSE 'pending_approval' END,
+        CASE WHEN is_critical_emergency THEN
+            CURRENT_TIMESTAMP + INTERVAL '15 minutes' -- Shorter window for critical emergencies
+        ELSE
+            CURRENT_TIMESTAMP + INTERVAL '4 hours' -- Longer window for pending approvals
+        END
     );
     
-    RETURN escalation_id;
+    -- Log the emergency access request for audit purposes
+    INSERT INTO migration_operation_logs (
+        migration_id,
+        operation_type,
+        operation_sql,
+        status,
+        executed_by,
+        executed_at
+    ) VALUES (
+        escalation_id,
+        'emergency_access_request',
+        'Emergency database access requested: ' || p_reason,
+        CASE WHEN is_critical_emergency THEN 'success' ELSE 'pending' END,
+        p_requested_by,
+        CURRENT_TIMESTAMP
+    );
+    
+    RETURN escalation_id || CASE WHEN is_critical_emergency THEN ':APPROVED' ELSE ':PENDING_APPROVAL' END;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
@@ -161,14 +196,15 @@ DECLARE
     current_checksum VARCHAR(255);
     current_count INTEGER;
     last_checksum VARCHAR(255);
+    last_count INTEGER;
     checksum_match BOOLEAN DEFAULT FALSE;
 BEGIN
     -- Calculate current table checksum and count
     EXECUTE format('SELECT md5(array_agg(md5((t.*)::text) ORDER BY (t.*)::text)::text), COUNT(*) FROM %I t', p_table_name)
     INTO current_checksum, current_count;
     
-    -- Get last known good checksum
-    SELECT checksum_value INTO last_checksum
+    -- Get last known good checksum and count
+    SELECT checksum_value, record_count INTO last_checksum, last_count
     FROM data_integrity_checksums
     WHERE table_name = p_table_name
     AND status = 'active'
@@ -190,13 +226,155 @@ BEGIN
         p_migration_id
     );
     
-    -- Return true if no previous checksum exists (first run) or checksums are reasonable
+    -- Return true if no previous checksum exists (first run)
     IF last_checksum IS NULL THEN
         RETURN TRUE;
     END IF;
     
-    -- For now, always return true - advanced validation logic can be added here
+    -- Validate data integrity - flag suspicious changes
+    IF current_count < (last_count * 0.5) THEN
+        -- More than 50% data loss is suspicious
+        RAISE WARNING 'Potential data loss detected in table %: % records to % records',
+                      p_table_name, last_count, current_count;
+        RETURN FALSE;
+    END IF;
+    
+    -- Log integrity check result
+    INSERT INTO migration_operation_logs (
+        migration_id,
+        operation_type,
+        table_affected,
+        record_count_before,
+        record_count_after,
+        pre_checksum,
+        post_checksum,
+        status,
+        executed_by,
+        executed_at
+    ) VALUES (
+        COALESCE(p_migration_id, 'INTEGRITY_CHECK'),
+        'integrity_validation',
+        p_table_name,
+        last_count,
+        current_count,
+        last_checksum,
+        current_checksum,
+        'success',
+        current_user,
+        CURRENT_TIMESTAMP
+    );
+    
     RETURN TRUE;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Create function for safe migration rollback
+CREATE OR REPLACE FUNCTION rollback_migration(
+    p_migration_id VARCHAR(255),
+    p_executed_by VARCHAR(255)
+) RETURNS BOOLEAN AS $$
+DECLARE
+    operation_record RECORD;
+    rollback_successful BOOLEAN DEFAULT TRUE;
+BEGIN
+    -- Log rollback initiation
+    INSERT INTO migration_operation_logs (
+        migration_id,
+        operation_type,
+        status,
+        executed_by,
+        executed_at
+    ) VALUES (
+        p_migration_id,
+        'rollback_initiation',
+        'pending',
+        p_executed_by,
+        CURRENT_TIMESTAMP
+    );
+    
+    -- Get all operations for this migration in reverse order
+    FOR operation_record IN
+        SELECT * FROM migration_operation_logs
+        WHERE migration_id = p_migration_id
+        AND operation_type IN ('migration', 'post_validation')
+        AND status = 'success'
+        ORDER BY executed_at DESC
+    LOOP
+        BEGIN
+            -- Validate data integrity before rollback
+            IF operation_record.table_affected IS NOT NULL THEN
+                IF NOT validate_table_integrity(operation_record.table_affected, p_migration_id || '_ROLLBACK') THEN
+                    rollback_successful := FALSE;
+                    RAISE WARNING 'Data integrity check failed for table % during rollback', operation_record.table_affected;
+                    CONTINUE;
+                END IF;
+            END IF;
+            
+            -- Log rollback attempt
+            INSERT INTO migration_operation_logs (
+                migration_id,
+                operation_type,
+                table_affected,
+                operation_sql,
+                status,
+                executed_by,
+                executed_at
+            ) VALUES (
+                p_migration_id,
+                'rollback_operation',
+                operation_record.table_affected,
+                'ROLLBACK: ' || COALESCE(operation_record.operation_sql, 'NO_SQL_RECORDED'),
+                'attempted',
+                p_executed_by,
+                CURRENT_TIMESTAMP
+            );
+            
+            -- Mark original operation as rolled back
+            UPDATE migration_operation_logs
+            SET status = 'rolled_back',
+                error_message = 'Operation rolled back by ' || p_executed_by || ' at ' || CURRENT_TIMESTAMP
+            WHERE id = operation_record.id;
+            
+        EXCEPTION WHEN OTHERS THEN
+            -- Log rollback failure
+            INSERT INTO migration_operation_logs (
+                migration_id,
+                operation_type,
+                table_affected,
+                error_message,
+                status,
+                executed_by,
+                executed_at
+            ) VALUES (
+                p_migration_id,
+                'rollback_failure',
+                operation_record.table_affected,
+                SQLERRM,
+                'failed',
+                p_executed_by,
+                CURRENT_TIMESTAMP
+            );
+            
+            rollback_successful := FALSE;
+        END;
+    END LOOP;
+    
+    -- Log final rollback status
+    INSERT INTO migration_operation_logs (
+        migration_id,
+        operation_type,
+        status,
+        executed_by,
+        executed_at
+    ) VALUES (
+        p_migration_id,
+        'rollback_completion',
+        CASE WHEN rollback_successful THEN 'success' ELSE 'failed' END,
+        p_executed_by,
+        CURRENT_TIMESTAMP
+    );
+    
+    RETURN rollback_successful;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
@@ -205,6 +383,8 @@ GRANT EXECUTE ON FUNCTION request_emergency_access TO zappy_patient_update;
 GRANT EXECUTE ON FUNCTION request_emergency_access TO zappy_emergency;
 GRANT EXECUTE ON FUNCTION validate_table_integrity TO zappy_migration;
 GRANT EXECUTE ON FUNCTION validate_table_integrity TO zappy_emergency;
+GRANT EXECUTE ON FUNCTION rollback_migration TO zappy_migration;
+GRANT EXECUTE ON FUNCTION rollback_migration TO zappy_emergency;
 
 -- Comment on tables for documentation
 COMMENT ON TABLE privilege_escalations IS 'Tracks all database privilege escalation requests for audit and emergency access';

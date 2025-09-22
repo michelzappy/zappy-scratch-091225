@@ -15,6 +15,17 @@ import { AppError } from '../errors/AppError.js';
 
 const router = express.Router();
 
+// Validate JWT secret on module load
+if (!process.env.JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required for authentication security');
+}
+
+if (process.env.JWT_SECRET.length < 32) {
+  throw new Error('JWT_SECRET must be at least 32 characters for security compliance');
+}
+
+const JWT_SECRET = process.env.JWT_SECRET;
+
 const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -166,7 +177,7 @@ router.post('/register/patient',
     // Generate JWT token
     const token = jwt.sign(
       { id: patient.id, email: patient.email, role: 'patient' },
-      process.env.JWT_SECRET || 'development-secret',
+      JWT_SECRET,
       { expiresIn: '7d' }
     );
     
