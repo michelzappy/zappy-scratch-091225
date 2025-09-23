@@ -2,7 +2,7 @@ import express from 'express';
 import { body, param, query, validationResult } from 'express-validator';
 import { asyncHandler } from '../middleware/errorHandler.js';
 import { getDatabase } from '../config/database.js';
-import { consultations, messages } from '../models/index.js';
+import { consultations, consultationMessages } from '../models/index.js';
 import { eq } from 'drizzle-orm';
 import { requireAuth, requireRole, optionalAuth } from '../middleware/auth.js';
 import multer from 'multer';
@@ -141,15 +141,14 @@ router.post('/',
       
       if (planTier && condition) {
         try {
-          const planResult = await db.query(
-            `SELECT id, name, price FROM treatment_plans 
-             WHERE condition = $1 AND plan_tier = $2 
-             LIMIT 1`,
-            [condition, planTier]
-          );
+          const planResult = await db`
+            SELECT id, name, price FROM treatment_plans
+            WHERE condition = ${condition} AND plan_tier = ${planTier}
+            LIMIT 1
+          `;
           
-          if (planResult.rows.length > 0) {
-            const plan = planResult.rows[0];
+          if (planResult.length > 0) {
+            const plan = planResult[0];
             selectedPlanId = plan.id;
             selectedPlanName = plan.name;
             selectedPlanPrice = plan.price;
@@ -251,9 +250,9 @@ router.get('/patient/:patientId',
 
     const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
 
-    const result = await db.query(`
-      SELECT 
-        c.*, 
+    const result = await db.unsafe(`
+      SELECT
+        c.*,
         p.first_name as patient_first_name,
         p.last_name as patient_last_name,
         pr.first_name as provider_first_name,
@@ -267,7 +266,7 @@ router.get('/patient/:patientId',
     `, [...params, limit, offset]);
 
     // Parse JSON fields
-    const consultationsList = result.rows.map(consultation => {
+    const consultationsList = result.map(consultation => {
       if (consultation.attachments) {
         consultation.attachments = JSON.parse(consultation.attachments);
       }
@@ -298,8 +297,8 @@ router.get('/provider/queue',
     const db = getDatabase();
     const { limit = 20, offset = 0 } = req.query;
 
-    const result = await db.query(`
-      SELECT 
+    const result = await db`
+      SELECT
         c.*,
         p.first_name as patient_first_name,
         p.last_name as patient_last_name,
@@ -313,11 +312,11 @@ router.get('/provider/queue',
       JOIN patients p ON c.patient_id = p.id
       WHERE c.status = 'pending'
       ORDER BY c.created_at ASC
-      LIMIT $1 OFFSET $2
-    `, [limit, offset]);
+      LIMIT ${limit} OFFSET ${offset}
+    `;
 
     // Parse JSON fields
-    const queueList = result.rows.map(consultation => {
+    const queueList = result.map(consultation => {
       if (consultation.attachments) {
         try {
           consultation.attachments = JSON.parse(consultation.attachments);
@@ -486,23 +485,16 @@ router.post('/:id/approve-prescription',
 
     // Create order record only if pharmacy integration is enabled
     if (pharmacyResult.pharmacyOrderId) {
-      await db.query(`
+      await db`
         INSERT INTO orders (
           consultation_id, patient_id, provider_id,
           pharmacy_order_id, tracking_number, medications,
           status, estimated_delivery, created_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-      `, [
-        consultation.id,
-        consultation.patientId,
-        req.user.id,
-        pharmacyResult.pharmacyOrderId,
-        pharmacyResult.trackingNumber,
-        JSON.stringify(req.body.medications),
-        'processing',
-        pharmacyResult.estimatedDelivery,
-        new Date()
-      ]);
+        ) VALUES (${consultation.id}, ${consultation.patientId}, ${req.user.id},
+          ${pharmacyResult.pharmacyOrderId}, ${pharmacyResult.trackingNumber},
+          ${JSON.stringify(req.body.medications)}, 'processing',
+          ${pharmacyResult.estimatedDelivery}, ${new Date()})
+      `;
     }
 
     const message = pharmacyResult.pharmacyOrderId
@@ -601,7 +593,7 @@ router.post('/:id/messages',
     };
 
     const [message] = await db
-      .insert(messages)
+      .insert(consultationMessages)
       .values(messageData)
       .returning();
 
@@ -624,9 +616,9 @@ router.get('/:id/messages',
     const db = getDatabase();
     const messagesList = await db
       .select()
-      .from(messages)
-      .where(eq(messages.consultationId, req.params.id))
-      .orderBy(messages.createdAt);
+      .from(consultationMessages)
+      .where(eq(consultationMessages.consultationId, req.params.id))
+      .orderBy(consultationMessages.createdAt);
 
     res.json({
       success: true,

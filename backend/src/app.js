@@ -34,6 +34,7 @@ import webhookRoutes from './routes/webhooks.js';
 import treatmentPlanRoutes from './routes/treatment-plans.js';
 import aiConsultationRoutes from './routes/ai-consultation.js';
 import authHealthRoutes from './routes/auth-health.js';
+import refillCheckinRoutes from './routes/refill-checkins.js';
 
 // Import socket handlers
 import { setupSocketHandlers } from './sockets/index.js';
@@ -127,6 +128,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/admin/patients', adminPatientsRoutes);
 app.use('/api/treatment-plans', treatmentPlanRoutes);
 app.use('/api/ai-consultation', aiConsultationRoutes);
+app.use('/api/checkins', refillCheckinRoutes);
 
 // Frontend compatibility routes (without /api prefix)
 // These provide compatibility for frontend requests expecting routes without /api prefix

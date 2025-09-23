@@ -31,9 +31,13 @@ export async function connectDatabase() {
 
 export function getDatabase() {
   if (!connection) {
-    throw new Error('Database not initialized. Call connectDatabase() first.');
+    throw new Error('Database not available. Please check your DATABASE_URL configuration and restart the server.');
   }
   return connection;
+}
+
+export function isDatabaseConnected() {
+  return !!connection;
 }
 
 export function getRawConnection() {
