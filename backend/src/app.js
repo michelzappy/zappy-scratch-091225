@@ -1,3 +1,14 @@
+// Load environment variables FIRST before any other imports
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+dotenv.config({ path: path.join(__dirname, '../.env') });
+
+// Now import everything else
 import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
@@ -5,7 +16,6 @@ import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
-import dotenv from 'dotenv';
 
 // Import configurations
 import { connectDatabase } from './config/database.js';
@@ -39,14 +49,7 @@ import refillCheckinRoutes from './routes/refill-checkins.js';
 // Import socket handlers
 import { setupSocketHandlers } from './sockets/index.js';
 
-// Load environment variables
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-dotenv.config({ path: path.join(__dirname, '../../.env') });
+// Environment variables already loaded at top of file
 
 const app = express();
 const server = createServer(app);
