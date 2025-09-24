@@ -18,7 +18,7 @@ import compression from 'compression';
 import morgan from 'morgan';
 
 // Import configurations
-import { connectDatabase } from './config/database.js';
+import { connectDatabase, dbManager } from './config/database.js';
 import { setupRedis } from './config/redis.js';
 
 // Import middleware
@@ -45,6 +45,8 @@ import treatmentPlanRoutes from './routes/treatment-plans.js';
 import aiConsultationRoutes from './routes/ai-consultation.js';
 import authHealthRoutes from './routes/auth-health.js';
 import refillCheckinRoutes from './routes/refill-checkins.js';
+import queryMetricsRoutes from './routes/query-metrics.js';
+import comprehensiveHealthRoutes from './routes/comprehensive-health.js';
 
 // Import socket handlers
 import { setupSocketHandlers } from './sockets/index.js';
@@ -132,6 +134,8 @@ app.use('/api/admin/patients', adminPatientsRoutes);
 app.use('/api/treatment-plans', treatmentPlanRoutes);
 app.use('/api/ai-consultation', aiConsultationRoutes);
 app.use('/api/checkins', refillCheckinRoutes);
+app.use('/api/query-metrics', queryMetricsRoutes);
+app.use('/api', comprehensiveHealthRoutes);
 
 // Frontend compatibility routes (without /api prefix)
 // These provide compatibility for frontend requests expecting routes without /api prefix
@@ -214,8 +218,16 @@ const gracefulShutdown = (signal) => {
     console.log('✅ Session cleanup stopped');
   }
   
-  server.close(() => {
+  server.close(async () => {
     console.log('Server closed');
+    
+    // Close database connections
+    try {
+      await dbManager.close();
+    } catch (error) {
+      console.error('Error closing database:', error);
+    }
+    
     process.exit(0);
   });
 };
