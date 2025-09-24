@@ -217,3 +217,18 @@ MIT
 3. Commit your changes
 4. Push to the branch
 5. Open a Pull Request
+
+---
+
+Built with ❤️ for better healthcare accessibility
+
+
+## 🤖 Multi-agent Review Automation
+
+Run the built-in Python toolkit to generate an architecture-aware review report:
+
+```bash
+python -m multi_agent_review.cli --root $(pwd) --output review-report.md
+```
+
+The orchestrator walks the backend, frontend, and database workspaces, runs specialist agents, and writes a Markdown summary to `review-report.md`.
