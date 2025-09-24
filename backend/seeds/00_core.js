@@ -99,7 +99,7 @@ async function verifyCoreTablesExist(db) {
     'consultations',
     'prescriptions',
     'orders',
-    'messages'
+    'consultation_messages'
   ];
 
   for (const tableName of requiredTables) {
