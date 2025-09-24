@@ -124,6 +124,7 @@ async function checkDatabase() {
     // Test critical tables exist
     const tables = ['patients', 'providers', 'consultations', 'prescriptions'];
     const tableChecks = {};
+    const db = getDatabase();
     
     for (const table of tables) {
       const tableStart = performance.now();
