@@ -137,15 +137,6 @@ app.use('/api/checkins', refillCheckinRoutes);
 app.use('/api/query-metrics', queryMetricsRoutes);
 app.use('/api', comprehensiveHealthRoutes);
 
-// Frontend compatibility routes (without /api prefix)
-// These provide compatibility for frontend requests expecting routes without /api prefix
-app.use('/auth', authRoutes);
-app.use('/patients', patientRoutes);
-app.use('/consultations', consultationRoutes);
-app.use('/messages', messageRoutes);
-app.use('/orders', orderRoutes);
-app.use('/providers', providerRoutes);
-
 // 404 handler
 app.use('*', (req, res) => {
   res.status(404).json({
