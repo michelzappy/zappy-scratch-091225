@@ -1,12 +1,5 @@
 // Load environment variables FIRST before any other imports
-import dotenv from 'dotenv';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-dotenv.config({ path: path.join(__dirname, '../.env') });
+import { config } from './config/index.js';
 
 // Now import everything else
 import express from 'express';
@@ -59,7 +52,7 @@ const server = createServer(app);
 // Initialize Socket.io
 const io = new Server(server, {
   cors: {
-    origin: process.env.CORS_ORIGIN?.split(',') || ["http://localhost:3000"],
+    origin: config.corsOrigins || ["http://localhost:3000"],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true
   },
@@ -87,7 +80,7 @@ app.use(morgan('combined'));
 
 // CORS configuration
 app.use(cors({
-  origin: process.env.CORS_ORIGIN?.split(',').map(origin => origin.trim()) || ["http://localhost:3000"],
+  origin: config.corsOrigins?.split(',').map(origin => origin.trim()) || ["http://localhost:3000"],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
@@ -113,7 +106,7 @@ app.get('/health', (req, res) => {
     status: 'healthy',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
-    environment: process.env.NODE_ENV || 'development'
+    environment: config.nodeEnv || 'development'
   });
 });
 
@@ -182,14 +175,14 @@ async function startServer() {
     app.set('sessionCleanupStop', sessionCleanupStop);
 
     // Start server
-    const PORT = process.env.PORT || 3001;
+    const PORT = config.port || 3001;
     server.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`📊 Environment: ${config.nodeEnv || 'development'}`);
       console.log(`🔗 API Base URL: http://localhost:${PORT}/api`);
       console.log(`🔒 Authentication Health: http://localhost:${PORT}/api/auth-system/health`);
-      console.log(`🛡️  Enhanced Security: ${process.env.ENABLE_ENHANCED_AUTH !== 'false' ? 'Enabled' : 'Disabled'}`);
-      console.log(`📋 HIPAA Sessions: ${process.env.ENABLE_HIPAA_SESSIONS !== 'false' ? 'Enabled' : 'Disabled'}`);
+      console.log(`🛡️  Enhanced Security: ${config.security.enhancedAuth !== 'false' ? 'Enabled' : 'Disabled'}`);
+      console.log(`📋 HIPAA Sessions: ${config.security.hipaaSessions !== 'false' ? 'Enabled' : 'Disabled'}`);
     });
 
   } catch (error) {

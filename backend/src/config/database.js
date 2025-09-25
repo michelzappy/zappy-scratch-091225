@@ -1,4 +1,5 @@
 import postgres from 'postgres';
+import { config } from '../config/index.js';
 
 /**
  * Enhanced Database Manager with proper connection pooling and lifecycle management
@@ -18,7 +19,7 @@ class DatabaseManager {
     }
 
     try {
-      this.connectionString = process.env.DATABASE_URL;
+      this.connectionString = config.databaseUrl;
       
       if (!this.connectionString) {
         throw new Error('DATABASE_URL environment variable is required');
@@ -29,13 +30,13 @@ class DatabaseManager {
         max: 20,
         idle_timeout: 30,
         connect_timeout: 10,
-        ssl: process.env.NODE_ENV === 'production' ? 'require' : false,
+        ssl: config.nodeEnv === 'production' ? 'require' : false,
         onnotice: () => {}, 
         transform: {
           undefined: null 
         },
         prepare: false, 
-        debug: process.env.NODE_ENV === 'development' ? false : false
+        debug: config.NODE_ENV === 'development' ? false : false
       });
 
       await this.testConnection();
