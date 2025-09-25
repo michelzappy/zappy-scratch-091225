@@ -280,11 +280,11 @@ export class PrivilegedDatabaseManager {
 
     for (const table of tables) {
       try {
-        const result = await db.execute(`
+        const result = await db`
           SELECT COUNT(*) as count, 
                  md5(string_agg(md5((t.*)::text), '' ORDER BY (t.*)::text)) as checksum 
           FROM ${table} t
-        `);
+        `;
         
         checksums[table] = {
           count: result[0]?.count || 0,
@@ -316,11 +316,11 @@ export class PrivilegedDatabaseManager {
 
     for (const [table, preChecksum] of Object.entries(preChecksums)) {
       try {
-        const result = await db.execute(`
+        const result = await db`
           SELECT COUNT(*) as count, 
                  md5(string_agg(md5((t.*)::text), '' ORDER BY (t.*)::text)) as checksum 
           FROM ${table} t
-        `);
+        `;
         
         postChecksums[table] = {
           count: result[0]?.count || 0,

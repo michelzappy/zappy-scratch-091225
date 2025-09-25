@@ -14,11 +14,11 @@ async function testConnection() {
     console.log('✅ Database connected successfully!');
     
     // Test a simple query
-    const result = await db.connection`SELECT 1 as test`;
+    const result = await db`SELECT 1 as test`;
     console.log('✅ Database query test successful:', result);
     
     // Close connection
-    await db.connection.end();
+    await db.end();
     console.log('✅ Connection closed gracefully');
     
   } catch (error) {

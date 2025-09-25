@@ -16,7 +16,7 @@ services:
       - "5433:5432"
     volumes:
       - zappy_postgres_data:/var/lib/postgresql/data
-      - ./apply-schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./consolidated-schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
       - ./seeds:/docker-entrypoint-initdb.d/seeds
     networks:
       - zappy_telehealth_network

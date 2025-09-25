@@ -8,11 +8,11 @@ docker-compose -f database/docker-adminer-setup.yml up -d
 ```
 
 **Step 2: Access Adminer Web Interface**
-- URL: http://localhost:8080
+- URL: http://localhost:8081
 - System: PostgreSQL
 - Server: postgres
 - Username: telehealth_user
-- Password: secure_password
+- Password: secure_password_2025
 - Database: telehealth_db
 
 **Step 3: Test Backend Connection**

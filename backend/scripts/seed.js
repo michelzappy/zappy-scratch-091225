@@ -97,8 +97,6 @@ if (process.argv.includes('--help') || process.argv.includes('-h')) {
 }
 
 // Run the seeder
-if (import.meta.url === `file://${process.argv[1]}`) {
-  runSeeds().catch(console.error);
-}
+runSeeds().catch(console.error);
 
 export { runSeeds };

@@ -67,11 +67,11 @@ export default function PatientDashboard() {
         ]);
 
         // Set data from API responses
-        setPatientData(patient.data);
-        setPrograms(programs.data || []);
-        setRecentOrders(orders.data || []);
-        setMeasurements(measurements.data || []);
-        setStats(stats.data || {});
+        setPatientData(patient.data.data);
+        setPrograms(programs.data.data || []);
+        setRecentOrders(orders.data.data || []);
+        setMeasurements(measurements.data.data || []);
+        setStats(stats.data.data || {});
         
         setLoading(false);
       } catch (err) {

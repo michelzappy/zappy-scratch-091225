@@ -8,7 +8,6 @@
 
 import { sql } from 'drizzle-orm';
 import { 
-  insertIfNotExists, 
   hashPassword,
   generateSecurePassword,
   getEnvVar,
@@ -66,7 +65,7 @@ async function seedAdminUser(db) {
       updated_at: new Date().toISOString()
     };
 
-    await db.execute(sql`
+    await db`
       INSERT INTO admins (
         id, email, password_hash, first_name, last_name, role, 
         permissions, two_factor_enabled, status, created_at, updated_at
@@ -84,7 +83,7 @@ async function seedAdminUser(db) {
         ${adminData.created_at}::timestamp,
         ${adminData.updated_at}::timestamp
       )
-    `);
+    `;
 
     logSeedOperation(`✅ Admin user created: ${adminEmail}`);
     
@@ -140,7 +139,7 @@ async function seedAdditionalAdmins(db) {
       const password = generateSecurePassword(16);
       const passwordHash = await hashPassword(password);
       
-      await db.execute(sql`
+      await db`
         INSERT INTO admins (
           id, email, password_hash, first_name, last_name, role, 
           permissions, two_factor_enabled, status, created_at, updated_at
@@ -158,7 +157,7 @@ async function seedAdditionalAdmins(db) {
           NOW(),
           NOW()
         )
-      `);
+      `;
 
       createdAdmins.push({ email, password, role });
       logSeedOperation(`✅ Additional admin created: ${email}`);
@@ -209,7 +208,7 @@ async function seedProviderStub(db) {
     const password = generateSecurePassword(16);
     const passwordHash = await hashPassword(password);
 
-    await db.execute(sql`
+    await db`
       INSERT INTO providers (
         id, email, password_hash, first_name, last_name, 
         license_number, npi_number, specialties, states_licensed,
@@ -233,7 +232,7 @@ async function seedProviderStub(db) {
         NOW(),
         NOW()
       )
-    `);
+    `;
 
     logSeedOperation(`✅ Provider stub created: ${providerEmail}`);
     
