@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Card from '@/components/Card';
-import { apiClient } from '@/lib/api';
+import { apiClient, api } from '@/lib/api';
 import NotificationPopup from '@/components/NotificationPopup';
 import ConfirmDialog from '@/components/ConfirmDialog';
 
@@ -46,10 +46,8 @@ export default function TreatmentPlansPage() {
       setLoading(true);
       setError(null);
       
-      // Get treatment plans from API
-      const response = await apiClient.treatmentPlans.getByCondition(selectedCondition);
-      
-      const plansData = response.data || [];
+  // Get treatment plans from API (unwrapped)
+  const plansData = await api.get<any[]>(`/api/treatment-plans/condition/${selectedCondition}`);
       
       // Transform API data to match our interface
       const transformedPlans: TreatmentPlan[] = plansData.map((item: any) => ({
@@ -67,9 +65,9 @@ export default function TreatmentPlansPage() {
       
       setPlans(transformedPlans);
       
-    } catch (err) {
-      console.error('Error loading plans:', err);
-      setError('Failed to load treatment plans');
+    } catch (err: any) {
+      console.error('Error loading plans:', err?.error || err);
+      setError(err?.error || 'Failed to load treatment plans');
       setPlans([]);
     } finally {
       setLoading(false);

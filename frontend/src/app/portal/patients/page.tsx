@@ -70,10 +70,10 @@ export default function PatientsPage() {
       
       // For now, we'll use a generic API call since we don't have a specific patients list endpoint
       // In a real implementation, this would be something like apiClient.patients.getAll()
-      const response = await apiClient.admin.getDashboard();
+  const dashboard = await apiClient.admin.getDashboard();
       
-      // Extract patients data from dashboard or use a fallback
-      const patientsData = response.data?.patients || [];
+  // Extract patients data from dashboard or use a fallback
+  const patientsData = (dashboard as any)?.patients || [];
       
       // Transform API data to match our interface
       const transformedPatients: Patient[] = patientsData.map((item: any) => ({
@@ -90,9 +90,9 @@ export default function PatientsPage() {
       
       setPatients(transformedPatients);
       
-    } catch (err) {
-      console.error('Error fetching patients:', err);
-      setError('Failed to load patients');
+    } catch (err: any) {
+      console.error('Error fetching patients:', err?.error || err);
+      setError(err?.error || 'Failed to load patients');
       setPatients([]);
     } finally {
       setLoading(false);

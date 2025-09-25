@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Card from '@/components/Card';
+import { apiClient } from '@/lib/api';
 
 export default function NewOrderPage() {
   const router = useRouter();
@@ -49,45 +50,31 @@ export default function NewOrderPage() {
 
   const loadPatients = async () => {
     try {
-      const response = await fetch('/api/patients', {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      });
-      
-      if (response.ok) {
-        const patientsData = await response.json();
-        setPatients(patientsData);
-      } else {
-        // Mock data for demo
-        setPatients([
-          { id: '1', firstName: 'John', lastName: 'Smith' },
-          { id: '2', firstName: 'Jane', lastName: 'Doe' },
-          { id: '3', firstName: 'Robert', lastName: 'Johnson' }
-        ]);
-      }
+      const { data } = await apiClient.patients.getAll();
+      setPatients(data as any[]);
     } catch (err) {
       console.error('Failed to load patients:', err);
+      // Fallback mock data for demo
+      setPatients([
+        { id: '1', firstName: 'John', lastName: 'Smith' },
+        { id: '2', firstName: 'Jane', lastName: 'Doe' },
+        { id: '3', firstName: 'Robert', lastName: 'Johnson' }
+      ]);
     }
   };
 
   const loadPharmacies = async () => {
     try {
-      const response = await fetch('/api/pharmacies', {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      });
-      
-      if (response.ok) {
-        const pharmaciesData = await response.json();
-        setPharmacies(pharmaciesData);
-      } else {
-        // Mock data for demo
-        setPharmacies([
-          { id: '1', name: 'CVS Pharmacy', address: '123 Main St' },
-          { id: '2', name: 'Walgreens', address: '456 Oak Ave' },
-          { id: '3', name: 'Rite Aid', address: '789 Pine Rd' }
-        ]);
-      }
+      const { data } = await apiClient.pharmacies.getAll();
+      setPharmacies(data as any[]);
     } catch (err) {
       console.error('Failed to load pharmacies:', err);
+      // Mock data for demo
+      setPharmacies([
+        { id: '1', name: 'CVS Pharmacy', address: '123 Main St' },
+        { id: '2', name: 'Walgreens', address: '456 Oak Ave' },
+        { id: '3', name: 'Rite Aid', address: '789 Pine Rd' }
+      ]);
     }
   };
 
@@ -97,25 +84,12 @@ export default function NewOrderPage() {
     setError('');
 
     try {
-      const response = await fetch('/api/orders', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (response.ok) {
-        setSuccess(true);
-        setTimeout(() => {
-          router.push('/portal/orders');
-        }, 2000);
-      } else {
-        const errorData = await response.json();
-        setError(errorData.message || 'Failed to create order. Please try again.');
-      }
-    } catch (err) {
+      await apiClient.orders.create(formData);
+      setSuccess(true);
+      setTimeout(() => {
+        router.push('/portal/orders');
+      }, 2000);
+    } catch (err: any) {
       setError('Network error. Please check your connection and try again.');
     } finally {
       setLoading(false);

@@ -68,10 +68,10 @@ export default function RefillCheckIn() {
 
   const fetchPrescription = async () => {
     try {
-      const response = await api.get(`/prescriptions/${prescriptionId}`);
-      setPrescription(response.data);
-    } catch (error) {
-      console.error('Error fetching prescription:', error);
+      const data = await api.get<any>(`/prescriptions/${prescriptionId}`);
+      setPrescription(data);
+    } catch (error: any) {
+      console.error('Error fetching prescription:', error?.error || error);
     }
   };
 
@@ -116,15 +116,15 @@ export default function RefillCheckIn() {
         photos_urls: responses.photos
       };
 
-      const response = await api.post('/refill-checkins', checkInData);
+      const result = await api.post<any>('/refill-checkins', checkInData);
 
-      if (response.data.requires_consultation) {
+      if ((result as any)?.requires_consultation) {
         router.push('/patient/new-consultation?type=refill-followup');
       } else {
         router.push('/patient/dashboard?checkin=complete');
       }
-    } catch (error) {
-      console.error('Error submitting check-in:', error);
+    } catch (error: any) {
+      console.error('Error submitting check-in:', error?.error || error);
     } finally {
       setLoading(false);
     }

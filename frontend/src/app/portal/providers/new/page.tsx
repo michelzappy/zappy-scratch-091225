@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Card from '@/components/Card';
+import { apiClient } from '@/lib/api';
 
 export default function NewProviderPage() {
   const router = useRouter();
@@ -94,27 +95,15 @@ export default function NewProviderPage() {
     setError('');
 
     try {
-      // TODO: Implement provider creation API call
-      const response = await fetch('/api/providers', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (response.ok) {
-        const newProvider = await response.json();
+      // Create provider via centralized API client
+      const { data: newProvider } = await apiClient.providers.create(formData);
+      if (newProvider) {
         setSuccess(true);
         
         // Redirect to providers list after short delay
         setTimeout(() => {
           router.push('/portal/providers');
         }, 2000);
-      } else {
-        const errorData = await response.json();
-        setError(errorData.message || 'Failed to create provider. Please try again.');
       }
     } catch (err) {
       setError('Network error. Please check your connection and try again.');

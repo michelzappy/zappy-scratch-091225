@@ -81,13 +81,13 @@ export default function OrdersPage() {
       setError(null);
       
       // Get orders from API
-      const response = await apiClient.orders.getAll({
+      const ordersDataRaw = await apiClient.orders.getAll({
         status: activeFilter !== 'all' ? activeFilter : undefined,
         dateRange,
         search: searchTerm || undefined
       });
       
-      const ordersData = response.data || [];
+      const ordersData = (ordersDataRaw as any) || [];
       
       // Transform API data to match our interface
       const transformedOrders: Order[] = ordersData.map((item: any) => ({
@@ -115,9 +115,9 @@ export default function OrdersPage() {
       
       setOrders(transformedOrders);
       
-    } catch (err) {
-      console.error('Error fetching orders:', err);
-      setError('Failed to load orders');
+    } catch (err: any) {
+      console.error('Error fetching orders:', err?.error || err);
+      setError(err?.error || 'Failed to load orders');
       setOrders([]);
     } finally {
       setLoading(false);

@@ -1,7 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'react-hot-toast';
+import { apiClient } from '@/lib/api';
 
 export default function PatientRegisterPage() {
   const router = useRouter();
@@ -17,6 +19,21 @@ export default function PatientRegisterPage() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [cooldownTime, setCooldownTime] = useState(0);
+  const [isDisabled, setIsDisabled] = useState(false);
+
+  // Cooldown timer effect
+  useEffect(() => {
+    if (cooldownTime > 0) {
+      setIsDisabled(true);
+      const timer = setTimeout(() => {
+        setCooldownTime(cooldownTime - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else {
+      setIsDisabled(false);
+    }
+  }, [cooldownTime]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,31 +52,24 @@ export default function PatientRegisterPage() {
     setError('');
 
     try {
-      // TODO: Implement registration API call
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email,
-          password: formData.password,
-          phoneNumber: formData.phoneNumber,
-          dateOfBirth: formData.dateOfBirth
-        }),
+      await apiClient.auth.register({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        password: formData.password,
+        phoneNumber: formData.phoneNumber,
+        dateOfBirth: formData.dateOfBirth,
       });
-
-      if (response.ok) {
-        // Registration successful
-        router.push('/patient/login?message=registration-successful');
+      // Registration successful
+      router.push('/patient/login?message=registration-successful');
+    } catch (err: any) {
+      if (err.status === 429) {
+        // Rate limited - show toast and start cooldown
+        toast.error('Too many attempts — try again later.');
+        setCooldownTime(60); // 60 second cooldown
       } else {
-        const errorData = await response.json();
-        setError(errorData.message || 'Registration failed. Please try again.');
+        setError('Network error. Please check your connection and try again.');
       }
-    } catch (err) {
-      setError('Network error. Please check your connection and try again.');
     } finally {
       setLoading(false);
     }
@@ -231,7 +241,7 @@ export default function PatientRegisterPage() {
           <div>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || isDisabled}
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
@@ -242,6 +252,8 @@ export default function PatientRegisterPage() {
                   </svg>
                   Creating Account...
                 </>
+              ) : isDisabled && cooldownTime > 0 ? (
+                `Try Again in ${cooldownTime}s`
               ) : (
                 'Create Account'
               )}

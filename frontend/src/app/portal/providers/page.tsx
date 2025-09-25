@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { apiClient } from '@/lib/api';
+import { apiClient, api } from '@/lib/api';
 
 type UserRole = 'provider' | 'admin' | 'provider-admin' | 'super-admin';
 
@@ -37,10 +37,8 @@ export default function ProvidersPage() {
       setLoading(true);
       setError(null);
       
-      // Get providers from API
-      const response = await apiClient.providers.getAll();
-      
-      const providersData = response.data || [];
+  // Get providers from API (unwrapped)
+  const providersData = await api.get<any[]>('/api/providers');
       
       // Transform API data to match our interface
       const transformedProviders: Provider[] = providersData.map((item: any) => ({
@@ -58,9 +56,9 @@ export default function ProvidersPage() {
       
       setProviders(transformedProviders);
       
-    } catch (err) {
-      console.error('Error fetching providers:', err);
-      setError('Failed to load providers');
+    } catch (err: any) {
+      console.error('Error fetching providers:', err?.error || err);
+      setError(err?.error || 'Failed to load providers');
       setProviders([]);
     } finally {
       setLoading(false);

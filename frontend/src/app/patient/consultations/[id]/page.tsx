@@ -20,13 +20,13 @@ export default function ConsultationDetails() {
         setLoading(true);
         // Try to fetch from API first
         try {
-          const response = await api.get(`/consultations/${consultationId}`);
-          if (response.data && response.data.data) {
-            setConsultation(response.data.data);
+          const data = await api.get<any>(`/consultations/${consultationId}`);
+          if (data) {
+            setConsultation(data);
           } else {
             throw new Error('No data received');
           }
-        } catch (apiError) {
+        } catch (apiError: any) {
           // Fallback to mock data for demo purposes
           const mockConsultation = getMockConsultation(consultationId);
           if (mockConsultation) {
@@ -36,7 +36,7 @@ export default function ConsultationDetails() {
           }
         }
       } catch (err: any) {
-        setError(err.message || 'Failed to load consultation');
+        setError(err?.error || err?.message || 'Failed to load consultation');
       } finally {
         setLoading(false);
       }

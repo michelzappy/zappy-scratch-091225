@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Card from '@/components/Card';
+import { apiClient } from '@/lib/api';
 
 export default function CheckinReviewsPage() {
   const router = useRouter();
@@ -38,51 +39,8 @@ export default function CheckinReviewsPage() {
 
   const loadCheckinReviews = async () => {
     try {
-      const response = await fetch('/api/checkin-reviews', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setCheckinReviews(data);
-      } else {
-        // Mock data for demo
-        const mockData = [
-          {
-            id: '1',
-            patientName: 'John Smith',
-            checkinDate: '2024-12-09',
-            status: 'pending',
-            type: 'routine',
-            symptoms: ['Headache', 'Fatigue'],
-            priority: 'medium',
-            assignedProvider: 'Dr. Sarah Johnson'
-          },
-          {
-            id: '2',
-            patientName: 'Jane Doe',
-            checkinDate: '2024-12-09',
-            status: 'reviewed',
-            type: 'follow-up',
-            symptoms: ['Chest pain', 'Shortness of breath'],
-            priority: 'high',
-            assignedProvider: 'Dr. Michael Chen'
-          },
-          {
-            id: '3',
-            patientName: 'Robert Johnson',
-            checkinDate: '2024-12-08',
-            status: 'completed',
-            type: 'new-patient',
-            symptoms: ['Back pain', 'Muscle stiffness'],
-            priority: 'low',
-            assignedProvider: 'Dr. Sarah Johnson'
-          }
-        ];
-        setCheckinReviews(mockData);
-      }
+      const { data } = await apiClient.checkinReviews.getAll();
+      setCheckinReviews(data as any[]);
     } catch (err) {
       setError('Failed to load checkin reviews. Please try again.');
       console.error('Error loading checkin reviews:', err);
@@ -112,25 +70,13 @@ export default function CheckinReviewsPage() {
 
   const handleReviewUpdate = async (reviewId: string, newStatus: string) => {
     try {
-      const response = await fetch(`/api/checkin-reviews/${reviewId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({ status: newStatus })
-      });
-
-      if (response.ok) {
-        // Update local state
-        setCheckinReviews(prev =>
-          prev.map(review =>
-            review.id === reviewId ? { ...review, status: newStatus } : review
-          )
-        );
-      } else {
-        setError('Failed to update review status');
-      }
+      await apiClient.checkinReviews.update(reviewId, { status: newStatus });
+      // Update local state
+      setCheckinReviews(prev =>
+        prev.map(review =>
+          review.id === reviewId ? { ...review, status: newStatus } : review
+        )
+      );
     } catch (err) {
       setError('Network error. Please try again.');
       console.error('Error updating review:', err);

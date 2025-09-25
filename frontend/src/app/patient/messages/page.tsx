@@ -3,7 +3,9 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { toast } from 'react-hot-toast';
 import { apiClient } from '@/lib/api';
+import { validateFileSize, uploadWithRetry } from '@/lib/upload-utils';
 
 interface Message {
   id: string;
@@ -45,12 +47,12 @@ export default function PatientMessages() {
     const fetchConversations = async () => {
       try {
         setLoading(true);
-        const response = await apiClient.messages.getMyConversations();
-        setConversations(response.data || []);
+  const data = await apiClient.messages.getMyConversations();
+  setConversations((data as any) || []);
         setError(null);
-      } catch (err) {
-        console.error('Error fetching conversations:', err);
-        setError('Failed to load conversations');
+      } catch (err: any) {
+        console.error('Error fetching conversations:', err?.error || err);
+        setError(err?.error || 'Failed to load conversations');
         setConversations([]);
       } finally {
         setLoading(false);
@@ -65,15 +67,15 @@ export default function PatientMessages() {
     const fetchMessages = async () => {
       if (selectedConversation) {
         try {
-          const response = await apiClient.messages.getConversationMessages(selectedConversation.id);
-          setMessages(response.data || []);
+          const data = await apiClient.messages.getConversationMessages(selectedConversation.id);
+          setMessages((data as any) || []);
           
           // Hide conversations list on mobile when selecting
           if (window.innerWidth < 768) {
             setShowConversations(false);
           }
-        } catch (err) {
-          console.error('Error fetching messages:', err);
+        } catch (err: any) {
+          console.error('Error fetching messages:', err?.error || err);
           setMessages([]);
         }
       }
@@ -103,27 +105,42 @@ export default function PatientMessages() {
         formData.append(`attachments`, file);
       });
 
-      // Send message via API
-      const response = await apiClient.messages.sendMessage(selectedConversation.id, formData);
+      // Send message via API with retry logic
+      const data = await uploadWithRetry(async () => {
+        return await apiClient.messages.sendMessage(selectedConversation.id, formData);
+      });
       
       // Add the sent message to local state
-      if (response.data) {
-        setMessages(prev => [...prev, response.data]);
+      if (data) {
+        setMessages(prev => [...prev, data as any]);
       }
       
       // Clear input
       setNewMessage('');
       setAttachedFiles([]);
+      toast.success('Message sent successfully!');
       
-    } catch (err) {
-      console.error('Error sending message:', err);
-      // Could add error toast here
+    } catch (err: any) {
+      console.error('Error sending message:', err?.error || err);
+      // Error toasts are already handled by uploadWithRetry
     }
   };
 
   const handleFileAttachment = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      setAttachedFiles(prev => [...prev, ...Array.from(e.target.files!)]);
+      const files = Array.from(e.target.files);
+      
+      // Validate each file size
+      const validFiles = files.filter(file => {
+        if (!validateFileSize(file)) {
+          return false; // Error toast already shown by validateFileSize
+        }
+        return true;
+      });
+      
+      if (validFiles.length > 0) {
+        setAttachedFiles(prev => [...prev, ...validFiles]);
+      }
     }
   };
 

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { apiClient } from '@/lib/api';
+import { apiClient, api } from '@/lib/api';
 import NotificationPopup from '@/components/NotificationPopup';
 
 export default function PatientDashboard() {
@@ -59,24 +59,24 @@ export default function PatientDashboard() {
         
         // Fetch all data in parallel - using proper API client methods
         const [patient, programs, orders, measurements, stats] = await Promise.all([
-          apiClient.patients.getProfile().catch(() => ({ data: null })),
-          apiClient.patients.getPrograms().catch(() => ({ data: [] })),
-          apiClient.patients.getOrders({ limit: 5 }).catch(() => ({ data: [] })),
-          apiClient.patients.getMeasurements({ limit: 5 }).catch(() => ({ data: [] })),
-          apiClient.patients.getStats().catch(() => ({ data: {} }))
+          apiClient.patients.getProfile().catch(() => null),
+          apiClient.patients.getPrograms().catch(() => []),
+          apiClient.patients.getOrders({ limit: 5 }).catch(() => []),
+          apiClient.patients.getMeasurements({ limit: 5 }).catch(() => []),
+          apiClient.patients.getStats().catch(() => ({}))
         ]);
 
-        // Set data from API responses
-        setPatientData(patient.data.data);
-        setPrograms(programs.data.data || []);
-        setRecentOrders(orders.data.data || []);
-        setMeasurements(measurements.data.data || []);
-        setStats(stats.data.data || {});
+        // Set data from API responses (already unwrapped)
+        setPatientData(patient);
+        setPrograms((programs as any[]) || []);
+        setRecentOrders((orders as any[]) || []);
+        setMeasurements((measurements as any[]) || []);
+        setStats(stats || {});
         
         setLoading(false);
-      } catch (err) {
-        console.error('Error fetching dashboard data:', err);
-        setError('Failed to load dashboard data');
+      } catch (err: any) {
+        console.error('Error fetching dashboard data:', err?.error || err);
+        setError(err?.error || 'Failed to load dashboard data');
         setLoading(false);
       }
     };
@@ -104,9 +104,9 @@ export default function PatientDashboard() {
         });
         
         // Refresh measurements from API
-        const response = await apiClient.patients.getMeasurements({ limit: 5 });
-        setMeasurements(response.data);
-      } catch (apiError) {
+  const latest = await api.get<any[]>('/api/patients/me/measurements', { params: { limit: 5 } });
+  setMeasurements(latest || []);
+      } catch (apiError: any) {
         // If API fails, use mock data for demo
         setMeasurements([newMeasurement, ...measurements].slice(0, 5));
       }

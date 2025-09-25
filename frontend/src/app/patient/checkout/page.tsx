@@ -186,20 +186,25 @@ function CheckoutForm({ consultationId, prescriptions = [] }: CheckoutFormProps)
         }
       };
 
-      const response = await api.post('/api/orders', orderData);
+      const result = await api.post<any>('/api/orders', orderData);
 
-      if (response.data.success) {
+      if ((result as any)?.success === false) {
+        throw new Error((result as any)?.error || 'Order processing failed');
+      }
+      
+      if ((result as any)?.orderId) {
         // Show success message
         toast.success('Order placed successfully!');
         
         // Redirect to order confirmation
-        router.push(`/patient/orders/${response.data.orderId}?success=true`);
+        router.push(`/patient/orders/${(result as any).orderId}?success=true`);
       } else {
-        throw new Error(response.data.error || 'Order processing failed');
+        throw new Error('Order processing failed');
       }
     } catch (err: any) {
-      setError(err.message || 'Payment processing failed. Please try again.');
-      toast.error(err.message || 'Payment failed');
+      const message = err?.error || err?.message || 'Payment processing failed. Please try again.';
+      setError(message);
+      toast.error(message);
     } finally {
       setProcessing(false);
     }
