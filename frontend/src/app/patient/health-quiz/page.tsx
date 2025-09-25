@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getIntakeForm, IntakeForm, IntakeStep, treatmentPlans } from '@/lib/intake-forms';
-
+import RegionDropdown from "./states"
 // Progress Bar Component
 const ProgressBar: React.FC<{ currentStep: number; totalSteps: number }> = ({ currentStep, totalSteps }) => {
   const progressPercentage = (currentStep / totalSteps) * 100;
@@ -20,43 +20,124 @@ const ProgressBar: React.FC<{ currentStep: number; totalSteps: number }> = ({ cu
   );
 };
 
+const AddressGroup: React.FC<{
+  question: any;
+  value: {
+    street?: string;
+    unit?: string;
+    city?: string;
+    region?: string;
+    postal_code?: string;
+  };
+  onChange: (name: string, value: any) => void;
+}> = ({ question, value = {}, onChange }) => {
+  const handleChange = (field: string, fieldValue: string) => {
+    onChange(question.id, { ...value, [field]: fieldValue });
+  };
+
+  return (
+    <div className="space-y-6">
+      <h2 className="text-2xl font-bold text-gray-800 text-center mb-6">
+        {question.question}
+      </h2>
+
+      <div className="grid grid-cols-1 gap-4 max-w-lg mx-auto">
+        {/* Street */}
+        <input
+          type="text"
+          placeholder="Street Address"
+          value={value.street || ""}
+          onChange={(e) => handleChange("street", e.target.value)}
+          className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-zappy-pink focus:border-zappy-pink"
+        />
+
+        {/* Unit (optional) */}
+        <input
+          type="text"
+          placeholder="Apt / Unit (optional)"
+          value={value.unit || ""}
+          onChange={(e) => handleChange("unit", e.target.value)}
+          className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-zappy-pink focus:border-zappy-pink"
+        />
+
+        <div className="grid grid-cols-2 gap-4">
+          {/* City */}
+          <input
+            type="text"
+            placeholder="City"
+            value={value.city || ""}
+            onChange={(e) => handleChange("city", e.target.value)}
+            className="px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-zappy-pink focus:border-zappy-pink"
+          />
+
+          {/* Region */}
+          <RegionDropdown
+            value={value.region || ""}
+            onChange={(regionCode) => handleChange("region", regionCode)}
+            placeholder="Select Region"
+          />
+        </div>
+
+        {/* Postal Code */}
+        <input
+          type="text"
+          placeholder="Postal Code"
+          value={value.postal_code || ""}
+          onChange={(e) => handleChange("postal_code", e.target.value)}
+          className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-zappy-pink focus:border-zappy-pink"
+        />
+      </div>
+    </div>
+  );
+};
+
 // Radio Group Component
 const RadioGroup: React.FC<{
   question: any;
   value: string;
   onChange: (name: string, value: string) => void;
-}> = ({ question, value, onChange }) => (
-  <div className="space-y-6">
-    <h2 className="text-2xl font-bold text-gray-800 text-center mb-8">
-      {question.question}
-    </h2>
-    {question.helpText && (
-      <p className="text-gray-600 text-center mb-4">{question.helpText}</p>
-    )}
-    <div className="space-y-3 max-w-lg mx-auto">
-      {question.options?.map((option: string) => (
-        <label
-          key={option}
-          className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
-            value === option 
-              ? 'bg-zappy-light-yellow border-zappy-pink' 
-              : 'border-gray-200 hover:border-zappy-pink bg-white'
-          }`}
-        >
-          <input
-            type="radio"
-            name={question.id}
-            value={option}
-            checked={value === option}
-            onChange={(e) => onChange(question.id, e.target.value)}
-            className="sr-only"
-          />
-          <span className="font-medium text-gray-700">{option}</span>
-        </label>
-      ))}
+}> = ({ question, value, onChange }) => {
+  // For yesno type, define options
+  const options = question.type === 'yesno'
+    ? [
+        { label: 'Yes', value: 'true' },
+        { label: 'No', value: 'false' }
+      ]
+    : (question.options || []).map((o: string) => ({ label: o, value: o }));
+
+  return (
+    <div className="space-y-6">
+      <h2 className="text-2xl font-bold text-gray-800 text-center mb-8">
+        {question.question}
+      </h2>
+      {question.helpText && (
+        <p className="text-gray-600 text-center mb-4">{question.helpText}</p>
+      )}
+      <div className="space-y-3 max-w-lg mx-auto">
+        {options.map((option) => (
+          <label
+            key={option.value}
+            className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
+              value === option.value
+                ? 'bg-zappy-light-yellow border-zappy-pink'
+                : 'border-gray-200 hover:border-zappy-pink bg-white'
+            }`}
+          >
+            <input
+              type="radio"
+              name={question.id}
+              value={option.value}
+              checked={value === option.value}
+              onChange={(e) => onChange(question.id, e.target.value)}
+              className="sr-only"
+            />
+            <span className="font-medium text-gray-700">{option.label}</span>
+          </label>
+        ))}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 // Checkbox Group Component
 const CheckboxGroup: React.FC<{
@@ -176,20 +257,53 @@ const ScaleGroup: React.FC<{
 // Plan Selection Component
 const PlanSelection: React.FC<{
   condition: string;
+  region: string;
   selectedPlan: string;
   onChange: (planId: string) => void;
-}> = ({ condition, selectedPlan, onChange }) => {
-  const plans = treatmentPlans[condition] || [];
-  
+}> = ({ condition, region, selectedPlan, onChange }) => {
+  const [plans, setPlans] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPlans = async () => {
+      setLoading(true);
+      try {
+        const queryParams = new URLSearchParams();
+        if (condition) queryParams.append('condition', condition);
+        if (region) queryParams.append('region', region); // <-- add region here
+
+        const res = await fetch(`https://api-stag.zappyhealth.com/consultations/packages?${queryParams.toString()}`, {
+          headers: {
+            'X-API-KEY': '82ecfe6de6ce65d6d9e2622ce406eb39fa46f4ecf83d371d421e3b70bc1a57e83bd1f861af5af994a83918631f74cbcd558d56227cc76132e7c3533dd319854b',
+          },
+        });
+
+        if (!res.ok) throw new Error(`Failed to fetch: ${res.statusText}`);
+        const data = await res.json();
+        setPlans(data);
+      } catch (err) {
+        console.error('Error fetching plans:', err);
+        setPlans([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPlans();
+  }, [condition, region]);
+
+  console.log(plans.length)
+  if (loading) return <p className="text-center text-gray-500">Loading plans...</p>;
+  if (!plans.length) return <p className="text-center text-gray-500">No plans available.</p>;
+
+  console.log(plans)
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-800 text-center mb-2">
-        Choose Your Treatment Plan
-      </h2>
+      <h2 className="text-2xl font-bold text-gray-800 text-center mb-2">Choose Your Treatment Plan</h2>
       <p className="text-gray-600 text-center mb-8">
         Select the plan that best fits your needs and budget
       </p>
-      
+
       <div className="flex gap-6 overflow-x-auto pb-4 px-4 max-w-full">
         {plans.map((plan) => (
           <div
@@ -208,7 +322,7 @@ const PlanSelection: React.FC<{
                 </span>
               </div>
             )}
-            
+
             <div className="text-center mb-4">
               <h3 className="text-xl font-bold text-gray-800 mb-2">{plan.name}</h3>
               <div className="flex items-baseline justify-center">
@@ -217,18 +331,23 @@ const PlanSelection: React.FC<{
               </div>
               <p className="text-gray-600 text-sm mt-2">{plan.description}</p>
             </div>
-            
+
             <ul className="space-y-2">
-              {plan.features.map((feature, index) => (
+              {plan.features && plan.features.map((feature: string, index: number) => (
                 <li key={index} className="flex items-start">
-                  <svg className="w-5 h-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg
+                    className="w-5 h-5 text-green-500 mr-2 mt-0.5 flex-shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                   <span className="text-gray-700 text-sm">{feature}</span>
                 </li>
               ))}
             </ul>
-            
+
             <div className="mt-6">
               <button
                 className={`w-full py-3 rounded-full font-bold transition-all ${
@@ -269,34 +388,84 @@ export default function HealthQuizPage() {
     setIntakeForm(form);
   }, [condition, router]);
 
-  const handleNext = useCallback(() => {
+  const handleNext = useCallback(async () => {
     if (!intakeForm) return;
-    
+
+    const currentStepConfig = intakeForm.steps.find(s => s.stepNumber === currentStep);
+    if (!currentStepConfig) return;
+
+    const missingFields = currentStepConfig.questions.filter(q => {
+      if (!q.required) return false;
+
+      const value = formData[q.id];
+
+      switch (q.type) {
+        case 'address':
+          // If value is missing or not an object
+          if (!value || typeof value !== 'object') return true;
+
+          // Required fields for address
+          const requiredAddressFields = ['street', 'city', 'region', 'postal_code'];
+
+          // Return true if any required field is empty
+          return requiredAddressFields.some(field => {
+            const fieldValue = value[field];
+            console.log(field, fieldValue)
+            return !fieldValue || (typeof fieldValue === 'string' && fieldValue.trim() === '');
+          });
+
+        case 'multiselect':
+          return !Array.isArray(value) || value.length === 0;
+
+        default:
+          // For strings, numbers, etc.
+          return !value || (typeof value === 'string' && value.trim() === '');
+      }
+    });
+
+    if (missingFields.length > 0) {
+      console.log(missingFields)
+      alert('Please fill all required fields before continuing.');
+      return;
+    }
+
     if (currentStep < intakeForm.totalSteps) {
-      setCurrentStep((prev) => prev + 1);
+      setCurrentStep(prev => prev + 1);
     } else {
-      // Form complete - save and redirect
+      // Form complete - submit to backend API
       const selectedPlanId = formData.selected_plan;
       const selectedPlan = treatmentPlans[condition]?.find(p => p.id === selectedPlanId);
-      
+      debugger
       const consultationData = {
         condition,
         responses: formData,
-        selectedPlan: selectedPlan ? {
-          id: selectedPlan.id,
-          name: selectedPlan.name,
-          price: selectedPlan.price,
-          tier: selectedPlanId
-        } : null,
+        intake_form: intakeForm,
         timestamp: new Date().toISOString()
       };
-      
-      localStorage.setItem(`${condition}_intake_responses`, JSON.stringify(consultationData));
-      
-      // TODO: Submit to backend API
-      // await api.post('/consultations', consultationData);
-      
-      setCurrentStep(intakeForm.totalSteps + 1); // Show completion screen
+
+      try {
+        const response = await fetch('https://api-stag.zappyhealth.com/consultations', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-API-KEY': '82ecfe6de6ce65d6d9e2622ce406eb39fa46f4ecf83d371d421e3b70bc1a57e83bd1f861af5af994a83918631f74cbcd558d56227cc76132e7c3533dd319854b', // replace with your actual token
+          },
+          body: JSON.stringify(consultationData),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to submit: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        console.log('Consultation submitted successfully:', result);
+
+        // Show completion screen
+        setCurrentStep(intakeForm.totalSteps + 1);
+      } catch (error) {
+        console.error('Error submitting consultation:', error);
+        alert('There was an error submitting your form. Please try again.');
+      }
     }
   }, [currentStep, formData, intakeForm, condition]);
 
@@ -360,6 +529,7 @@ export default function HealthQuizPage() {
         <div className="w-full animate-fade-in">
           <PlanSelection
             condition={condition}
+            region={formData.address?.region || ''}
             selectedPlan={formData.selected_plan || ''}
             onChange={(planId) => handleInputChange('selected_plan', planId)}
           />
@@ -397,6 +567,16 @@ export default function HealthQuizPage() {
                   key={question.id}
                   question={question}
                   value={fieldValue as string}
+                  onChange={handleInputChange}
+                />
+              );
+            } else if (question.type === 'address') {
+              console.log(question)
+              return (
+                <AddressGroup
+                  key={question.id}
+                  question={question}
+                  value={fieldValue as any}
                   onChange={handleInputChange}
                 />
               );
