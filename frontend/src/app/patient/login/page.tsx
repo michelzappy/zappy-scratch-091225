@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { authService, UserRole } from '@/lib/auth';
@@ -12,7 +12,22 @@ export default function PatientLogin() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [cooldownTime, setCooldownTime] = useState(0);
+  const [isDisabled, setIsDisabled] = useState(false);
   const router = useRouter();
+
+  // Cooldown timer effect
+  useEffect(() => {
+    if (cooldownTime > 0) {
+      setIsDisabled(true);
+      const timer = setTimeout(() => {
+        setCooldownTime(cooldownTime - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else {
+      setIsDisabled(false);
+    }
+  }, [cooldownTime]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,13 +51,17 @@ export default function PatientLogin() {
         router.push('/patient/dashboard');
       }
     } catch (err: any) {
-      // Handle specific error cases
-      if (err.response?.data?.code === 'INVALID_CREDENTIALS') {
+      // Handle specific error cases with normalized errors
+      if (err?.status === 429) {
+        // Rate limited - show toast and start cooldown
+        toast.error('Too many attempts — try again later.');
+        setCooldownTime(60); // 60 second cooldown
+      } else if (err?.code === 'INVALID_CREDENTIALS') {
         setError('Invalid email or password. Please try again.');
-      } else if (err.response?.data?.code === 'ACCOUNT_LOCKED') {
+      } else if (err?.code === 'ACCOUNT_LOCKED') {
         setError('Your account has been locked. Please contact support.');
       } else {
-        setError(err.response?.data?.error || 'Login failed. Please try again.');
+        setError(err?.error || 'Login failed. Please try again.');
       }
       setLoading(false);
     }
@@ -218,7 +237,7 @@ export default function PatientLogin() {
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || isDisabled}
               className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {loading ? (
@@ -229,6 +248,8 @@ export default function PatientLogin() {
                   </svg>
                   Signing in...
                 </div>
+              ) : isDisabled && cooldownTime > 0 ? (
+                `Try Again in ${cooldownTime}s`
               ) : (
                 'Sign In'
               )}

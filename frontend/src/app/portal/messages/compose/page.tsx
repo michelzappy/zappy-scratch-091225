@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Card from '@/components/Card';
+import { apiClient } from '@/lib/api';
 
 interface Recipient {
   id: string;
@@ -69,29 +70,18 @@ export default function ComposeMessagePage() {
 
   const loadRecipients = async () => {
     try {
-      // TODO: Implement API call to load recipients
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/messages/recipients', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      if (response.ok) {
-        const recipients = await response.json();
-        setAvailableRecipients(recipients);
-      } else {
-        // Fallback to mock data for demo
-        setAvailableRecipients([
-          { id: '1', name: 'Dr. Sarah Johnson', email: 'sarah.johnson@clinic.com', type: 'provider' },
-          { id: '2', name: 'John Smith', email: 'john.smith@patient.com', type: 'patient' },
-          { id: '3', name: 'Admin User', email: 'admin@clinic.com', type: 'admin' },
-          { id: '4', name: 'Dr. Michael Chen', email: 'michael.chen@clinic.com', type: 'provider' },
-          { id: '5', name: 'Jane Doe', email: 'jane.doe@patient.com', type: 'patient' }
-        ]);
-      }
+      const { data } = await apiClient.messages.getRecipients();
+      setAvailableRecipients(data as Recipient[]);
     } catch (err) {
       console.error('Failed to load recipients:', err);
+      // Fallback to mock data for demo
+      setAvailableRecipients([
+        { id: '1', name: 'Dr. Sarah Johnson', email: 'sarah.johnson@clinic.com', type: 'provider' },
+        { id: '2', name: 'John Smith', email: 'john.smith@patient.com', type: 'patient' },
+        { id: '3', name: 'Admin User', email: 'admin@clinic.com', type: 'admin' },
+        { id: '4', name: 'Dr. Michael Chen', email: 'michael.chen@clinic.com', type: 'provider' },
+        { id: '5', name: 'Jane Doe', email: 'jane.doe@patient.com', type: 'patient' }
+      ]);
     }
   };
 
@@ -116,27 +106,13 @@ export default function ComposeMessagePage() {
         attachments: attachments.map(file => ({ name: file.name, size: file.size }))
       };
 
-      // TODO: Implement message sending API call
-      const response = await fetch('/api/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify(messageData),
-      });
-
-      if (response.ok) {
-        setSuccess(true);
-        
-        // Redirect to messages after short delay
-        setTimeout(() => {
-          router.push('/portal/messages');
-        }, 2000);
-      } else {
-        const errorData = await response.json();
-        setError(errorData.message || 'Failed to send message. Please try again.');
-      }
+      // Send message via centralized API client (legacy endpoint until backend deprecates)
+      await apiClient.messages.create(messageData);
+      setSuccess(true);
+      // Redirect to messages after short delay
+      setTimeout(() => {
+        router.push('/portal/messages');
+      }, 2000);
     } catch (err) {
       setError('Network error. Please check your connection and try again.');
       console.error('Message sending error:', err);

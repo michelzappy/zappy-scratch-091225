@@ -3,6 +3,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase, subscribeToTable, unsubscribe } from '@/lib/supabase';
 import io, { Socket } from 'socket.io-client';
+import { apiClient } from '@/lib/api';
+import { validateFileSize, uploadWithRetry } from '@/lib/upload-utils';
+import { toast } from 'react-hot-toast';
 
 interface Message {
   id: string;
@@ -69,8 +72,8 @@ export default function MessageChat({
 
     setSocket(socketConnection);
 
-    // Fetch existing messages
-    fetchMessages();
+  // Fetch existing messages
+  fetchMessages();
 
     // Subscribe to real-time updates via Supabase
     const channel = subscribeToTable(
@@ -97,19 +100,13 @@ export default function MessageChat({
 
   const fetchMessages = async () => {
     try {
-      const response = await fetch(`/api/messages/consultation/${consultationId}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setMessages(data.messages || []);
-        scrollToBottom();
-      }
-    } catch (error) {
-      console.error('Error fetching messages:', error);
+      const data = await apiClient.messages.getByConsultation(consultationId);
+      // Support various response shapes (after interceptor unwrapping)
+      const list = (data as any)?.messages || (data as any) || [];
+      setMessages(list);
+      scrollToBottom();
+    } catch (error: any) {
+      console.error('Error fetching messages:', error?.error || error);
     } finally {
       setLoading(false);
     }
@@ -134,38 +131,25 @@ export default function MessageChat({
     setNewMessage('');
 
     try {
-      // Send via API
-      const response = await fetch('/api/messages/send', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: JSON.stringify({
-          consultation_id: consultationId,
-          content: messageContent,
-          sender_type: currentUserType,
-        }),
-      });
+      // Send via centralized API client with consultation-first routing
+  const payload = { content: messageContent, sender_type: currentUserType };
+  const data = await apiClient.messages.sendToConsultation(consultationId, payload);
 
-      if (response.ok) {
-        const data = await response.json();
-        
+  const savedMessage = (data as any)?.message || (data as any);
+      if (savedMessage) {
         // Replace temp message with real one
-        setMessages((prev) =>
-          prev.map((msg) => (msg.id === tempMessage.id ? data.message : msg))
-        );
+        setMessages((prev) => prev.map((msg) => (msg.id === tempMessage.id ? savedMessage : msg)));
 
         // Emit via Socket.io for real-time delivery
         if (socket) {
           socket.emit('send_message', {
             consultationId,
-            message: data.message,
+            message: savedMessage,
           });
         }
       }
-    } catch (error) {
-      console.error('Error sending message:', error);
+    } catch (error: any) {
+      console.error('Error sending message:', error?.error || error);
       // Remove temp message on error
       setMessages((prev) => prev.filter((msg) => msg.id !== tempMessage.id));
       setNewMessage(messageContent); // Restore message
@@ -209,41 +193,36 @@ export default function MessageChat({
     if (!files || files.length === 0) return;
 
     const file = files[0];
+    
+    // Validate file size before upload
+    if (!validateFileSize(file)) {
+      return; // Error toast already shown by validateFileSize
+    }
+
     const formData = new FormData();
     formData.append('file', file);
     formData.append('consultation_id', consultationId);
 
     try {
-      const response = await fetch('/api/files/upload', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: formData,
+      // Upload with retry logic
+      const uploadedData = await uploadWithRetry(async () => {
+        return await apiClient.files.upload(formData);
+      });
+      
+      const uploaded = (uploadedData as any)?.file || (uploadedData as any);
+
+      // Send message with file attachment through consultation route
+      await apiClient.messages.sendToConsultation(consultationId, {
+        content: `Shared a file: ${file.name}`,
+        sender_type: currentUserType,
+        attachments: uploaded ? [uploaded] : undefined,
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        
-        // Send message with file attachment
-        await fetch('/api/messages/send', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          },
-          body: JSON.stringify({
-            consultation_id: consultationId,
-            content: `Shared a file: ${file.name}`,
-            sender_type: currentUserType,
-            attachments: [data.file],
-          }),
-        });
-
-        fetchMessages();
-      }
-    } catch (error) {
-      console.error('Error uploading file:', error);
+      fetchMessages();
+      toast.success('File uploaded successfully!');
+    } catch (error: any) {
+      console.error('Error uploading file:', error?.error || error);
+      // Error toasts are already handled by uploadWithRetry
     }
   };
 

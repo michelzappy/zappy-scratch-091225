@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import { toast } from 'react-hot-toast';
 import { apiClient } from '@/lib/api';
+import { validateFileSize, uploadWithRetry } from '@/lib/upload-utils';
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'notifications' | 'billing'>('profile');
@@ -210,16 +212,31 @@ export default function ProfilePage() {
                       const input = document.createElement('input');
                       input.type = 'file';
                       input.accept = 'image/*';
-                      input.onchange = (e) => {
+                      input.onchange = async (e) => {
                         const file = (e.target as HTMLInputElement).files?.[0];
                         if (file) {
-                        console.log('Photo selected:', file.name);
-                        // Upload photo to server via API
-                        const formData = new FormData();
-                        formData.append('profile_photo', file);
-                        apiClient.files.upload(formData)
-                          .then(() => console.log('Profile photo uploaded successfully'))
-                          .catch(err => console.error('Failed to upload photo:', err));
+                          // Validate file size before upload
+                          if (!validateFileSize(file)) {
+                            return; // Error toast already shown by validateFileSize
+                          }
+
+                          console.log('Photo selected:', file.name);
+                          
+                          try {
+                            // Upload photo to server via API with retry logic
+                            const formData = new FormData();
+                            formData.append('profile_photo', file);
+                            
+                            await uploadWithRetry(async () => {
+                              return await apiClient.files.upload(formData);
+                            });
+                            
+                            toast.success('Profile photo uploaded successfully!');
+                            console.log('Profile photo uploaded successfully');
+                          } catch (err: any) {
+                            console.error('Failed to upload photo:', err);
+                            // Error toasts are already handled by uploadWithRetry
+                          }
                         }
                       };
                       input.click();

@@ -72,34 +72,22 @@ class AuthService {
     shippingState?: string;
     shippingZip?: string;
   }): Promise<AuthResponse> {
-    const response = await api.post('/api/auth/register/patient', data);
-    
-    if (response.data?.success && response.data?.data) {
-      const authData = response.data.data;
-      this.setTokens(authData);
-      this.setUser(authData.user);
-      this.scheduleTokenRefresh(authData.expiresIn || 3600);
-      return authData;
-    }
-    
-    throw new Error(response.data?.message || 'Registration failed');
+    const authData = await api.post('/api/auth/register/patient', data);
+    this.setTokens(authData);
+    this.setUser(authData.user);
+    this.scheduleTokenRefresh(authData.expiresIn || 3600);
+    return authData;
   }
 
   /**
    * Universal Login (supports all user types)
    */
   async login(email: string, password: string, userType?: string): Promise<AuthResponse> {
-    const response = await api.post('/api/auth/login', { email, password, userType });
-    
-    if (response.data?.success && response.data?.data) {
-      const authData = response.data.data;
-      this.setTokens(authData);
-      this.setUser(authData.user);
-      this.scheduleTokenRefresh(authData.expiresIn || 3600); // Default 1 hour
-      return authData;
-    }
-    
-    throw new Error(response.data?.message || 'Login failed');
+    const authData = await api.post('/api/auth/login', { email, password, userType });
+    this.setTokens(authData);
+    this.setUser(authData.user);
+    this.scheduleTokenRefresh(authData.expiresIn || 3600); // Default 1 hour
+    return authData;
   }
 
   /**
@@ -128,19 +116,15 @@ class AuthService {
     });
     
     // Check if 2FA is required
-    if (response.data?.requiresTwoFactor) {
+    if ((response as any)?.requiresTwoFactor) {
       return { requiresTwoFactor: true };
     }
-    
-    if (response.data?.success && response.data?.data) {
-      const authData = response.data.data;
-      this.setTokens(authData);
-      this.setUser(authData.user);
-      this.scheduleTokenRefresh(authData.expiresIn || 3600);
-      return authData;
-    }
-    
-    throw new Error(response.data?.message || 'Login failed');
+
+    const authData = response as unknown as AuthResponse;
+    this.setTokens(authData);
+    this.setUser(authData.user);
+    this.scheduleTokenRefresh(authData.expiresIn || 3600);
+    return authData;
   }
 
   /**
@@ -169,8 +153,8 @@ class AuthService {
     submittedAt: string;
     message: string;
   }> {
-    const response = await api.post('/api/auth/intake', data);
-    return response.data?.data || response.data;
+  const result = await api.post('/api/auth/intake', data);
+  return result;
   }
 
   /**
@@ -184,14 +168,10 @@ class AuthService {
     }
 
     try {
-      const response = await api.post('/api/auth/refresh', { refreshToken });
-      
-      if (response.data?.success && response.data?.data) {
-        const tokenData = response.data.data;
-        this.setTokens(tokenData);
-        this.scheduleTokenRefresh(tokenData.expiresIn || 3600);
-        return tokenData;
-      }
+      const tokenData = await api.post('/api/auth/refresh', { refreshToken });
+      this.setTokens(tokenData);
+      this.scheduleTokenRefresh(tokenData.expiresIn || 3600);
+      return tokenData;
     } catch (error) {
       // If refresh fails, clear auth locally without making logout API call
       // to prevent infinite loop with API interceptor
@@ -230,22 +210,17 @@ class AuthService {
     }
 
     try {
-      const response = await api.get('/api/auth/me');
-      
-      if (response.data?.success && response.data?.data) {
-        this.setUser(response.data.data);
-        return response.data.data;
-      }
+      const me = await api.get('/api/auth/me');
+      this.setUser(me);
+      return me;
     } catch (error) {
       // If getting user fails, try to refresh token
       const refreshed = await this.refreshToken();
       
       if (refreshed) {
-        const response = await api.get('/api/auth/me');
-        if (response.data?.success && response.data?.data) {
-          this.setUser(response.data.data);
-          return response.data.data;
-        }
+        const me = await api.get('/api/auth/me');
+        this.setUser(me);
+        return me;
       }
       
       return null;

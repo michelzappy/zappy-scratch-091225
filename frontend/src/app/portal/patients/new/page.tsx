@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Card from '@/components/Card';
+import { apiClient } from '@/lib/api';
 
 export default function NewPatientPage() {
   const router = useRouter();
@@ -65,27 +66,15 @@ export default function NewPatientPage() {
     setError('');
 
     try {
-      // TODO: Implement patient creation API call
-      const response = await fetch('/api/patients', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (response.ok) {
-        const newPatient = await response.json();
+      // Create patient via centralized API client
+      const { data: newPatient } = await apiClient.patients.create(formData);
+      if (newPatient) {
         setSuccess(true);
         
         // Redirect to patient list after short delay
         setTimeout(() => {
           router.push('/portal/patients');
         }, 2000);
-      } else {
-        const errorData = await response.json();
-        setError(errorData.message || 'Failed to create patient. Please try again.');
       }
     } catch (err) {
       setError('Network error. Please check your connection and try again.');

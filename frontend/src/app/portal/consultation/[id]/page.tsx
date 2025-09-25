@@ -125,25 +125,17 @@ export default function ConsultationReviewPage() {
   const generateAIContent = async (type: 'assessment' | 'plan' | 'message') => {
     setAiLoading(true);
     try {
-      const response = await fetch('/api/ai-consultation/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type,
-          consultation,
-          hpi,
-          diagnosis
-        })
+      const { data } = await apiClient.aiConsultation.generate({
+        type,
+        consultation,
+        hpi,
+        diagnosis,
       });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (type === 'assessment') {
-          setDiagnosis(data.diagnosis);
-          setTreatmentNotes(data.assessment);
-        } else if (type === 'message') {
-          setPatientVisibleNote(data.message);
-        }
+      if (type === 'assessment') {
+        setDiagnosis((data as any)?.diagnosis);
+        setTreatmentNotes((data as any)?.assessment);
+      } else if (type === 'message') {
+        setPatientVisibleNote((data as any)?.message);
       }
     } catch (error) {
       console.error('AI generation error:', error);

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Card from '@/components/Card';
 import { apiClient } from '@/lib/api';
 
@@ -21,6 +21,7 @@ interface Message {
 
 export default function MessagesPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [userRole, setUserRole] = useState<UserRole>('provider');
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,14 +53,12 @@ export default function MessagesPage() {
     try {
       setLoading(true);
       setError(null);
+      const consultationId = searchParams.get('consultationId') ?? undefined;
       
       // Get messages from API
-      const response = await apiClient.messages.getAll({
-        type: filter !== 'all' && filter !== 'unread' ? filter : undefined,
-        unread: filter === 'unread' ? true : undefined
-      });
+      const data = await apiClient.messages.getMyConversations();
       
-      const messagesData = response.data || [];
+      const messagesData = (data as any) || [];
       
       // Transform API data to match our interface
       const transformedMessages: Message[] = messagesData.map((item: any) => ({
@@ -76,9 +75,9 @@ export default function MessagesPage() {
       
       setMessages(transformedMessages);
       
-    } catch (err) {
-      console.error('Error fetching messages:', err);
-      setError('Failed to load messages');
+    } catch (err: any) {
+      console.error('Error fetching messages:', err?.error || err);
+      setError(err?.error || 'Failed to load messages');
       setMessages([]);
     } finally {
       setLoading(false);
@@ -219,7 +218,8 @@ export default function MessagesPage() {
               // Mark message as read when clicked
               if (!message.read) {
                 try {
-                  await apiClient.messages.markRead(message.id);
+                  const consultationId = searchParams.get('consultationId') ?? undefined;
+                  await apiClient.messages.markConversationRead(message.id);
                   // Update local state
                   setMessages(prev => prev.map(m => 
                     m.id === message.id ? { ...m, read: true } : m
@@ -243,7 +243,8 @@ export default function MessagesPage() {
                       // Mark message as read when clicked
                       if (!message.read) {
                         try {
-                          await apiClient.messages.markRead(message.id);
+                          const consultationId = searchParams.get('consultationId') ?? undefined;
+                          await apiClient.messages.markRead(message.id, consultationId);
                           // Update local state
                           setMessages(prev => prev.map(m => 
                             m.id === message.id ? { ...m, read: true } : m
