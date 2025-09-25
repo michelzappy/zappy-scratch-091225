@@ -22,8 +22,13 @@ export default function PatientLogin() {
     try {
       // Login using our auth service
       const response = await authService.loginPatient(email, password);
-      
+
       if (response.user) {
+        // Set user and token in localStorage
+        localStorage.setItem('user', JSON.stringify(response.user));
+        localStorage.setItem('token', response.accessToken);
+        localStorage.setItem('userRole', UserRole.PATIENT);
+
         // Show success message
         toast.success(`Welcome back, ${response.user.firstName || 'Patient'}!`);
         

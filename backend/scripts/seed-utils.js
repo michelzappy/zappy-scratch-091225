@@ -4,8 +4,6 @@
  * Seed Utilities Framework
  * Provides helper functions for idempotent database seeding
  */
-
-import { sql } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 
 /**
@@ -18,12 +16,12 @@ import bcrypt from 'bcryptjs';
  */
 export async function recordExists(db, tableName, field, value) {
   try {
-    const result = await db.execute(sql`
+    const result = await db`
       SELECT EXISTS (
-        SELECT 1 FROM ${sql.identifier(tableName)} 
-        WHERE ${sql.identifier(field)} = ${value}
+        SELECT 1 FROM ${db(tableName)} 
+        WHERE ${db(field)} = ${value}
       ) as exists
-    `);
+    `;
     return result[0]?.exists || false;
   } catch (error) {
     console.error(`Error checking if record exists in ${tableName}:`, error);
@@ -61,7 +59,7 @@ export async function upsertRecord(db, tableName, data, conflictField, updateFie
     
     query += ' RETURNING *';
     
-    const result = await db.execute(sql.raw(query, values));
+    const result = await db.raw(query, values);
     return result[0];
   } catch (error) {
     console.error(`Error upserting record in ${tableName}:`, error);
@@ -97,7 +95,7 @@ export async function insertIfNotExists(db, tableName, data, checkField, checkVa
       RETURNING *
     `;
     
-    const result = await db.execute(sql.raw(query, values));
+    const result = await db.raw(query, values);
     console.log(`✅ Inserted new record in ${tableName}`);
     return result[0];
   } catch (error) {
@@ -193,13 +191,14 @@ export async function executeInTransaction(db, operations) {
  */
 export async function tableExists(db, tableName) {
   try {
-    const result = await db.execute(sql`
+    const query = `
       SELECT EXISTS (
         SELECT FROM information_schema.tables 
         WHERE table_schema = 'public' 
-        AND table_name = ${tableName}
+        AND table_name = '${tableName}'
       ) as exists
-    `);
+    `;
+    const result = await db.unsafe(query);
     return result[0]?.exists || false;
   } catch (error) {
     console.error(`Error checking if table ${tableName} exists:`, error);
@@ -215,9 +214,8 @@ export async function tableExists(db, tableName) {
  */
 export async function getRecordCount(db, tableName) {
   try {
-    const result = await db.execute(sql`
-      SELECT COUNT(*) as count FROM ${sql.identifier(tableName)}
-    `);
+    const query = `SELECT COUNT(*) as count FROM ${tableName}`;
+    const result = await db.unsafe(query);
     return parseInt(result[0]?.count || 0);
   } catch (error) {
     console.error(`Error getting record count from ${tableName}:`, error);

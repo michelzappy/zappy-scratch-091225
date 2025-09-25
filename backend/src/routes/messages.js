@@ -5,6 +5,7 @@ import { requireAuth, requireRole } from '../middleware/auth.js';
 import { getDatabase } from '../config/database.js';
 import { consultationMessages } from '../models/index.js';
 import { eq } from 'drizzle-orm';
+import { deprecationWarning } from '../middleware/deprecation.js';
 
 const router = express.Router();
 
@@ -19,8 +20,10 @@ const handleValidationErrors = (req, res, next) => {
   next();
 };
 
+// DEPRECATED: Use POST /api/consultations/:id/messages instead
 // Send message
 router.post('/',
+  deprecationWarning('/api/messages', 'POST /api/consultations/:id/messages'),
   requireAuth,
   [
     body('consultationId').isUUID().withMessage('Invalid consultation ID'),
@@ -61,8 +64,10 @@ router.post('/',
   })
 );
 
+// DEPRECATED: Use GET /api/consultations/:id/messages instead
 // Get messages for consultation
 router.get('/consultation/:consultationId',
+  deprecationWarning('/api/messages/consultation/:consultationId', 'GET /api/consultations/:id/messages'),
   requireAuth,
   [
     param('consultationId').isUUID().withMessage('Invalid consultation ID')

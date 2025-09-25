@@ -36,7 +36,7 @@ async function seedConsultationSettings(db) {
     const count = await getRecordCount(db, 'consultation_settings');
     
     if (count === 0) {
-      await db.execute(sql`
+      await db`
         INSERT INTO consultation_settings (
           id, consultation_fee, require_credit_card, auto_charge_on_approval, 
           refill_consultation_fee, created_at, updated_at
@@ -51,7 +51,7 @@ async function seedConsultationSettings(db) {
           ${defaultSettings.updated_at}::timestamp
         )
         ON CONFLICT (id) DO NOTHING
-      `);
+      `;
       
       logSeedOperation('✅ Default consultation settings created');
     } else {
@@ -72,8 +72,8 @@ async function seedSystemConfig(db) {
   
   try {
     // Ensure required extensions are enabled
-    await db.execute(sql`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`);
-    await db.execute(sql`CREATE EXTENSION IF NOT EXISTS "pgcrypto"`);
+    await db`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`;
+    await db`CREATE EXTENSION IF NOT EXISTS "pgcrypto"`;
     
     logSeedOperation('✅ System extensions verified');
   } catch (error) {
@@ -99,7 +99,7 @@ async function verifyCoreTablesExist(db) {
     'consultations',
     'prescriptions',
     'orders',
-    'messages'
+    'consultation_messages'
   ];
 
   for (const tableName of requiredTables) {

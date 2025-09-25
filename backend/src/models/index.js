@@ -51,32 +51,33 @@ export const patients = pgTable('patients', {
   shippingState: varchar('shipping_state', { length: 2 }),
   shippingZip: varchar('shipping_zip', { length: 10 }),
   
-  // Medical information
-  allergies: text('allergies'),
-  currentMedications: text('current_medications'),
-  medicalConditions: text('medical_conditions'),
   bloodType: varchar('blood_type', { length: 10 }),
+// Medical info
+  allergies: text('allergies').array(),
+  currentMedications: text('current_medications').array(),
+  medicalConditions: text('medical_conditions').array(),
   
-  // Subscription and account tracking
-  subscriptionTier: varchar('subscription_tier', { length: 50 }).default('free'),
-  subscriptionActive: boolean('subscription_active').default(false),
-  subscriptionStartDate: date('subscription_start_date'),
-  subscriptionEndDate: date('subscription_end_date'),
   totalSpent: decimal('total_spent', { precision: 10, scale: 2 }).default('0'),
-  totalOrders: integer('total_orders').default(0),
+  totalOrders: integer('total_orders').default(0),  // Payment info (Card-on-file)
   stripeCustomerId: varchar('stripe_customer_id', { length: 255 }),
+  defaultPaymentMethodId: varchar('default_payment_method_id', { length: 255 }),
+  hasValidPaymentMethod: boolean('has_valid_payment_method').default(false),
   
-  // Profile
-  profileImageUrl: text('profile_image_url'),
-  emergencyContactName: varchar('emergency_contact_name', { length: 100 }),
-  emergencyContactPhone: varchar('emergency_contact_phone', { length: 20 }),
-  insuranceProvider: varchar('insurance_provider', { length: 100 }),
-  insurancePolicyNumber: varchar('insurance_policy_number', { length: 100 }),
+  // Account status
+  emailVerified: boolean('email_verified').default(false),
+  verificationToken: varchar('verification_token', { length: 255 }),
+  resetToken: varchar('reset_token', { length: 255 }),
+  resetTokenExpires: timestamp('reset_token_expires'),
+  subscriptionStatus: varchar('subscription_status', { length: 50 }).default('none'), // none, active, cancelled, paused
+  subscriptionTier: varchar('subscription_tier', { length: 50 }).default('free'),
+  subscriptionId: varchar('subscription_id', { length: 255 }),
+  subscriptionActive: boolean('subscription_active').default(false),
   
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
-  lastLogin: timestamp('last_login', { withTimezone: true }),
-  isActive: boolean('is_active').default(true)
+  // Timestamps
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+  isActive: boolean('is_active').default(true),
+  lastLogin: timestamp('last_login')
 });
 
 // Enhanced Providers table matching complete-schema.sql

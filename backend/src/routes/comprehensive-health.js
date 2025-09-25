@@ -4,8 +4,8 @@
  */
 
 import express from 'express';
-import { getDatabase } from '../config/database.js';
-import redis from 'redis';
+import { getDatabase, dbManager } from '../config/database.js';
+import { getRedis } from '../config/redis.js';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import fs from 'fs/promises';
@@ -102,23 +102,29 @@ async function checkDatabase() {
   };
 
   try {
-    const db = getDatabase();
+    // Use enhanced database manager health check
+    const healthResult = await dbManager.healthCheck();
     
-    // Test basic connectivity
-    const connectStart = performance.now();
-    const result = await db`SELECT NOW() as current_time, version() as db_version`;
-    const connectTime = performance.now() - connectStart;
+    if (!healthResult.healthy) {
+      check.healthy = false;
+      check.checks.connectivity = {
+        healthy: false,
+        error: healthResult.error
+      };
+      return check;
+    }
     
     check.checks.connectivity = {
       healthy: true,
-      response_time: Math.round(connectTime),
-      database_time: result[0].current_time,
-      version: result[0].db_version
+      response_time: healthResult.responseTime,
+      database_time: healthResult.databaseTime,
+      version: healthResult.version
     };
 
     // Test critical tables exist
     const tables = ['patients', 'providers', 'consultations', 'prescriptions'];
     const tableChecks = {};
+    const db = getDatabase();
     
     for (const table of tables) {
       const tableStart = performance.now();
@@ -176,14 +182,20 @@ async function checkRedis() {
       return check;
     }
 
-    const client = redis.createClient({ url: process.env.REDIS_URL });
-    await client.connect();
+    const client = getRedis();
+    if (!client) {
+      check.checks.connectivity = {
+        healthy: false,
+        error: 'Redis client not available'
+      };
+      return check;
+    }
 
     // Test basic operations
     const testKey = `health:check:${Date.now()}`;
     const testValue = 'health-check-value';
     
-    await client.set(testKey, testValue, { EX: 10 });
+    await client.setex(testKey, 10, testValue);
     const retrievedValue = await client.get(testKey);
     await client.del(testKey);
     

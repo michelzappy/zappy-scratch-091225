@@ -1,90 +1,86 @@
 # Telehealth Platform
 
-A comprehensive telehealth system for async consultations between patients and healthcare providers.
+A telehealth system for async consultations between patients and healthcare providers.
 
-## 🚀 Quick Start
+## Getting Started
 
-### Prerequisites
+You'll need Node.js 18+, Docker, and Docker Compose installed.
 
-- Node.js 18+ 
-- Docker & Docker Compose
-- PostgreSQL (optional if using Docker)
-- Redis (optional if using Docker)
+### Installation
 
-### Setup Instructions
-
-1. **Clone and Install Dependencies**
+Install dependencies for both backend and frontend:
 
 ```bash
-# Install backend dependencies
-cd backend
-npm install
-cd ..
+npm run setup:all
 ```
 
-2. **Environment Setup**
-
+Or install them separately:
 ```bash
-# Copy environment template
-cp .env.example .env
-
-# Edit .env with your configuration
-# For local development, the defaults should work with Docker
+npm run setup:backend
+npm run setup:frontend
 ```
 
-3. **Start Database and Redis with Docker**
+### Environment
 
+The backend environment is already configured in `backend/.env`. The database runs on port 5433 (not the default 5432) and Redis on 6379.
+
+### Running the Application
+
+Start the database services:
 ```bash
-# Start PostgreSQL and Redis
 docker-compose up -d
-
-# Verify containers are running
-docker ps
-
-# Database will be available at localhost:5432
-# Redis will be available at localhost:6379
-# Adminer (database UI) at http://localhost:8080
 ```
 
-4. **Initialize Database**
-
-The database will be automatically initialized with the schema when Docker starts.
-If you need to reset it:
-
-```bash
-# Connect to database and run init script
-docker exec -i telehealth_postgres psql -U telehealth_user -d telehealth_db < database/init.sql
-```
-
-5. **Start the Backend Server**
-
+Seed the database with initial data:
 ```bash
 cd backend
-npm run dev
-
-# Server will start on http://localhost:3001
-# Health check: http://localhost:3001/health
+npm run db:seed
 ```
 
-## 📁 Project Structure
+Start the backend server:
+```bash
+npm run dev:backend
+```
+
+Or start both backend and frontend together:
+```bash
+npm run dev
+```
+
+The backend will be available at `http://localhost:3001` with a health check at `/health`.
+
+## Project Structure
 
 ```
 .
 ├── backend/
-│   ├── routes/          # API route definitions
-│   ├── middleware/       # Express middleware
-│   ├── services/         # Business logic
-│   ├── utils/           # Utility functions
-│   ├── config/          # Configuration files
-│   └── server.js        # Main server file
+│   ├── src/
+│   │   ├── routes/          # API endpoints
+│   │   ├── middleware/       # Auth, HIPAA, rate limiting
+│   │   ├── services/         # Business logic
+│   │   ├── config/          # Database and Redis config
+│   │   ├── models/          # Database models
+│   │   ├── errors/          # Custom error handling
+│   │   └── sockets/         # Real-time messaging
+│   ├── seeds/              # Database seeding
+│   ├── test/               # Test suite
+│   └── scripts/            # Utility scripts
 ├── database/
-│   ├── migrations/      # Database migrations
-│   └── init.sql        # Initial schema
-├── frontend/           # Frontend application (to be built)
-└── docker-compose.yml  # Docker configuration
+│   ├── migrations/         # Database migrations
+│   ├── seeds/             # SQL seed files
+│   └── docker-compose.yml  # Database services
+├── frontend/              # Next.js frontend
+├── docs/                  # Documentation
+└── docker-compose.yml     # Main Docker config
 ```
 
-## 🔌 API Endpoints
+## API Endpoints
+
+### Health & Monitoring
+- `GET /health` - Basic health check
+- `GET /api/health/comprehensive` - Detailed system health
+- `GET /api/query-metrics/metrics` - Query performance metrics
+- `GET /api/auth-system/health` - Authentication system health
 
 ### Authentication
 - `POST /api/auth/register` - Register new user
@@ -93,176 +89,128 @@ npm run dev
 - `GET /api/auth/me` - Get current user
 - `POST /api/auth/refresh` - Refresh token
 
-### Consultations
-- `GET /api/consultations` - List consultations
-- `GET /api/consultations/:id` - Get consultation details
-- `POST /api/consultations` - Create new consultation
-- `PUT /api/consultations/:id` - Update consultation
-- `POST /api/consultations/:id/assign` - Assign provider
-- `POST /api/consultations/:id/complete` - Complete consultation
-- `DELETE /api/consultations/:id` - Cancel consultation
-
-### Messages
-- `GET /api/messages/consultation/:id` - Get consultation messages
-- `POST /api/messages` - Send message
-- `PUT /api/messages/:id/read` - Mark as read
-- `POST /api/messages/mark-all-read` - Mark all as read
-- `GET /api/messages/unread-count` - Get unread count
-
-### Providers
+### Core Resources
+- `GET /api/patients` - List patients
 - `GET /api/providers` - List providers
-- `GET /api/providers/:id` - Get provider profile
-- `PUT /api/providers/:id` - Update profile
-- `GET /api/providers/:id/consultations` - Get provider's consultations
-- `POST /api/providers/:id/availability` - Update availability
-- `GET /api/providers/:id/stats` - Get statistics
+- `GET /api/consultations` - List consultations
+- `GET /api/messages` - List messages
+- `GET /api/admin/patients` - Admin patient management
 
-### Patients
-- `GET /api/patients/:id` - Get patient profile
-- `PUT /api/patients/:id` - Update profile
-- `GET /api/patients/:id/consultations` - Get patient's consultations
-- `GET /api/patients/:id/treatment-plans` - Get treatment plans
-- `POST /api/patients/:id/insurance` - Update insurance
-- `GET /api/patients/:id/documents` - Get documents
+## Development
 
-## 🔧 Development
+### Available Scripts
 
-### Running Tests
-
+Root level scripts:
 ```bash
-cd backend
-npm test
+npm run setup:all          # Install all dependencies
+npm run dev                # Start both backend and frontend
+npm run dev:backend        # Start backend only
+npm run dev:frontend       # Start frontend only
 ```
 
-### Database Management
-
+Backend scripts (run from `backend/` directory):
 ```bash
-# Access PostgreSQL CLI
+npm run dev                # Start with nodemon
+npm test                   # Run all tests
+npm run test:security      # Run security tests
+npm run db:seed            # Seed database
+npm run db:reset           # Reset and reseed database
+npm run lint               # Run ESLint
+```
+
+### Database Access
+
+Connect to PostgreSQL:
+```bash
 docker exec -it telehealth_postgres psql -U telehealth_user -d telehealth_db
-
-# Access Adminer UI
-open http://localhost:8080
-# Server: postgres
-# Username: telehealth_user
-# Password: secure_password
-# Database: telehealth_db
 ```
 
-### Logs
+Or use Adminer at `http://localhost:8080`:
+- Server: postgres
+- Username: telehealth_user  
+- Password: secure_password_2025
+- Database: telehealth_db
+- Port: 5433
 
-Backend logs are stored in:
-- `logs/error.log` - Error logs
-- `logs/combined.log` - All logs
+### Testing Endpoints
 
-### WebSocket Events
+```bash
+# Health checks
+curl http://localhost:3001/health
+curl http://localhost:3001/api/health/comprehensive
 
-The server supports real-time messaging via Socket.io:
+# Query metrics
+curl http://localhost:3001/api/query-metrics/metrics
 
-- `join_consultation` - Join consultation room
-- `leave_consultation` - Leave consultation room
-- `send_message` - Send message to consultation
-- `new_message` - Receive new message
-- `typing` - Send typing indicator
-- `user_typing` - Receive typing indicator
+# Test database connection
+cd backend && node test-db.js
+```
 
-## 🏗️ Next Steps
+## Current Status
 
-### Immediate TODOs
+The backend is functional with core features implemented:
 
-1. **Database Integration**
-   - Set up Prisma ORM
-   - Implement database queries
-   - Add migrations
+**Completed:**
+- Database integration with PostgreSQL
+- JWT authentication and role-based access
+- HIPAA-compliant session management
+- Health monitoring and query performance metrics
+- Comprehensive test suite and security testing
 
-2. **Authentication**
-   - Integrate Supabase Auth
-   - Implement JWT middleware
-   - Add role-based access control
+**In Progress:**
+- Frontend development (Next.js)
+- Real-time messaging features
+- Provider dashboard
 
-3. **File Storage**
-   - Set up local file storage
-   - Add S3 integration (optional)
-   - Implement file upload endpoints
+**Next Steps:**
+- Complete frontend patient portal
+- Add API documentation
+- Set up monitoring and CI/CD
 
-4. **Frontend Development**
-   - Create React/Next.js application
-   - Build patient portal
-   - Build provider dashboard
+## Environment Variables
 
-5. **Real-time Features**
-   - Implement Socket.io messaging
-   - Add notification system
-   - Create presence indicators
-
-### Production Considerations
-
-- [ ] Add comprehensive error handling
-- [ ] Implement request validation
-- [ ] Set up monitoring (Sentry, etc.)
-- [ ] Add API documentation (Swagger)
-- [ ] Implement caching strategies
-- [ ] Add security headers
-- [ ] Set up CI/CD pipeline
-- [ ] Add comprehensive testing
-- [ ] Implement backup strategies
-- [ ] Add rate limiting per user
-
-## 📝 Environment Variables
-
-Create a `.env` file based on `.env.example`:
+The backend environment is pre-configured in `backend/.env`. Key settings:
 
 ```env
-# Required
-DATABASE_URL=postgresql://telehealth_user:secure_password@localhost:5432/telehealth_db
+NODE_ENV=development
+PORT=3001
+DATABASE_URL=postgresql://telehealth_user:secure_password_2025@localhost:5433/telehealth_db
+JWT_SECRET=dev-jwt-secret-key-change-in-production-32-chars-min
 REDIS_URL=redis://localhost:6379
-JWT_SECRET=your-secret-key-here
-
-# Optional (for production)
-SUPABASE_URL=your-supabase-url
-SUPABASE_ANON_KEY=your-supabase-key
-AWS_ACCESS_KEY_ID=your-aws-key
-AWS_SECRET_ACCESS_KEY=your-aws-secret
 ```
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
-### Port Already in Use
-
+**Port already in use:**
 ```bash
 # Find process using port 3001
-lsof -i :3001
-
-# Kill the process
-kill -9 <PID>
+netstat -ano | findstr :3001
+taskkill /PID <PID> /F
 ```
 
-### Docker Issues
-
+**Docker issues:**
 ```bash
-# Reset Docker containers
 docker-compose down
 docker-compose up -d --build
-
-# View logs
-docker-compose logs -f
+docker ps  # Check container status
 ```
 
-### Database Connection Issues
-
+**Database connection:**
 ```bash
-# Test database connection
-docker exec telehealth_postgres pg_isready
-
-# Reset database
-docker-compose down -v
-docker-compose up -d
+cd backend && node test-db.js
+curl http://localhost:3001/api/health/comprehensive
 ```
 
-## 📄 License
+**Common fixes:**
+- Use `npm run setup:all` instead of `npm install`
+- Ensure Docker is running and check port 5433 (not 5432)
+- Verify DATABASE_URL format in backend/.env
+
+## License
 
 MIT
 
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create your feature branch

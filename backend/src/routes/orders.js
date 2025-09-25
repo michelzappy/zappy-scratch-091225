@@ -6,7 +6,10 @@ import { asyncHandler } from '../middleware/errorHandler.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 
 const router = express.Router();
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_dummy');
+if (!process.env.STRIPE_SECRET_KEY) {
+  throw new Error('STRIPE_SECRET_KEY is not set. Please set it in your environment variables.');
+}
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 // Generate order number
 function generateOrderNumber() {

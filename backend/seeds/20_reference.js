@@ -128,7 +128,7 @@ async function seedMedications(db) {
       const exists = await recordExists(db, 'medications', 'name', medication.name);
       
       if (!exists) {
-        await db.execute(sql`
+        await db`
           INSERT INTO medications (
             id, name, generic_name, brand_name, category, available_dosages,
             base_price, subscription_discount, requires_prescription, controlled_substance,
@@ -154,7 +154,7 @@ async function seedMedications(db) {
             NOW(),
             NOW()
           )
-        `);
+        `;
         insertedCount++;
       }
     }
@@ -215,7 +215,7 @@ async function seedPharmacies(db) {
       const exists = await recordExists(db, 'pharmacies', 'name', pharmacy.name);
       
       if (!exists) {
-        await db.execute(sql`
+        await db`
           INSERT INTO pharmacies (
             id, name, api_endpoint, address, city, state, zip, phone, email,
             supported_medications, states_serviced, active, preferred,
@@ -238,7 +238,7 @@ async function seedPharmacies(db) {
             NOW(),
             NOW()
           )
-        `);
+        `;
         insertedCount++;
       }
     }
@@ -263,13 +263,13 @@ async function seedTreatmentPlans(db) {
   
   try {
     // Check if treatment_plans table exists
-    const tableExistsResult = await db.execute(sql`
+    const tableExistsResult = await db`
       SELECT EXISTS (
         SELECT FROM information_schema.tables 
         WHERE table_schema = 'public' 
         AND table_name = 'treatment_plans'
       ) as exists
-    `);
+    `;
     
     if (!tableExistsResult[0]?.exists) {
       logSeedOperation('⏭️  Treatment plans table does not exist, skipping');
@@ -346,7 +346,7 @@ async function seedTreatmentPlans(db) {
     let insertedCount = 0;
     
     for (const plan of treatmentPlans) {
-      await db.execute(sql`
+      await db`
         INSERT INTO treatment_plans (
           id, condition, plan_tier, name, price, billing_period, protocol_key,
           features, medications, is_popular, sort_order, created_at, updated_at
@@ -366,7 +366,7 @@ async function seedTreatmentPlans(db) {
           NOW(),
           NOW()
         )
-      `);
+      `;
       insertedCount++;
     }
     

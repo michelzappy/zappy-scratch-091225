@@ -55,7 +55,7 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
     // Don't check auth on pages that don't need layout
     if (noLayoutPages) return;
     
-    const userData = localStorage.getItem('user');
+    const userData = localStorage.getItem('telehealth_user');
     if (userData) {
       setUser(JSON.parse(userData));
     } else {
