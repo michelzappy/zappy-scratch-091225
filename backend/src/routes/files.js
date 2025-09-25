@@ -7,6 +7,7 @@ import { asyncHandler } from '../middleware/errorHandler.js';
 import { requireAuth, ROLES } from '../middleware/auth.js';
 import { getDatabase } from '../config/database.js';
 import { AppError } from '../errors/AppError.js';
+import { uploadLimiter } from '../middleware/rateLimiting.js';
 
 const router = express.Router();
 
@@ -62,6 +63,7 @@ const upload = multer({
 // Upload file endpoint
 router.post('/upload',
   requireAuth,
+  uploadLimiter, // Apply rate limiting to uploads
   upload.array('files', 5), // Allow up to 5 files
   asyncHandler(async (req, res) => {
     if (!req.files || req.files.length === 0) {

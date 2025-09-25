@@ -13,8 +13,12 @@ import {
   ROLES
 } from '../middleware/auth.js';
 import { AppError } from '../errors/AppError.js';
+import { strictLimiter } from '../middleware/rateLimiting.js';
 
 const router = express.Router();
+
+// Apply strict rate limiting to all auth routes
+router.use(strictLimiter);
 
 // Validate JWT secret on module load
 if (!process.env.JWT_SECRET) {
