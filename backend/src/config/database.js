@@ -1,5 +1,5 @@
-const { Sequelize } = require('sequelize');
-const logger = require('../utils/logger');
+import { Sequelize } from 'sequelize';
+import logger from '../utils/logger.js';
 
 // Database connection configuration
 const config = {
@@ -70,4 +70,8 @@ sequelize.authenticate()
     logger.error('Unable to connect to the database:', err);
   });
 
-module.exports = sequelize;
+// Export getDatabase function for compatibility
+const getDatabase = () => sequelize;
+
+export default sequelize;
+export { getDatabase };

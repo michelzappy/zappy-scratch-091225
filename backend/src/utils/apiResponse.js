@@ -198,7 +198,7 @@ const HttpStatus = {
   GATEWAY_TIMEOUT: 504
 };
 
-module.exports = {
+export {
   successResponse,
   errorResponse,
   validationErrorResponse,

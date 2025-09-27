@@ -1,17 +1,26 @@
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const morgan = require('morgan');
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import morgan from 'morgan';
 
 // Import utilities
-const logger = require('./utils/logger');
+import logger from './utils/logger.js';
 
 // Import middleware
-const responseWrapper = require('./middleware/responseWrapper');
-const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
-const { auditLogger } = require('./middleware/auditLogger');
-const { encryptRequest, decryptResponse, initializeEncryption } = require('./middleware/dataEncryption');
-const { requireAuth, filterResponseData } = require('./middleware/accessControl');
+import responseWrapper from './middleware/responseWrapper.js';
+import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
+import { auditLogger } from './middleware/auditLogger.js';
+import { encryptRequest, decryptResponse, initializeEncryption } from './middleware/dataEncryption.js';
+import { requireAuth, filterResponseData } from './middleware/accessControl.js';
+
+// Import route handlers
+import authRoutes from './routes/auth.js';
+import patientsRoutes from './routes/patients.js';
+import providersRoutes from './routes/providers.js';
+import prescriptionsRoutes from './routes/prescriptions.js';
+import consultationsRoutes from './routes/consultations.js';
+import medicationsRoutes from './routes/medications.js';
+import adminRoutes from './routes/admin.js';
 
 // Create Express app
 const app = express();
@@ -52,19 +61,18 @@ app.get('/health', (req, res) => {
 });
 
 // API Routes (add authentication as needed)
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/users', requireAuth(), require('./routes/users'));
-app.use('/api/patients', requireAuth(['admin', 'provider', 'staff']), require('./routes/patients'));
-app.use('/api/appointments', requireAuth(), require('./routes/appointments'));
-app.use('/api/providers', require('./routes/providers'));
-app.use('/api/records', requireAuth(['admin', 'provider']), require('./routes/records'));
-app.use('/api/prescriptions', requireAuth(['admin', 'provider']), require('./routes/prescriptions'));
+app.use('/api/auth', authRoutes);
+app.use('/api/patients', requireAuth(['admin', 'provider', 'staff']), patientsRoutes);
+app.use('/api/providers', providersRoutes);
+app.use('/api/prescriptions', requireAuth(['admin', 'provider']), prescriptionsRoutes);
+app.use('/api/consultations', requireAuth(), consultationsRoutes);
+app.use('/api/medications', requireAuth(), medicationsRoutes);
 
 // Admin routes
-app.use('/api/admin', requireAuth('admin'), require('./routes/admin'));
+app.use('/api/admin', requireAuth('admin'), adminRoutes);
 
 // Error handling (must be last!)
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-module.exports = app;
+export default app;

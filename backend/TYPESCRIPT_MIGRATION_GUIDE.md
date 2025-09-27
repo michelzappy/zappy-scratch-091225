@@ -298,3 +298,29 @@ Create a migration checklist:
 Example - Convert a simple validator:
 ```bash
 # 1. Copy file
+cp src/utils/validators.js src/utils/validators.ts
+
+# 2. Edit validators.ts and add types
+
+# 3. Test
+npm run typecheck
+
+# 4. Update imports where used
+# Change require('./validators') to import
+
+# 5. Remove old file
+rm src/utils/validators.js
+
+# 6. Commit
+git add -A && git commit -m "Migrate validators to TypeScript"
+```
+
+## Remember: TypeScript is a Tool, Not a Goal
+
+The goal is better, safer code. If a file works fine in JavaScript and rarely changes, it's OK to leave it. Focus TypeScript migration on:
+- Files you edit frequently
+- New features
+- Bug-prone areas
+- Complex business logic
+
+Your codebase can be partially TypeScript forever, and that's perfectly fine! 🎉

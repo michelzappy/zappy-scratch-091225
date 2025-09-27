@@ -4,8 +4,9 @@
  * Handles encryption of sensitive data in requests and responses
  */
 
-const { encryptFields, decryptFields } = require('../utils/encryption');
-const logger = require('../utils/logger');
+import { encryptFields, decryptFields, encrypt, decrypt, validateEncryptionKey } from '../utils/encryption.js';
+import logger from '../utils/logger.js';
+import crypto from 'crypto';
 
 /**
  * PHI fields that should be encrypted at rest
@@ -84,7 +85,6 @@ const deepEncryptFields = (obj, fieldPaths, context) => {
     // Encrypt the final field
     const fieldName = parts[parts.length - 1];
     if (current[fieldName] !== undefined && current[fieldName] !== null) {
-      const { encrypt } = require('../utils/encryption');
       const encryptedData = encrypt(String(current[fieldName]), context);
       current[fieldName] = encryptedData.encrypted;
       current[`${fieldName}_encrypted`] = true;
@@ -120,7 +120,6 @@ const deepDecryptFields = (obj, fieldPaths, context) => {
     const fieldName = parts[parts.length - 1];
     if (current[fieldName] && current[`${fieldName}_encrypted`]) {
       try {
-        const { decrypt } = require('../utils/encryption');
         current[fieldName] = decrypt(
           { encrypted: current[fieldName], context },
           context
@@ -242,7 +241,6 @@ const encryptFile = async (req, res, next) => {
   }
   
   try {
-    const { encrypt } = require('../utils/encryption');
     const context = `file:${req.user?.id || 'system'}`;
     
     // Handle single file
@@ -284,7 +282,6 @@ const encryptFile = async (req, res, next) => {
  * @returns {Buffer} Decrypted file buffer
  */
 const decryptFile = (encryptedData, userId) => {
-  const { decrypt } = require('../utils/encryption');
   const context = `file:${userId || 'system'}`;
   
   const decryptedBase64 = decrypt(
@@ -314,7 +311,6 @@ const initializeEncryption = () => {
     
     // Generate a key for development if needed
     if (process.env.NODE_ENV === 'development') {
-      const crypto = require('crypto');
       const key = crypto.randomBytes(32).toString('hex');
       logger.info(`Development encryption key generated: ${key}`);
       logger.info('Add this to your .env file: ENCRYPTION_MASTER_KEY=' + key);
@@ -323,7 +319,6 @@ const initializeEncryption = () => {
     return false;
   }
   
-  const { validateEncryptionKey } = require('../utils/encryption');
   if (!validateEncryptionKey()) {
     logger.error('Encryption key validation failed');
     return false;
@@ -333,7 +328,7 @@ const initializeEncryption = () => {
   return true;
 };
 
-module.exports = {
+export {
   encryptRequest,
   decryptResponse,
   encryptFile,

@@ -4,8 +4,8 @@
  * Stores all PHI access and modification records
  */
 
-const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
+import { DataTypes } from 'sequelize';
+import sequelize from '../config/database.js';
 
 /**
  * AuditLog model definition
@@ -310,4 +310,4 @@ AuditLog.generateReport = async function(filters = {}) {
   };
 };
 
-module.exports = AuditLog;
+export default AuditLog;

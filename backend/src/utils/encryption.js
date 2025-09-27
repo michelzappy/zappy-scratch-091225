@@ -4,8 +4,8 @@
  * HIPAA-compliant encryption using AES-256
  */
 
-const crypto = require('crypto');
-const logger = require('./logger');
+import crypto from 'crypto';
+import logger from './logger.js';
 
 // Encryption configuration
 const ALGORITHM = 'aes-256-gcm';
@@ -274,7 +274,7 @@ const rotateEncryptionKey = (oldKeyHex, newKeyHex, encryptedData) => {
   }
 };
 
-module.exports = {
+export {
   encrypt,
   decrypt,
   hash,

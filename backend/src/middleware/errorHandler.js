@@ -3,8 +3,8 @@
  * @description Centralized error handling middleware for the application
  */
 
-const logger = require('../utils/logger');
-const { errorResponse, HttpStatus } = require('../utils/apiResponse');
+import logger from '../utils/logger.js';
+import { errorResponse, HttpStatus } from '../utils/apiResponse.js';
 
 /**
  * Custom application error class
@@ -254,9 +254,13 @@ process.on('unhandledRejection', (err) => {
   }, 1000);
 });
 
-module.exports = {
+// Create an alias for compatibility
+const asyncHandler = asyncErrorWrapper;
+
+export {
   AppError,
   asyncErrorWrapper,
+  asyncHandler,  // Alias for compatibility
   errorHandler,
   notFoundHandler
 };

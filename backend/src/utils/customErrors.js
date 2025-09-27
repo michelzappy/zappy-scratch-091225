@@ -3,7 +3,7 @@
  * @description Custom error classes for the application
  */
 
-const { HttpStatus } = require('./apiResponse');
+import { HttpStatus } from './apiResponse.js';
 
 /**
  * Base application error class
@@ -219,11 +219,15 @@ class IntegrationError extends BaseError {
   }
 }
 
-module.exports = {
+// Add ForbiddenError as an alias for AuthorizationError for compatibility
+const ForbiddenError = AuthorizationError;
+
+export {
   BaseError,
   ValidationError,
   AuthenticationError,
   AuthorizationError,
+  ForbiddenError,
   NotFoundError,
   ConflictError,
   BadRequestError,

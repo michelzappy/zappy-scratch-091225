@@ -4,9 +4,9 @@
  * Tracks all PHI access and modifications for compliance
  */
 
-const AuditLog = require('../models/AuditLog');
-const logger = require('../utils/logger');
-const { getClientIp } = require('../utils/helpers');
+import AuditLog from '../models/AuditLog.js';
+import logger from '../utils/logger.js';
+import { getClientIp } from '../utils/helpers.js';
 
 /**
  * PHI-related endpoints that require audit logging
@@ -290,7 +290,7 @@ const auditExport = async (req, exportType, filters = {}) => {
   await createAuditLog(auditData);
 };
 
-module.exports = {
+export {
   auditLogger,
   auditAction,
   auditLogin,

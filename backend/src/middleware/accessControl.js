@@ -4,9 +4,9 @@
  * Implements HIPAA-compliant access restrictions
  */
 
-const { AuthorizationError, ForbiddenError } = require('../utils/customErrors');
-const logger = require('../utils/logger');
-const { auditAction } = require('./auditLogger');
+import { AuthorizationError, ForbiddenError } from '../utils/customErrors.js';
+import logger from '../utils/logger.js';
+import { auditAction } from './auditLogger.js';
 
 /**
  * Permission definitions for each role
@@ -395,7 +395,7 @@ const isValidRole = (role) => {
   return Object.keys(PERMISSIONS).includes(role);
 };
 
-module.exports = {
+export {
   requireAuth,
   requirePermission,
   requireOwnership,

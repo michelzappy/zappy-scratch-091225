@@ -4,7 +4,7 @@
  * Ensures consistent response format across all API endpoints
  */
 
-const { v4: uuidv4 } = require('uuid');
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Wraps API responses in a standardized format
@@ -139,4 +139,4 @@ function responseWrapper(req, res, next) {
   next();
 }
 
-module.exports = responseWrapper;
+export default responseWrapper;

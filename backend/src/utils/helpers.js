@@ -67,7 +67,7 @@ function sanitizeHtml(text) {
     .replace(/'/g, '&#039;');
 }
 
-module.exports = {
+export {
   getClientIp,
   parsePagination,
   formatDate,
