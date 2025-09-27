@@ -233,3 +233,68 @@ declare module 'some-old-package';
 ### Issue 2: Sequelize Model Types
 ```typescript
 // Temporary solution: use 'any'
+const Patient = require('../models/Patient') as any;
+
+// Better solution: Define interfaces
+interface PatientModel {
+  findAll(options?: any): Promise<Patient[]>;
+  findOne(options?: any): Promise<Patient | null>;
+}
+```
+
+### Issue 3: Express Request/Response Types
+```typescript
+// Use our pre-defined types
+import { AuthenticatedRequest } from '../types';
+
+router.get('/', (req: AuthenticatedRequest, res: Response) => {
+  const userId = req.user?.id; // TypeScript knows about user
+});
+```
+
+## 📊 Migration Tracking
+
+Create a migration checklist:
+
+```markdown
+## TypeScript Migration Status
+
+### ✅ Completed
+- [x] Configuration setup
+- [x] Type definitions
+- [x] typescript-helpers.ts
+
+### 🔄 In Progress
+- [ ] PatientService.ts (50%)
+- [ ] validators.ts (planning)
+
+### 📋 Planned
+- [ ] AppointmentService.js → .ts
+- [ ] auth.routes.js → .ts
+- [ ] email.utils.js → .ts
+
+### ⏰ Backlog (Keep as JS for now)
+- [ ] Complex legacy routes
+- [ ] Third-party integrations
+```
+
+## 💡 Pro Tips
+
+1. **Don't migrate everything at once** - Your app works now, keep it working
+2. **Use `// @ts-ignore` when stuck** - Better to have some TS than none
+3. **Start with `any` types** - You can tighten them later
+4. **Test after each file migration** - Catch issues early
+5. **Commit working JS before converting** - Easy rollback if needed
+
+## 🚀 Quick Start: Your First Migration
+
+1. Pick a simple utility file
+2. Copy it with .ts extension
+3. Add basic types
+4. Test it works
+5. Delete the .js version
+6. Commit!
+
+Example - Convert a simple validator:
+```bash
+# 1. Copy file
