@@ -1,54 +1,73 @@
-import postgres from 'postgres';
+const { Sequelize } = require('sequelize');
+const logger = require('../utils/logger');
 
-let connection;
-
-export async function connectDatabase() {
-  try {
-    const connectionString = process.env.DATABASE_URL;
-    
-    if (!connectionString) {
-      throw new Error('DATABASE_URL environment variable is required');
+// Database connection configuration
+const config = {
+  development: {
+    username: process.env.DATABASE_USER || 'postgres',
+    password: process.env.DATABASE_PASSWORD || 'password',
+    database: process.env.DATABASE_NAME || 'healthcare_dev',
+    host: process.env.DATABASE_HOST || 'localhost',
+    port: process.env.DATABASE_PORT || 5432,
+    dialect: 'postgres',
+    logging: (msg) => logger.debug(msg),
+    pool: {
+      max: 5,
+      min: 0,
+      acquire: 30000,
+      idle: 10000
     }
-
-    // Create PostgreSQL connection
-    connection = postgres(connectionString, {
-      max: 20,
-      idle_timeout: 30,
-      connect_timeout: 10,
-      ssl: process.env.NODE_ENV === 'production' ? 'require' : false
-    });
-
-    // Test connection
-    await connection`SELECT 1`;
-    console.log('✅ Database connected successfully');
-
-    return connection;
-  } catch (error) {
-    console.error('Database connection failed:', error);
-    throw error;
+  },
+  test: {
+    username: process.env.DATABASE_USER || 'postgres',
+    password: process.env.DATABASE_PASSWORD || 'password',
+    database: process.env.DATABASE_NAME || 'healthcare_test',
+    host: process.env.DATABASE_HOST || 'localhost',
+    port: process.env.DATABASE_PORT || 5432,
+    dialect: 'postgres',
+    logging: false
+  },
+  production: {
+    use_env_variable: 'DATABASE_URL',
+    dialect: 'postgres',
+    logging: false,
+    pool: {
+      max: 10,
+      min: 2,
+      acquire: 30000,
+      idle: 10000
+    },
+    dialectOptions: {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false
+      }
+    }
   }
+};
+
+const env = process.env.NODE_ENV || 'development';
+const dbConfig = config[env];
+
+let sequelize;
+if (dbConfig.use_env_variable) {
+  sequelize = new Sequelize(process.env[dbConfig.use_env_variable], dbConfig);
+} else {
+  sequelize = new Sequelize(
+    dbConfig.database,
+    dbConfig.username,
+    dbConfig.password,
+    dbConfig
+  );
 }
 
-export function getDatabase() {
-  if (!connection) {
-    throw new Error('Database not available. Please check your DATABASE_URL configuration and restart the server.');
-  }
-  return connection;
-}
+// Test connection
+sequelize.authenticate()
+  .then(() => {
+    logger.info('Database connection has been established successfully.');
+  })
+  .catch((err) => {
+    logger.error('Unable to connect to the database:', err);
+  });
 
-export function isDatabaseConnected() {
-  return !!connection;
-}
-
-export function getRawConnection() {
-  if (!connection) {
-    throw new Error('Database not initialized. Call connectDatabase() first.');
-  }
-  return connection;
-}
-
-export async function closeDatabase() {
-  if (connection) {
-    await connection.end();
-  }
-}
+module.exports = sequelize;
