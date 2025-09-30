@@ -98,8 +98,8 @@ export default function ProfilePage() {
       {showCodeSent && (
         <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-top-2 fade-in duration-300">
           <div className="bg-white shadow-lg rounded-xl p-4 flex items-start gap-3 max-w-sm border border-slate-200">
-            <div className="flex-shrink-0 w-10 h-10 bg-medical-100 rounded-full flex items-center justify-center">
-              <svg className="w-5 h-5 text-medical-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="flex-shrink-0 w-10 h-10 bg-rose-100 rounded-full flex items-center justify-center">
+              <svg className="w-5 h-5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
             </div>
@@ -181,7 +181,7 @@ export default function ProfilePage() {
               onClick={() => setActiveTab(tab.id as any)}
               className={`flex-1 min-w-[100px] px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors ${
                 activeTab === tab.id
-                  ? 'bg-medical-50 text-medical-700 border-b-2 border-medical-500'
+                  ? 'bg-rose-50 text-rose-700 border-b-2 border-rose-500'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
             >
@@ -224,7 +224,7 @@ export default function ProfilePage() {
                       };
                       input.click();
                     }}
-                    className="text-sm text-medical-600 hover:text-medical-700 mt-1"
+                    className="text-sm text-rose-600 hover:text-rose-700 mt-1"
                   >
                     Change Photo
                   </button>
@@ -243,7 +243,7 @@ export default function ProfilePage() {
                       type="text"
                       value={profileData.firstName}
                       onChange={(e) => updateProfileField('firstName', e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-medical-500 focus:bg-white transition-colors"
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white transition-colors"
                     />
                   </div>
                   <div>
@@ -291,7 +291,7 @@ export default function ProfilePage() {
                     value={profileData.streetAddress}
                     onChange={(e) => updateProfileField('streetAddress', e.target.value)}
                     placeholder="Street Address"
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-medical-500 focus:bg-white transition-colors"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white transition-colors"
                   />
                   <div className="grid grid-cols-2 gap-3">
                     <input
@@ -299,7 +299,7 @@ export default function ProfilePage() {
                       value={profileData.city}
                       onChange={(e) => updateProfileField('city', e.target.value)}
                       placeholder="City"
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-medical-500 focus:bg-white transition-colors"
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white transition-colors"
                     />
                     <input
                       type="text"
@@ -323,7 +323,7 @@ export default function ProfilePage() {
                   <input
                     type="password"
                     placeholder="Current Password"
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-medical-500 focus:bg-white transition-colors"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white transition-colors"
                   />
                   <input
                     type="password"
@@ -365,7 +365,7 @@ export default function ProfilePage() {
                       className={`px-4 py-2 text-sm rounded-lg transition-colors ${
                         is2FAEnabled 
                           ? 'bg-red-600 text-white hover:bg-red-700' 
-                          : 'bg-medical-600 text-white hover:bg-medical-700'
+                          : 'bg-slate-900 text-white hover:bg-slate-800'
                       }`}
                     >
                       {is2FAEnabled ? 'Disable' : 'Enable'}
@@ -381,7 +381,7 @@ export default function ProfilePage() {
                           placeholder="(555) 123-4567"
                           value={phoneNumber}
                           onChange={(e) => setPhoneNumber(e.target.value)}
-                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-medical-500 transition-colors"
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 transition-colors"
                         />
                         <div className="flex gap-2">
                           <button 
@@ -397,7 +397,7 @@ export default function ProfilePage() {
                               }
                             }}
                             disabled={!phoneNumber.trim()}
-                            className="px-4 py-2 bg-medical-600 text-white text-sm rounded-lg hover:bg-medical-700 transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed"
+                            className="px-4 py-3 bg-slate-900 text-white text-sm rounded-lg hover:bg-slate-800 transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed"
                           >
                             Send Code
                           </button>
@@ -408,7 +408,7 @@ export default function ProfilePage() {
                               setVerificationCode('');
                               setIsVerifying(false);
                             }}
-                            className="px-4 py-2 bg-slate-200 text-slate-700 text-sm rounded-lg hover:bg-slate-300 transition-colors"
+                            className="px-4 py-3 bg-slate-200 text-slate-700 text-sm rounded-lg hover:bg-slate-300 transition-colors"
                           >
                             Cancel
                           </button>
@@ -422,7 +422,7 @@ export default function ProfilePage() {
                           placeholder="123456"
                           value={verificationCode}
                           onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-mono tracking-wider focus:outline-none focus:ring-2 focus:ring-medical-500 transition-colors"
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-mono tracking-wider focus:outline-none focus:ring-2 focus:ring-rose-500 transition-colors"
                         />
                         <div className="flex gap-2">
                           <button 
@@ -438,7 +438,7 @@ export default function ProfilePage() {
                               }
                             }}
                             disabled={verificationCode.length !== 6}
-                            className="px-4 py-2 bg-medical-600 text-white text-sm rounded-lg hover:bg-medical-700 transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed"
+                            className="px-4 py-2 bg-slate-900 text-white text-sm rounded-lg hover:bg-slate-800 transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed"
                           >
                             Verify
                           </button>
@@ -485,7 +485,7 @@ export default function ProfilePage() {
                         [item.id]: e.target.checked
                       }))}
                     />
-                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-medical-600"></div>
+                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-rose-500"></div>
                   </label>
                 </div>
               ))}
@@ -545,7 +545,7 @@ export default function ProfilePage() {
                             const value = e.target.value.replace(/[^a-zA-Z\s]/g, '');
                             setNewCardDetails(prev => ({ ...prev, cardholderName: value }));
                           }}
-                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-medical-500 transition-colors"
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 transition-colors"
                         />
                       </div>
                       
@@ -674,7 +674,7 @@ export default function ProfilePage() {
                               alert('Please fill in all card details correctly');
                             }
                           }}
-                          className="px-4 py-2 bg-medical-600 text-white text-sm rounded-lg hover:bg-medical-700 transition-colors"
+                          className="px-4 py-2 bg-slate-900 text-white text-sm rounded-lg hover:bg-slate-800 transition-colors"
                         >
                           Add Card
                         </button>
@@ -716,7 +716,7 @@ export default function ProfilePage() {
                         <p className="text-sm font-semibold text-slate-900">{charge.amount}</p>
                         <button 
                           onClick={() => setShowReceipt(charge)}
-                          className="text-xs text-medical-600 hover:text-medical-700"
+                          className="text-xs text-rose-600 hover:text-rose-700"
                         >
                           Receipt
                         </button>
@@ -734,7 +734,7 @@ export default function ProfilePage() {
       <div className="fixed bottom-20 lg:relative lg:bottom-auto left-0 right-0 p-4 bg-white border-t border-slate-200 lg:border-0 lg:p-0">
         <button 
           onClick={handleSave}
-          className="w-full lg:w-auto px-6 py-3 bg-medical-600 text-white rounded-xl font-medium hover:bg-medical-700 transition-colors shadow-sm"
+          className="w-full lg:w-auto px-6 py-3 bg-slate-900 text-white rounded-xl font-medium hover:bg-slate-800 transition-colors shadow-sm"
         >
           Save Changes
         </button>
@@ -763,7 +763,7 @@ export default function ProfilePage() {
             <div className="p-6" id="receipt-content">
               {/* Company Info */}
               <div className="text-center mb-6">
-                <h3 className="text-2xl font-bold text-medical-600">Zappy Health</h3>
+                <h3 className="text-2xl font-bold text-rose-600">Zappy Health</h3>
                 <p className="text-sm text-slate-600 mt-1">Your Telehealth Partner</p>
               </div>
 
@@ -974,13 +974,13 @@ export default function ProfilePage() {
                   setShowReceiptDownloaded(true);
                   setTimeout(() => setShowReceiptDownloaded(false), 3000);
                 }}
-                className="flex-1 px-4 py-2 bg-medical-600 text-white rounded-lg hover:bg-medical-700 transition-colors font-medium"
+                className="flex-1 px-4 py-3 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors font-medium"
               >
                 Download Receipt
               </button>
               <button
                 onClick={() => setShowReceipt(null)}
-                className="flex-1 px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-colors font-medium"
+                className="flex-1 px-4 py-3 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-colors font-medium"
               >
                 Close
               </button>

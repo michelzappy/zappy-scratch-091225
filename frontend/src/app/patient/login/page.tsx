@@ -93,26 +93,24 @@ export default function PatientLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full">
         {/* Logo & Header */}
         <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center text-blue-600 hover:text-blue-700 text-sm mb-6">
+          <Link href="/" className="inline-flex items-center text-rose-600 hover:text-rose-700 text-sm mb-6">
             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
             Back to Home
           </Link>
           
-          <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-            <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-          </div>
-          
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Welcome Back
+          <h1 className="text-4xl font-bold text-rose-600 mb-4">
+            Zappy
           </h1>
+          
+          <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+            Welcome Back
+          </h2>
           <p className="text-gray-600">
             Sign in to access your healthcare dashboard
           </p>
@@ -146,7 +144,7 @@ export default function PatientLogin() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="appearance-none relative block w-full px-4 py-3 border border-gray-300 rounded-lg placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                className="appearance-none relative block w-full px-4 py-3 border border-gray-300 rounded-lg placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 transition-colors"
                 placeholder="you@example.com"
               />
             </div>
@@ -165,7 +163,7 @@ export default function PatientLogin() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="appearance-none relative block w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  className="appearance-none relative block w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 transition-colors"
                   placeholder="Enter your password"
                 />
                 <button
@@ -194,7 +192,7 @@ export default function PatientLogin() {
                   id="remember-me"
                   name="remember-me"
                   type="checkbox"
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  className="h-4 w-4 text-rose-600 focus:ring-rose-500 border-gray-300 rounded"
                 />
                 <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
                   Remember me
@@ -204,7 +202,7 @@ export default function PatientLogin() {
               <button
                 type="button"
                 onClick={handleForgotPassword}
-                className="text-sm font-medium text-blue-600 hover:text-blue-500"
+                className="text-sm font-medium text-rose-600 hover:text-rose-700"
               >
                 Forgot password?
               </button>
@@ -214,7 +212,7 @@ export default function PatientLogin() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {loading ? (
                 <div className="flex items-center">
@@ -235,14 +233,14 @@ export default function PatientLogin() {
             <button
               onClick={handleTestMode}
               disabled={loading}
-              className="w-full flex justify-center items-center py-3 px-4 border-2 border-dashed border-orange-400 rounded-lg text-sm font-medium text-orange-700 bg-orange-50 hover:bg-orange-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full flex justify-center items-center py-3 px-4 border-2 border-dashed border-amber-400 rounded-lg text-sm font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
               </svg>
               Test Mode - Bypass Authentication
             </button>
-            <p className="mt-2 text-xs text-center text-orange-600">
+            <p className="mt-2 text-xs text-center text-amber-600">
               ⚠️ Development only - Instantly access portal as test patient
             </p>
           </div>
@@ -261,14 +259,14 @@ export default function PatientLogin() {
           <div className="text-center space-y-4">
             <Link
               href="/patient/new-consultation"
-              className="w-full inline-flex justify-center py-3 px-4 border border-blue-600 rounded-lg shadow-sm text-sm font-medium text-blue-600 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+              className="w-full inline-flex justify-center py-3 px-4 border border-rose-600 rounded-lg shadow-sm text-sm font-medium text-rose-600 bg-white hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 transition-colors"
             >
               Start Free Consultation (No Account Required)
             </Link>
             
             <p className="text-sm text-gray-600">
               or{' '}
-              <Link href="/patient/register" className="font-medium text-blue-600 hover:text-blue-500">
+              <Link href="/patient/register" className="font-medium text-rose-600 hover:text-rose-700">
                 create an account
               </Link>
               {' '}for faster checkouts
@@ -296,11 +294,11 @@ export default function PatientLogin() {
 
         {/* Footer Links */}
         <div className="mt-6 text-center text-sm text-gray-600">
-          <Link href="/provider/login" className="hover:text-blue-600">
+          <Link href="/provider/login" className="hover:text-rose-600">
             Provider Login
           </Link>
           <span className="mx-2">•</span>
-          <Link href="/admin/login" className="hover:text-blue-600">
+          <Link href="/admin/login" className="hover:text-rose-600">
             Admin Login
           </Link>
         </div>

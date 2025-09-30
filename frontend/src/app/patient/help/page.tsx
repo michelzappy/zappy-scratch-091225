@@ -196,10 +196,10 @@ export default function HelpPage() {
           Our support team is here to assist you with any questions.
         </p>
         <div className="grid grid-cols-2 gap-2">
-          <button className="bg-white/20 backdrop-blur text-white font-medium text-sm py-2 px-3 rounded-lg hover:bg-white/30 transition">
+          <button className="bg-white/20 backdrop-blur text-white font-medium text-sm py-3 px-3 rounded-lg hover:bg-white/30 transition">
             💬 Live Chat
           </button>
-          <button className="bg-white/10 text-white font-medium text-sm py-2 px-3 rounded-lg hover:bg-white/20 transition">
+          <button className="bg-white/10 text-white font-medium text-sm py-3 px-3 rounded-lg hover:bg-white/20 transition">
             📧 Email Us
           </button>
         </div>

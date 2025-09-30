@@ -158,7 +158,7 @@ export default function RefillCheckIn() {
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div 
-              className="bg-medical-600 h-2 rounded-full transition-all duration-300"
+              className="bg-rose-500 h-2 rounded-full transition-all duration-300"
               style={{ width: `${(step / (config?.steps || 4)) * 100}%` }}
             />
           </div>
@@ -182,7 +182,7 @@ export default function RefillCheckIn() {
                       onClick={() => handleResponse('taking_as_prescribed', option)}
                       className={`w-full text-left p-3 rounded-lg border ${
                         responses.taking_as_prescribed === option
-                          ? 'border-medical-600 bg-medical-50'
+                          ? 'border-rose-500 bg-rose-50'
                           : 'border-gray-300 hover:border-gray-400'
                       }`}
                     >
@@ -197,7 +197,7 @@ export default function RefillCheckIn() {
                   Any changes to your health since your last check-in?
                 </label>
                 <textarea
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-medical-500 focus:border-medical-500"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
                   rows={3}
                   placeholder="Please describe any changes..."
                   value={responses.health_changes || ''}
@@ -216,7 +216,7 @@ export default function RefillCheckIn() {
                       onClick={() => handleResponse('new_medications', option)}
                       className={`w-full text-left p-3 rounded-lg border ${
                         responses.new_medications === option
-                          ? 'border-medical-600 bg-medical-50'
+                          ? 'border-rose-500 bg-rose-50'
                           : 'border-gray-300 hover:border-gray-400'
                       }`}
                     >
@@ -227,7 +227,7 @@ export default function RefillCheckIn() {
                 {responses.new_medications === 'Yes' && (
                   <input
                     type="text"
-                    className="w-full mt-2 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-medical-500"
+                    className="w-full mt-2 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500"
                     placeholder="Please list the new medications..."
                     value={responses.new_medications_list || ''}
                     onChange={(e) => handleResponse('new_medications_list', e.target.value)}
@@ -237,7 +237,7 @@ export default function RefillCheckIn() {
 
               <button
                 onClick={() => setStep(2)}
-                className="w-full py-3 bg-medical-600 text-white rounded-lg hover:bg-medical-700 transition"
+                className="w-full py-3 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition"
                 disabled={!responses.taking_as_prescribed || !responses.new_medications}
               >
                 Continue
@@ -333,7 +333,7 @@ export default function RefillCheckIn() {
                 </button>
                 <button
                   onClick={() => setStep(3)}
-                  className="flex-1 py-3 bg-medical-600 text-white rounded-lg hover:bg-medical-700 transition"
+                  className="flex-1 py-3 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition"
                 >
                   Continue
                 </button>
@@ -362,7 +362,7 @@ export default function RefillCheckIn() {
                   />
                   <span className="text-sm text-gray-500">Very effective</span>
                 </div>
-                <p className="text-center text-2xl font-bold text-medical-600 mt-2">
+                <p className="text-center text-2xl font-bold text-rose-600 mt-2">
                   {responses.effectiveness || 5}/10
                 </p>
               </div>
@@ -375,7 +375,7 @@ export default function RefillCheckIn() {
                   </label>
                   <input
                     type="number"
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-medical-500"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500"
                     placeholder="Enter your current weight"
                     value={responses.current_weight || ''}
                     onChange={(e) => handleResponse('current_weight', e.target.value)}
@@ -399,7 +399,7 @@ export default function RefillCheckIn() {
                       onClick={() => handleResponse('continue_treatment', option)}
                       className={`w-full text-left p-3 rounded-lg border ${
                         responses.continue_treatment === option
-                          ? 'border-medical-600 bg-medical-50'
+                          ? 'border-rose-500 bg-rose-50'
                           : 'border-gray-300 hover:border-gray-400'
                       }`}
                     >
@@ -418,7 +418,7 @@ export default function RefillCheckIn() {
                 </button>
                 <button
                   onClick={() => setStep(4)}
-                  className="flex-1 py-3 bg-medical-600 text-white rounded-lg hover:bg-medical-700 transition"
+                  className="flex-1 py-3 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition"
                 >
                   Continue
                 </button>
@@ -470,7 +470,7 @@ export default function RefillCheckIn() {
                   Any questions or concerns for your provider?
                 </label>
                 <textarea
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-medical-500"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500"
                   rows={3}
                   placeholder="Optional: Enter any questions or concerns..."
                   value={responses.provider_questions || ''}
@@ -495,7 +495,7 @@ export default function RefillCheckIn() {
                 <button
                   onClick={submitCheckIn}
                   disabled={loading}
-                  className="flex-1 py-3 bg-medical-600 text-white rounded-lg hover:bg-medical-700 transition disabled:opacity-50"
+                  className="flex-1 py-3 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition disabled:opacity-50"
                 >
                   {loading ? 'Submitting...' : 'Submit Check-in'}
                 </button>

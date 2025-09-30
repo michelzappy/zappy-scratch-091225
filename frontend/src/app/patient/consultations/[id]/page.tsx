@@ -288,7 +288,7 @@ export default function ConsultationDetails() {
           <p className="text-red-600 mb-4">{error || 'Consultation not found'}</p>
           <Link 
             href="/patient/dashboard" 
-            className="px-4 py-2 bg-medical-600 text-white rounded-lg hover:bg-medical-700"
+            className="px-4 py-3 bg-medical-600 text-white rounded-lg hover:bg-medical-700"
           >
             Back to Dashboard
           </Link>

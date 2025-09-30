@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
+import MobileBottomNav from './MobileBottomNav';
 
 interface MenuItem {
   name: string;
@@ -23,14 +24,14 @@ const NavItem: React.FC<NavItemProps> = ({ item, isActive }) => {
         href={item.href}
         className={`flex items-center p-3 my-1 rounded-lg transition-colors duration-200 ${
           isActive
-            ? 'bg-indigo-100 text-indigo-700 font-semibold'
-            : 'text-slate-600 hover:bg-slate-100 hover:text-slate-800'
+            ? 'bg-rose-50 text-rose-700 font-medium'
+            : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
         }`}
       >
         <span className="w-5 h-5">{item.icon}</span>
-        <span className="ml-4 text-sm">{item.name}</span>
+        <span className="ml-3 text-sm">{item.name}</span>
         {item.badge && (
-          <span className="ml-auto bg-red-500 text-white text-xs rounded-full px-2 py-1">
+          <span className="ml-auto bg-rose-500 text-white text-xs rounded-full px-2 py-0.5 font-medium">
             {item.badge}
           </span>
         )}
@@ -70,15 +71,6 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
       icon: (
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-        </svg>
-      ),
-    },
-    {
-      name: 'New Consultation',
-      href: '/patient/new-consultation',
-      icon: (
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
         </svg>
       ),
     },
@@ -143,7 +135,7 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
     <div className="flex flex-col w-64 bg-white h-full border-r border-slate-200">
       {/* Simple Logo */}
       <div className="h-16 flex items-center justify-center border-b border-slate-200">
-        <span className="text-xl font-bold text-medical-600">TeleHealth</span>
+        <span className="text-xl font-bold text-rose-600">Zappy</span>
       </div>
 
       {/* Navigation Menu */}
@@ -177,7 +169,7 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
       <div className="p-4 border-t border-slate-200">
         <button
           onClick={handleLogout}
-          className="flex items-center w-full p-3 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-red-600 transition-colors"
+          className="flex items-center w-full p-3 rounded-lg text-slate-600 hover:bg-rose-50 hover:text-rose-600 transition-colors"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -189,7 +181,7 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
   );
 
   return (
-    <div className="flex h-screen bg-zinc-50 text-slate-800">
+    <div className="flex h-screen bg-slate-50 text-slate-800">
       {/* Mobile sidebar */}
       <div className={`fixed inset-0 flex z-40 lg:hidden ${sidebarOpen ? 'block' : 'hidden'}`} role="dialog" aria-modal="true">
         <div 
@@ -235,11 +227,12 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
         </button>
 
         {/* Page Content - no header */}
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-zinc-50">
-          <div className="container mx-auto px-4 sm:px-6 py-8">
-            {children}
-          </div>
+        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-50">
+          {children}
         </main>
+
+        {/* Mobile Bottom Navigation */}
+        <MobileBottomNav />
       </div>
     </div>
   );

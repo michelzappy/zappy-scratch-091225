@@ -302,10 +302,10 @@ export default function PatientMedicalRecords() {
       {/* Quick Action Buttons - Mobile Fixed */}
       <div className="fixed bottom-20 left-0 right-0 p-4 bg-white border-t border-slate-200 lg:hidden">
         <div className="grid grid-cols-2 gap-2">
-          <button className="py-2 px-4 bg-medical-600 text-white rounded-lg text-sm font-medium">
+          <button className="py-3 px-4 bg-medical-600 text-white rounded-lg text-sm font-medium">
             📥 Download All
           </button>
-          <button className="py-2 px-4 bg-emerald-600 text-white rounded-lg text-sm font-medium">
+          <button className="py-3 px-4 bg-emerald-600 text-white rounded-lg text-sm font-medium">
             📤 Share with Doctor
           </button>
         </div>

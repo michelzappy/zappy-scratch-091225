@@ -80,198 +80,211 @@ export default function OrdersPage() {
     status: 'in-transit',
     expectedDate: 'Dec 12, 2025',
     tracking: '9400111899562123456790',
-    progress: 75
+    carrier: 'UPS',
+    progress: 75,
+    lastUpdate: 'Package arrived at local facility',
+    lastUpdateTime: '2h ago'
   };
 
   return (
-    <div className="space-y-4 pb-20 lg:pb-8">
-      {/* Header */}
-      <div>
-        <h1 className="text-xl lg:text-2xl font-bold text-slate-900">Your Orders</h1>
-        <p className="text-sm text-slate-600 mt-1">Track shipments and manage medications</p>
-      </div>
-
-      {/* Active Shipment - Mobile Priority */}
-      {activeShipment && (
-        <div className="bg-gradient-to-r from-medical-500 to-emerald-500 rounded-xl p-4 text-white">
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <p className="text-sm font-medium text-white/90">Package In Transit</p>
-              <p className="text-lg font-bold">Arrives {activeShipment.expectedDate}</p>
-            </div>
-            <div className="text-3xl">📦</div>
-          </div>
-          
-          {/* Progress Bar */}
-          <div className="w-full bg-white/20 rounded-full h-2 mb-3">
-            <div 
-              className="bg-white h-2 rounded-full transition-all duration-300"
-              style={{ width: `${activeShipment.progress}%` }}
-            />
-          </div>
-          
-          <button 
-            onClick={() => window.open(`https://tools.usps.com/go/TrackConfirmAction?qtc_tLabels1=${activeShipment.tracking}`, '_blank')}
-            className="text-sm text-white/90 underline hover:text-white transition-colors"
-          >
-            Track: {activeShipment.tracking}
-          </button>
+    <div className="min-h-screen bg-slate-50">
+      <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-2xl font-semibold text-slate-900">Your Orders</h1>
+          <p className="text-slate-600 mt-1">Track shipments and manage medications</p>
         </div>
-      )}
 
-      {/* Active Medications - Mobile Cards */}
-      <div>
-        <h2 className="text-base font-semibold text-slate-900 mb-3">Active Medications</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {orders[0].items.map((med, idx) => (
-            <div key={idx} className="bg-white rounded-xl border border-slate-200 p-4 hover:shadow-md transition-shadow">
-              <div className="flex items-start justify-between mb-2">
-                <h3 className="font-semibold text-sm text-slate-900">{med.name}</h3>
-                <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs rounded-full">
-                  Active
-                </span>
+        {/* Active Shipment */}
+        {activeShipment && (
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-lg bg-rose-50 flex items-center justify-center">
+                <svg className="w-6 h-6 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-rose-600">Package In Transit</p>
+                  <p className="text-lg font-semibold text-slate-900">Arrives {activeShipment.expectedDate}</p>
+                </div>
               </div>
-              
-              <p className="text-xs text-slate-600 mb-2">📋 {med.instructions}</p>
-              <p className="text-xs text-orange-600 mb-3">⚠️ {med.warnings}</p>
-              
-              <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-                <span className="text-xs text-slate-500">{med.refills}</span>
-                <button 
-                  onClick={() => handleRefillRequest(med.id || '')}
-                  className="text-xs font-medium text-medical-600 hover:text-medical-700 transition-colors"
-                >
-                  Request Refill →
-                </button>
+              <span className="px-3 py-1 bg-rose-100 text-rose-700 text-sm font-medium rounded-full">
+                {activeShipment.carrier}
+              </span>
+            </div>
+            
+            {/* Progress Bar */}
+            <div className="mb-4">
+              <div className="w-full bg-slate-100 rounded-full h-2">
+                <div 
+                  className="bg-rose-500 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${activeShipment.progress}%` }}
+                />
+              </div>
+              <div className="flex justify-between mt-2 text-xs text-slate-600">
+                <span>{activeShipment.lastUpdate}</span>
+                <span>{activeShipment.lastUpdateTime}</span>
               </div>
             </div>
-          ))}
-        </div>
-      </div>
+            
+            <button 
+              onClick={() => window.open(`https://www.ups.com/track?tracknum=${activeShipment.tracking}`, '_blank')}
+              className="w-full px-4 py-3 bg-slate-900 text-white font-medium rounded-lg hover:bg-slate-800 transition-colors text-center"
+            >
+              Track Package: {activeShipment.tracking}
+            </button>
+          </div>
+        )}
 
-      {/* Order History - Clean List */}
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-        <div className="px-4 py-3 border-b border-slate-200">
-          <h2 className="text-base font-semibold text-slate-900">Order History</h2>
-        </div>
-        
-        <div className="divide-y divide-slate-100">
-          {orders.map((order) => (
-            <div key={order.id}>
-              <button
-                onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}
-                className="w-full text-left p-4 hover:bg-slate-50 transition-colors"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-medium text-sm text-slate-900">{order.id}</span>
-                      <span className={`px-2 py-0.5 text-xs rounded-full ${
-                        order.status === 'delivered' 
-                          ? 'bg-emerald-100 text-emerald-700'
-                          : 'bg-blue-100 text-blue-700'
-                      }`}>
-                        {order.status === 'delivered' ? '✓ Delivered' : '🚚 Shipped'}
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-600">{order.date}</p>
-                    <div className="mt-2 space-y-0.5">
-                      {order.items.map((item, idx) => (
-                        <p key={idx} className="text-xs text-slate-500">• {item.name}</p>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-slate-900">{order.total}</p>
-                    <svg 
-                      className={`w-4 h-4 text-slate-400 mt-2 transition-transform ${
-                        expandedOrder === order.id ? 'rotate-180' : ''
-                      }`} 
-                      fill="none" 
-                      stroke="currentColor" 
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        {/* Active Medications */}
+        <div>
+          <h2 className="text-lg font-semibold text-slate-900 mb-4">Active Medications</h2>
+          <div className="grid gap-4 md:grid-cols-2">
+            {orders[0].items.map((med, idx) => (
+              <div key={idx} className="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-md transition-shadow">
+                <div className="flex items-start justify-between mb-3">
+                  <h3 className="font-semibold text-slate-900">{med.name}</h3>
+                  <span className="px-2 py-1 bg-emerald-100 text-emerald-700 text-xs font-medium rounded-full">
+                    Active
+                  </span>
+                </div>
+                
+                <div className="space-y-2 mb-4">
+                  <div className="flex items-start gap-2">
+                    <svg className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                     </svg>
+                    <p className="text-sm text-slate-600">{med.instructions}</p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <svg className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <p className="text-sm text-amber-600">{med.warnings}</p>
                   </div>
                 </div>
-              </button>
+                
+                <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+                  <span className="text-sm text-emerald-600 font-medium">{med.refills}</span>
+                  <button 
+                    onClick={() => handleRefillRequest(med.id || '')}
+                    className="text-sm font-medium text-slate-900 hover:text-slate-700 transition-colors"
+                  >
+                    Health Check-in →
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Order History */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-200">
+            <h2 className="text-lg font-semibold text-slate-900">Order History</h2>
+        </div>
+        
+          <div className="divide-y divide-slate-100">
+            {orders.map((order) => (
+              <div key={order.id}>
+                <button
+                  onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}
+                  className="w-full text-left p-6 hover:bg-slate-50 transition-colors"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="font-semibold text-slate-900">{order.id}</span>
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                          order.status === 'delivered' 
+                            ? 'bg-emerald-100 text-emerald-700'
+                            : 'bg-blue-100 text-blue-700'
+                        }`}>
+                          {order.status === 'delivered' ? 'Delivered' : 'Shipped'}
+                        </span>
+                      </div>
+                      <p className="text-sm text-slate-600 mb-3">{order.date}</p>
+                      <div className="space-y-1">
+                        {order.items.map((item, idx) => (
+                          <p key={idx} className="text-sm text-slate-700">• {item.name}</p>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="text-right ml-4">
+                      <p className="text-lg font-semibold text-slate-900">{order.total}</p>
+                      <svg 
+                        className={`w-5 h-5 text-slate-400 mt-2 transition-transform ${
+                          expandedOrder === order.id ? 'rotate-180' : ''
+                        }`} 
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+                </button>
               
-              {/* Expanded Details */}
-              {expandedOrder === order.id && (
-                <div className="px-4 pb-4 bg-slate-50">
-                  <div className="space-y-3 pt-3">
-                    {order.items.map((item, idx) => (
-                      <div key={idx} className="bg-white rounded-lg p-3">
-                        <p className="font-medium text-sm text-slate-900 mb-2">{item.name}</p>
-                        <div className="space-y-1 text-xs">
-                          <p className="text-slate-600">
-                            <span className="font-medium">How to take:</span> {item.instructions}
-                          </p>
-                          <p className="text-orange-600">
-                            <span className="font-medium">Warning:</span> {item.warnings}
-                          </p>
-                          <div className="flex justify-between items-center pt-2">
-                            <span className="text-slate-500">{item.quantity}</span>
-                            <div className="flex items-center gap-3">
-                              <span className="text-medical-600 font-medium">{item.refills}</span>
-                              {parseInt(item.refills) > 0 && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleRefillRequest(item.id || '');
-                                  }}
-                                  className="text-xs font-medium text-medical-600 hover:text-medical-700 transition-colors"
-                                >
-                                  Request Refill
-                                </button>
-                              )}
+                {/* Expanded Details */}
+                {expandedOrder === order.id && (
+                  <div className="px-6 pb-6 bg-slate-50">
+                    <div className="space-y-4 pt-4">
+                      {order.items.map((item, idx) => (
+                        <div key={idx} className="bg-white rounded-lg p-4 border border-slate-200">
+                          <p className="font-medium text-slate-900 mb-3">{item.name}</p>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex items-start gap-2">
+                              <span className="font-medium text-slate-700">Instructions:</span>
+                              <span className="text-slate-600">{item.instructions}</span>
+                            </div>
+                            <div className="flex items-start gap-2">
+                              <span className="font-medium text-amber-700">Warning:</span>
+                              <span className="text-amber-600">{item.warnings}</span>
+                            </div>
+                            <div className="flex justify-between items-center pt-3 border-t border-slate-100">
+                              <span className="text-slate-600">{item.quantity}</span>
+                              <div className="flex items-center gap-4">
+                                <span className="text-emerald-600 font-medium">{item.refills}</span>
+                                {parseInt(item.refills) > 0 && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleRefillRequest(item.id || '');
+                                    }}
+                                    className="text-sm font-medium text-slate-900 hover:text-slate-700 transition-colors"
+                                  >
+                                    Health Check-in
+                                  </button>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </div>
+                      ))}
+                      <div className="pt-3 border-t border-slate-200">
+                        <p className="text-sm text-slate-600">
+                          Tracking Number:{' '}
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              window.open(`https://www.ups.com/track?tracknum=${order.tracking}`, '_blank');
+                            }}
+                            className="font-mono font-medium text-rose-600 underline hover:text-rose-700 transition-colors"
+                          >
+                            {order.tracking}
+                          </button>
+                        </p>
                       </div>
-                    ))}
-                    <div className="pt-2 border-t border-slate-200">
-                      <p className="text-xs text-slate-600">
-                        Tracking:{' '}
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            window.open(`https://tools.usps.com/go/TrackConfirmAction?qtc_tLabels1=${order.tracking}`, '_blank');
-                          }}
-                          className="font-mono underline hover:text-slate-800 transition-colors"
-                        >
-                          {order.tracking}
-                        </button>
-                      </p>
                     </div>
                   </div>
-                </div>
-              )}
-            </div>
-          ))}
+                )}
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
-
-      {/* Quick Actions - Mobile Optimized */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-        <button className="bg-white rounded-xl border-2 border-medical-200 p-4 text-center hover:shadow-lg transition-all hover:scale-[1.02]">
-          <div className="text-2xl mb-2">🔄</div>
-          <p className="text-sm font-semibold text-medical-700">Auto-Refill</p>
-          <p className="text-xs text-slate-600 mt-1">Jan 5, 2026</p>
-        </button>
-        
-        <button className="bg-white rounded-xl border-2 border-emerald-200 p-4 text-center hover:shadow-lg transition-all hover:scale-[1.02]">
-          <div className="text-2xl mb-2">⏰</div>
-          <p className="text-sm font-semibold text-emerald-700">Reminders</p>
-          <p className="text-xs text-slate-600 mt-1">Daily: On</p>
-        </button>
-        
-        <button className="bg-white rounded-xl border-2 border-blue-200 p-4 text-center hover:shadow-lg transition-all hover:scale-[1.02] col-span-2 lg:col-span-1">
-          <div className="text-2xl mb-2">💊</div>
-          <p className="text-sm font-semibold text-blue-700">Ask Pharmacist</p>
-          <p className="text-xs text-slate-600 mt-1">Get help</p>
-        </button>
       </div>
     </div>
   );

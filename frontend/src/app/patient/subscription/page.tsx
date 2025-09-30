@@ -158,7 +158,7 @@ export default function PatientSubscription() {
       <div className={`rounded-xl p-4 text-white ${
         currentPlan === 'free' 
           ? 'bg-gradient-to-r from-slate-500 to-slate-600' 
-          : 'bg-gradient-to-r from-medical-500 to-emerald-500'
+          : 'bg-gradient-to-r from-rose-500 to-rose-600'
       }`}>
         <div className="flex items-start justify-between">
           <div>
@@ -233,14 +233,14 @@ export default function PatientSubscription() {
               key={plan.id}
               className={`relative bg-white rounded-xl border-2 p-4 transition-all ${
                 plan.id === currentPlan 
-                  ? 'border-medical-500 shadow-md' 
+                  ? 'border-rose-500 shadow-md' 
                   : 'border-slate-200 hover:border-slate-300 hover:shadow'
               }`}
             >
               {/* Badges */}
               <div className="absolute -top-3 left-4 right-4 flex justify-between">
                 {plan.badge && (
-                  <span className="px-2 py-0.5 bg-medical-600 text-white text-xs font-semibold rounded-full">
+                  <span className="px-2 py-0.5 bg-rose-600 text-white text-xs font-semibold rounded-full">
                     {plan.badge}
                   </span>
                 )}
@@ -286,7 +286,7 @@ export default function PatientSubscription() {
                   aria-label={`Switch to ${plan.name} plan - $${plan.price}${plan.price > 0 ? '/' + plan.period : ''}`}
                   className={`mt-4 w-full py-2 px-4 rounded-lg text-sm font-medium transition ${
                     plan.price > 29
-                      ? 'bg-medical-600 text-white hover:bg-medical-700'
+                      ? 'bg-slate-900 text-white hover:bg-slate-800'
                       : 'border border-slate-300 text-slate-700 hover:bg-slate-50'
                   }`}
                 >
@@ -378,7 +378,7 @@ export default function PatientSubscription() {
                   // TODO: Implement invoice download API call
                 }}
                 aria-label={`Download invoice for ${item.description} - $${item.amount}`}
-                className="mt-2 text-xs text-medical-600 hover:text-medical-700"
+                className="mt-2 text-xs text-rose-600 hover:text-rose-700"
               >
                 Download Invoice →
               </button>
@@ -417,7 +417,7 @@ export default function PatientSubscription() {
                         // TODO: Implement invoice download API call
                       }}
                       aria-label={`Download invoice for ${item.description} - $${item.amount}`}
-                      className="text-medical-600 hover:text-medical-700 text-sm"
+                      className="text-rose-600 hover:text-rose-700 text-sm"
                     >
                       Download
                     </button>
@@ -454,7 +454,7 @@ export default function PatientSubscription() {
             <div className="flex gap-3">
               <button
                 onClick={() => setShowCancelModal(false)}
-                className="flex-1 px-4 py-2.5 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 font-medium text-sm transition"
+                className="flex-1 px-4 py-3 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 font-medium text-sm transition"
               >
                 Keep Plan
               </button>
@@ -520,7 +520,7 @@ export default function PatientSubscription() {
             <div className="flex gap-3">
               <button
                 onClick={() => setShowDowngradeModal(false)}
-                className="flex-1 px-4 py-2.5 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 font-medium text-sm transition"
+                className="flex-1 px-4 py-3 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 font-medium text-sm transition"
               >
                 Cancel
               </button>
@@ -539,7 +539,7 @@ export default function PatientSubscription() {
                     },
                   });
                 }}
-                className="flex-1 px-4 py-2.5 bg-medical-600 text-white rounded-lg hover:bg-medical-700 font-medium text-sm transition"
+                className="flex-1 px-4 py-3 bg-slate-900 text-white rounded-lg hover:bg-slate-800 font-medium text-sm transition"
               >
                 OK
               </button>
@@ -623,7 +623,7 @@ export default function PatientSubscription() {
                   placeholder="1234 5678 9012 3456"
                   value={cardNumber}
                   onChange={handleCardNumberChange}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-medical-500 focus:border-medical-500"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
                   required
                   maxLength={19}
                   inputMode="numeric"
@@ -687,7 +687,7 @@ export default function PatientSubscription() {
                 <label className="flex items-center gap-2 text-sm">
                   <input
                     type="checkbox"
-                    className="rounded text-medical-600 focus:ring-medical-500"
+                    className="rounded text-rose-600 focus:ring-rose-500"
                     checked={isDefault}
                     onChange={(e) => setIsDefault(e.target.checked)}
                   />
@@ -723,7 +723,7 @@ export default function PatientSubscription() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2.5 bg-medical-600 text-white rounded-lg hover:bg-medical-700 font-medium text-sm transition"
+                  className="flex-1 px-4 py-2.5 bg-slate-900 text-white rounded-lg hover:bg-slate-800 font-medium text-sm transition"
                 >
                   Add Card
                 </button>

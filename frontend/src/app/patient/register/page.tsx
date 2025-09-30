@@ -74,13 +74,16 @@ export default function PatientRegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-white py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Create Your Patient Account
+        <div className="text-center">
+          <h1 className="text-4xl font-bold text-rose-600 mb-4">
+            Zappy
+          </h1>
+          <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+            Create Your Account
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
+          <p className="text-gray-600">
             Join our telehealth platform to get started with your care
           </p>
         </div>
@@ -99,7 +102,7 @@ export default function PatientRegisterPage() {
                   required
                   value={formData.firstName}
                   onChange={handleChange}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-rose-500 focus:border-rose-500"
                   placeholder="First name"
                 />
               </div>
@@ -207,15 +210,15 @@ export default function PatientRegisterPage() {
                 required
                 checked={formData.acceptTerms}
                 onChange={handleChange}
-                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                className="h-4 w-4 text-rose-600 focus:ring-rose-500 border-gray-300 rounded"
               />
               <label htmlFor="acceptTerms" className="ml-2 block text-sm text-gray-900">
                 I agree to the{' '}
-                <a href="/terms" className="text-indigo-600 hover:text-indigo-500">
+                <a href="/terms" className="text-rose-600 hover:text-rose-700">
                   Terms of Service
                 </a>{' '}
                 and{' '}
-                <a href="/privacy" className="text-indigo-600 hover:text-indigo-500">
+                <a href="/privacy" className="text-rose-600 hover:text-rose-700">
                   Privacy Policy
                 </a>
               </label>
@@ -232,7 +235,7 @@ export default function PatientRegisterPage() {
             <button
               type="submit"
               disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-slate-900 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <>
@@ -254,7 +257,7 @@ export default function PatientRegisterPage() {
               <button
                 type="button"
                 onClick={() => router.push('/patient/login')}
-                className="font-medium text-indigo-600 hover:text-indigo-500"
+                className="font-medium text-rose-600 hover:text-rose-700"
               >
                 Sign in here
               </button>

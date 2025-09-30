@@ -25,6 +25,7 @@ interface Conversation {
   unreadCount: number;
   consultationType: string;
 }
+
 export default function PatientMessages() {
   const router = useRouter();
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
@@ -32,26 +33,106 @@ export default function PatientMessages() {
   const [newMessage, setNewMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
-  const [showConversations, setShowConversations] = useState(true); // Mobile toggle
+  const [showConversations, setShowConversations] = useState(true);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Load conversations on component mount
-  // Load conversations on component mount
+  // Mock data for demo
+  const mockConversations: Conversation[] = [
+    {
+      id: 'conv-1',
+      patientName: 'Sarah Johnson',
+      providerName: 'Dr. Emily Roberts',
+      lastMessage: 'Your lab results look great! Your A1C has improved to 5.8.',
+      lastMessageTime: '2h ago',
+      unreadCount: 2,
+      consultationType: 'Weight Loss Program'
+    },
+    {
+      id: 'conv-2',
+      patientName: 'Sarah Johnson',
+      providerName: 'Dr. Michael Chen',
+      lastMessage: 'Thanks for the update on your progress. Let\'s schedule a follow-up.',
+      lastMessageTime: '1d ago',
+      unreadCount: 0,
+      consultationType: 'General Consultation'
+    }
+  ];
+
+  const mockMessages: Record<string, Message[]> = {
+    'conv-1': [
+      {
+        id: 'msg-1',
+        senderId: 'patient-1',
+        senderName: 'Sarah',
+        senderType: 'patient',
+        content: 'Hi Dr. Roberts, I wanted to update you on my progress. I\'ve been following the meal plan and taking my medication as prescribed.',
+        timestamp: '10:30 AM',
+        isRead: true
+      },
+      {
+        id: 'msg-2',
+        senderId: 'provider-1',
+        senderName: 'Dr. Roberts',
+        senderType: 'provider',
+        content: 'That\'s wonderful to hear! I\'ve reviewed your recent weight measurements and they show consistent progress. How are you feeling overall?',
+        timestamp: '10:45 AM',
+        isRead: true
+      },
+      {
+        id: 'msg-3',
+        senderId: 'patient-1',
+        senderName: 'Sarah',
+        senderType: 'patient',
+        content: 'I\'m feeling much better! More energy throughout the day and sleeping better too. The medication side effects have completely subsided.',
+        timestamp: '11:02 AM',
+        isRead: true
+      },
+      {
+        id: 'msg-4',
+        senderId: 'provider-1',
+        senderName: 'Dr. Roberts',
+        senderType: 'provider',
+        content: 'Excellent! I just reviewed your latest lab work. Your lab results look great! Your A1C has improved to 5.8. Keep up the great work with your program.',
+        timestamp: '2:15 PM',
+        isRead: false
+      }
+    ],
+    'conv-2': [
+      {
+        id: 'msg-5',
+        senderId: 'patient-1',
+        senderName: 'Sarah',
+        senderType: 'patient',
+        content: 'Hello Dr. Chen, thank you for the consultation last week.',
+        timestamp: 'Yesterday 9:00 AM',
+        isRead: true
+      },
+      {
+        id: 'msg-6',
+        senderId: 'provider-2',
+        senderName: 'Dr. Chen',
+        senderType: 'provider',
+        content: 'Thanks for the update on your progress. Let\'s schedule a follow-up in two weeks to reassess.',
+        timestamp: 'Yesterday 2:30 PM',
+        isRead: true
+      }
+    ]
+  };
+
   useEffect(() => {
     const fetchConversations = async () => {
       try {
         setLoading(true);
         const response = await apiClient.messages.getMyConversations();
-        setConversations(response.data || []);
+        setConversations(response.data || mockConversations);
         setError(null);
       } catch (err) {
         console.error('Error fetching conversations:', err);
-        setError('Failed to load conversations');
-        setConversations([]);
+        setConversations(mockConversations);
       } finally {
         setLoading(false);
       }
@@ -60,21 +141,19 @@ export default function PatientMessages() {
     fetchConversations();
   }, []);
 
-  // Load messages when conversation is selected
   useEffect(() => {
     const fetchMessages = async () => {
       if (selectedConversation) {
         try {
           const response = await apiClient.messages.getConversationMessages(selectedConversation.id);
-          setMessages(response.data || []);
+          setMessages(response.data || mockMessages[selectedConversation.id] || []);
           
-          // Hide conversations list on mobile when selecting
           if (window.innerWidth < 768) {
             setShowConversations(false);
           }
         } catch (err) {
           console.error('Error fetching messages:', err);
-          setMessages([]);
+          setMessages(mockMessages[selectedConversation.id] || []);
         }
       }
     };
@@ -82,7 +161,6 @@ export default function PatientMessages() {
     fetchMessages();
   }, [selectedConversation]);
 
-  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -93,31 +171,25 @@ export default function PatientMessages() {
     }
 
     try {
-      // Create FormData for message with potential attachments
       const formData = new FormData();
       formData.append('content', newMessage);
       formData.append('senderType', 'patient');
       
-      // Add attachments if any
       attachedFiles.forEach((file, index) => {
         formData.append(`attachments`, file);
       });
 
-      // Send message via API
       const response = await apiClient.messages.sendMessage(selectedConversation.id, formData);
       
-      // Add the sent message to local state
       if (response.data) {
         setMessages(prev => [...prev, response.data]);
       }
       
-      // Clear input
       setNewMessage('');
       setAttachedFiles([]);
       
     } catch (err) {
       console.error('Error sending message:', err);
-      // Could add error toast here
     }
   };
 
@@ -132,8 +204,7 @@ export default function PatientMessages() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-50">
-      {/* Mobile-first Header */}
+    <div className="min-h-screen bg-slate-50">
       <div className="sticky top-0 z-10 bg-white border-b border-slate-200 px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -158,7 +229,6 @@ export default function PatientMessages() {
       </div>
 
       <div className="flex h-[calc(100vh-60px)]">
-        {/* Conversations List - Mobile Responsive */}
         <div className={`${
           showConversations ? 'block' : 'hidden'
         } lg:block w-full lg:w-1/3 xl:w-1/4 bg-white border-r border-slate-200 overflow-y-auto`}>
@@ -167,7 +237,7 @@ export default function PatientMessages() {
               key={conversation.id}
               onClick={() => setSelectedConversation(conversation)}
               className={`w-full text-left p-4 hover:bg-slate-50 border-b border-slate-100 transition-colors ${
-                selectedConversation?.id === conversation.id ? 'bg-medical-50 border-l-4 border-l-medical-500' : ''
+                selectedConversation?.id === conversation.id ? 'bg-rose-50 border-l-4 border-l-rose-500' : ''
               }`}
             >
               <div className="flex items-start justify-between">
@@ -180,7 +250,7 @@ export default function PatientMessages() {
                       {conversation.lastMessageTime}
                     </span>
                   </div>
-                  <p className="text-xs text-medical-600 font-medium mb-1">
+                  <p className="text-xs text-rose-600 font-medium mb-1">
                     {conversation.consultationType}
                   </p>
                   <p className="text-sm text-slate-600 truncate">
@@ -197,24 +267,22 @@ export default function PatientMessages() {
           ))}
         </div>
 
-        {/* Message Thread - Mobile Responsive */}
         <div className={`${
           !showConversations || window.innerWidth >= 1024 ? 'flex' : 'hidden'
         } lg:flex flex-1 flex-col bg-white`}>
           {selectedConversation ? (
             <>
-              {/* Chat Header */}
               <div className="p-4 border-b border-slate-200 bg-slate-50">
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="font-semibold text-slate-900">
                       {selectedConversation.providerName}
                     </h3>
-                    <p className="text-xs text-medical-600">
+                    <p className="text-xs text-rose-600">
                       {selectedConversation.consultationType}
                     </p>
                   </div>
-                  <button className="p-2 text-medical-600 hover:bg-white rounded-lg transition-colors">
+                  <button className="p-2 text-rose-600 hover:bg-white rounded-lg transition-colors">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                     </svg>
@@ -222,7 +290,6 @@ export default function PatientMessages() {
                 </div>
               </div>
 
-              {/* Messages Area */}
               <div className="flex-1 overflow-y-auto p-4 space-y-3">
                 {messages.map(message => (
                   <div
@@ -231,7 +298,7 @@ export default function PatientMessages() {
                   >
                     <div className={`max-w-[70%] lg:max-w-md ${
                       message.senderType === 'patient' 
-                        ? 'bg-medical-600 text-white rounded-2xl rounded-br-sm' 
+                        ? 'bg-rose-500 text-white rounded-2xl rounded-br-sm' 
                         : 'bg-slate-100 text-slate-900 rounded-2xl rounded-bl-sm'
                     } px-4 py-2 shadow-sm`}>
                       <p className="text-sm">{message.content}</p>
@@ -239,7 +306,7 @@ export default function PatientMessages() {
                         <div className="mt-2 space-y-1">
                           {message.attachments.map((file, index) => (
                             <div key={index} className={`text-xs ${
-                              message.senderType === 'patient' ? 'text-medical-100' : 'text-slate-500'
+                              message.senderType === 'patient' ? 'text-rose-100' : 'text-slate-500'
                             }`}>
                               📎 {file}
                             </div>
@@ -247,7 +314,7 @@ export default function PatientMessages() {
                         </div>
                       )}
                       <p className={`text-xs mt-1 ${
-                        message.senderType === 'patient' ? 'text-medical-100' : 'text-slate-500'
+                        message.senderType === 'patient' ? 'text-rose-100' : 'text-slate-500'
                       }`}>
                         {message.timestamp}
                         {message.senderType === 'patient' && (
@@ -271,7 +338,6 @@ export default function PatientMessages() {
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Input Area - Mobile Optimized */}
               <div className="p-3 border-t border-slate-200 bg-white">
                 {attachedFiles.length > 0 && (
                   <div className="mb-2 flex flex-wrap gap-2">
@@ -311,11 +377,11 @@ export default function PatientMessages() {
                     onChange={(e) => setNewMessage(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
                     placeholder="Type your message..."
-                    className="flex-1 px-4 py-2.5 bg-slate-100 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-medical-500 focus:bg-white transition-colors"
+                    className="flex-1 px-4 py-2.5 bg-slate-100 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white transition-colors"
                   />
                   <button
                     onClick={handleSendMessage}
-                    className="p-2.5 bg-medical-600 text-white rounded-full hover:bg-medical-700 transition-colors shadow-sm"
+                    className="p-2.5 bg-slate-900 text-white rounded-full hover:bg-slate-800 transition-colors shadow-sm"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
