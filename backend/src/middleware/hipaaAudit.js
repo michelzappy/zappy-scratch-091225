@@ -1,259 +1,471 @@
-import bcrypt from 'bcryptjs';
+/**
+ * HIPAA Audit Logging Middleware
+ * Provides comprehensive audit logging for all PHI access
+ * Required for HIPAA compliance and forensic analysis
+ */
+
 import { getDatabase } from '../config/database.js';
-import { AppError } from '../errors/AppError.js';
-
-// HIPAA-compliant audit logging middleware
-// Logs patient data access without storing sensitive information
-
-// Salt for consistent patient ID hashing - MUST be set in environment
-const AUDIT_SALT = process.env.HIPAA_AUDIT_SALT;
-
-if (!AUDIT_SALT) {
-  throw new Error('HIPAA_AUDIT_SALT environment variable is required for patient data anonymization compliance');
-}
-
-// Validate salt format for bcrypt compatibility
-if (!AUDIT_SALT.startsWith('$2a$') && !AUDIT_SALT.startsWith('$2b$')) {
-  throw new Error('HIPAA_AUDIT_SALT must be a valid bcrypt salt format');
-}
 
 /**
- * Hash patient ID for HIPAA-compliant audit logging
- * Uses bcrypt for consistent, secure hashing
+ * PHI field patterns to identify sensitive data
  */
-const hashPatientId = (patientId) => {
-  if (!patientId) return null;
-  try {
-    // Use bcrypt.hashSync with consistent salt for deterministic hashing
-    return bcrypt.hashSync(patientId.toString(), AUDIT_SALT);
-  } catch (error) {
-    console.error('Failed to hash patient ID for audit:', error);
-    return 'HASH_ERROR';
-  }
-};
+const PHI_FIELDS = [
+  'ssn', 'social_security', 
+  'dob', 'date_of_birth', 'birth_date',
+  'phone', 'telephone', 'mobile',
+  'email', 'email_address',
+  'address', 'street', 'city', 'state', 'zip', 'postal',
+  'medical_record', 'mrn',
+  'insurance', 'policy_number',
+  'diagnosis', 'condition', 'symptoms',
+  'medications', 'prescriptions',
+  'allergies', 'medical_history'
+];
 
 /**
  * Extract patient ID from request
- * Handles various patient endpoint patterns
+ * @param {Object} req - Express request object
+ * @returns {string|null} - Patient ID if found
  */
 const extractPatientId = (req) => {
-  // Direct patient ID in params (/patients/:id)
-  if (req.params.id) {
-    return req.params.id;
-  }
+  // Check URL parameters
+  if (req.params.patientId) return req.params.patientId;
+  if (req.params.id && req.path.includes('/patient')) return req.params.id;
   
-  // Patient accessing their own data (/patients/me)
-  if (req.user && req.user.role === 'patient') {
-    return req.user.id;
-  }
+  // Check query parameters
+  if (req.query.patientId) return req.query.patientId;
   
-  // Patient ID in request body (for updates)
-  if (req.body && req.body.patient_id) {
-    return req.body.patient_id;
-  }
+  // Check request body
+  if (req.body && req.body.patientId) return req.body.patientId;
+  if (req.body && req.body.patient_id) return req.body.patient_id;
   
   return null;
 };
 
 /**
- * Sanitize query parameters for audit logging
- * Removes sensitive data while preserving audit trail
+ * Identify resource type from endpoint
+ * @param {string} path - Request path
+ * @returns {string} - Resource type
  */
-const sanitizeQueryParams = (query) => {
-  const sanitized = { ...query };
-  
-  // Remove potentially sensitive parameters
-  delete sanitized.ssn;
-  delete sanitized.dob;
-  delete sanitized.phone;
-  delete sanitized.email;
-  delete sanitized.password;
-  delete sanitized.token;
-  
-  return Object.keys(sanitized).length > 0 ? sanitized : null;
+const identifyResourceType = (path) => {
+  if (path.includes('/consultation')) return 'consultation';
+  if (path.includes('/patient')) return 'patient';
+  if (path.includes('/prescription')) return 'prescription';
+  if (path.includes('/order')) return 'order';
+  if (path.includes('/provider')) return 'provider';
+  if (path.includes('/message')) return 'message';
+  return 'unknown';
 };
 
 /**
- * Log audit entry asynchronously
- * Does not block request processing
+ * Identify PHI fields in data object
+ * @param {Object} data - Data object to scan
+ * @returns {Array} - Array of PHI field names found
  */
-const logAuditEntry = async (auditData) => {
-  try {
-    const db = getDatabase();
-    
-    await db.raw(`
-      INSERT INTO patient_access_audit (
-        patient_id_hash,
-        endpoint_accessed,
-        http_method,
-        accessed_by_user_id,
-        accessed_by_role,
-        access_timestamp,
-        ip_address,
-        user_agent,
-        query_parameters
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `, [
-      auditData.patient_id_hash,
-      auditData.endpoint_accessed,
-      auditData.http_method,
-      auditData.accessed_by_user_id,
-      auditData.accessed_by_role,
-      auditData.access_timestamp,
-      auditData.ip_address,
-      auditData.user_agent,
-      auditData.query_parameters ? JSON.stringify(auditData.query_parameters) : null
-    ]);
-    
-  } catch (error) {
-    // Log error but don't fail the request - patient care takes priority
-    console.error('HIPAA audit logging failed:', error);
-    
-    // In production, this should be sent to monitoring/alerting system
-    if (process.env.NODE_ENV === 'production') {
-      // TODO: Send alert to monitoring system
-      console.error('CRITICAL: HIPAA audit logging failure in production');
+const identifyPHIFields = (data) => {
+  if (!data || typeof data !== 'object') return [];
+  
+  const foundFields = [];
+  const dataString = JSON.stringify(data).toLowerCase();
+  
+  for (const field of PHI_FIELDS) {
+    if (dataString.includes(field)) {
+      foundFields.push(field);
     }
   }
+  
+  return [...new Set(foundFields)]; // Remove duplicates
 };
 
 /**
- * HIPAA Patient Data Access Audit Middleware
- * 
- * Logs all patient data access attempts with:
- * - Hashed patient identifiers (HIPAA compliant)
- * - Access timestamp and metadata
- * - User information (who accessed)
- * - Request details (what was accessed)
- * 
- * Does NOT log:
- * - Actual patient data
- * - Sensitive query parameters
- * - Response content
+ * Main HIPAA audit logging middleware
+ * Logs all requests that access PHI
  */
-export const hipaaAuditLogger = (req, res, next) => {
-  // Skip audit logging for non-patient endpoints
-  if (!req.originalUrl.includes('/patients')) {
+export const hipaaAuditLog = async (req, res, next) => {
+  const startTime = Date.now();
+  
+  // Skip audit logging for non-PHI endpoints
+  const skipPaths = ['/health', '/metrics', '/favicon.ico', '/static'];
+  if (skipPaths.some(path => req.path.startsWith(path))) {
     return next();
   }
-  
-  // Skip audit logging for health checks and system endpoints
-  if (req.originalUrl.includes('/health') || req.originalUrl.includes('/status')) {
-    return next();
-  }
-  
-  try {
-    // Extract patient ID from request
-    const patientId = extractPatientId(req);
-    
-    if (!patientId) {
-      // No patient ID found - skip audit (e.g., general patient list endpoints)
-      return next();
-    }
-    
-    // Prepare audit data
-    const auditData = {
-      patient_id_hash: hashPatientId(patientId),
-      endpoint_accessed: req.originalUrl,
-      http_method: req.method,
-      accessed_by_user_id: req.user?.id || 'ANONYMOUS',
-      accessed_by_role: req.user?.role || 'GUEST',
-      access_timestamp: new Date(),
-      ip_address: req.ip || req.connection.remoteAddress,
-      user_agent: req.get('User-Agent'),
-      query_parameters: sanitizeQueryParams(req.query)
-    };
-    
-    // Log audit entry asynchronously (don't await - don't block request)
-    setImmediate(() => {
-      logAuditEntry(auditData);
-    });
-    
-    // Continue with request processing
-    next();
-    
-  } catch (error) {
-    // Log error but don't fail the request
-    console.error('HIPAA audit middleware error:', error);
-    
-    // Continue with request - patient care takes priority over audit logging
-    next();
-  }
-};
 
-/**
- * Enhanced audit logger that also captures response status
- * Wraps response to capture status code for compliance reporting
- */
-export const hipaaAuditLoggerWithResponse = (req, res, next) => {
-  // Apply standard audit logging first
-  hipaaAuditLogger(req, res, () => {
-    // Capture response status when request completes
-    const originalSend = res.send;
+  // Capture original response methods
+  const originalSend = res.send;
+  const originalJson = res.json;
+  let responseData = null;
+
+  // Override send method
+  res.send = function(data) {
+    responseData = data;
+    return originalSend.call(this, data);
+  };
+
+  // Override json method
+  res.json = function(data) {
+    responseData = data;
+    return originalJson.call(this, data);
+  };
+
+  // Wait for response to complete
+  res.on('finish', async () => {
+    const endTime = Date.now();
     
-    res.send = function(data) {
-      // Log response status for audit trail
-      if (req.originalUrl.includes('/patients') && extractPatientId(req)) {
-        setImmediate(() => {
-          logAuditEntry({
-            patient_id_hash: hashPatientId(extractPatientId(req)),
-            endpoint_accessed: `${req.originalUrl} [RESPONSE]`,
-            http_method: req.method,
-            accessed_by_user_id: req.user?.id || 'ANONYMOUS',
-            accessed_by_role: req.user?.role || 'GUEST',
-            access_timestamp: new Date(),
-            ip_address: req.ip || req.connection.remoteAddress,
-            user_agent: req.get('User-Agent'),
-            query_parameters: { response_status: res.statusCode }
-          });
-        });
-      }
+    try {
+      const db = getDatabase();
       
-      // Call original send
-      return originalSend.call(this, data);
-    };
-    
-    next();
+      // Determine if PHI was accessed
+      const resourceType = identifyResourceType(req.path);
+      const dataAccessed = res.statusCode >= 200 && res.statusCode < 300;
+      const patientId = extractPatientId(req);
+      
+      // Identify PHI fields in response
+      let phiFields = [];
+      if (responseData && dataAccessed) {
+        try {
+          const parsedResponse = typeof responseData === 'string' 
+            ? JSON.parse(responseData) 
+            : responseData;
+          phiFields = identifyPHIFields(parsedResponse);
+        } catch (e) {
+          // If parsing fails, assume PHI might be present
+          phiFields = ['response_data'];
+        }
+      }
+
+      // Only log if PHI was potentially accessed
+      const isPHIAccess = 
+        patientId !== null || 
+        ['consultation', 'patient', 'prescription', 'order'].includes(resourceType) ||
+        phiFields.length > 0;
+
+      if (isPHIAccess) {
+        await db`
+          INSERT INTO hipaa_audit_logs (
+            user_id,
+            user_role,
+            action,
+            resource_type,
+            resource_id,
+            patient_id,
+            endpoint,
+            method,
+            status_code,
+            ip_address,
+            user_agent,
+            session_id,
+            access_justification,
+            emergency_access,
+            data_accessed,
+            phi_fields_accessed,
+            response_time_ms,
+            success,
+            error_message,
+            created_at
+          ) VALUES (
+            ${req.user?.id || null},
+            ${req.user?.role || 'anonymous'},
+            ${req.method},
+            ${resourceType},
+            ${req.params.id || null},
+            ${patientId},
+            ${req.path},
+            ${req.method},
+            ${res.statusCode},
+            ${req.ip || req.connection.remoteAddress},
+            ${req.headers['user-agent'] || null},
+            ${req.sessionID || null},
+            ${req.headers['x-access-justification'] || null},
+            ${req.headers['x-emergency-access'] === 'true'},
+            ${dataAccessed},
+            ${phiFields},
+            ${endTime - startTime},
+            ${res.statusCode < 400},
+            ${res.statusCode >= 400 ? `HTTP ${res.statusCode}` : null},
+            NOW()
+          )
+        `;
+
+        // Log to console for immediate visibility
+        console.log(`🔒 HIPAA Audit: ${req.user?.role || 'anonymous'} ${req.method} ${req.path} - ${res.statusCode} (${endTime - startTime}ms)`);
+      }
+    } catch (error) {
+      console.error('❌ HIPAA audit logging failed:', error);
+      // Don't throw - audit failure shouldn't break the application
+    }
   });
+
+  next();
 };
 
 /**
- * HIPAA audit report generator
- * Generates audit reports for compliance purposes
+ * Require access justification for sensitive operations
+ * @param {string} requiredReason - Type of justification required
  */
-export const generateAuditReport = async (patientId, startDate, endDate) => {
+export const requireAccessJustification = (requiredReason = 'any') => {
+  return (req, res, next) => {
+    const justification = req.headers['x-access-justification'];
+    
+    if (!justification || justification.trim().length === 0) {
+      return res.status(403).json({
+        error: 'Access justification required',
+        code: 'JUSTIFICATION_REQUIRED',
+        message: 'You must provide a justification for accessing this patient data'
+      });
+    }
+
+    // In production, validate justification meets minimum requirements
+    if (justification.length < 10) {
+      return res.status(403).json({
+        error: 'Invalid access justification',
+        code: 'INVALID_JUSTIFICATION',
+        message: 'Justification must be at least 10 characters'
+      });
+    }
+
+    next();
+  };
+};
+
+/**
+ * Log break-the-glass emergency access
+ */
+export const logEmergencyAccess = async (req, res, next) => {
+  if (req.headers['x-emergency-access'] === 'true') {
+    console.warn(`🚨 EMERGENCY ACCESS: ${req.user?.role} ${req.user?.id} accessing ${req.path}`);
+    
+    // In production, send immediate alert to security team
+    // await securityService.alertEmergencyAccess({
+    //   userId: req.user?.id,
+    //   path: req.path,
+    //   timestamp: new Date()
+    // });
+  }
+  next();
+};
+
+/**
+ * Get audit logs for a specific patient
+ * @param {string} patientId - Patient UUID
+ * @param {Object} options - Query options
+ * @returns {Array} - Array of audit logs
+ */
+export const getPatientAuditLogs = async (patientId, options = {}) => {
+  const db = getDatabase();
+  const { limit = 100, offset = 0, startDate, endDate } = options;
+  
   try {
-    const db = getDatabase();
-    const patientIdHash = hashPatientId(patientId);
-    
-    const auditEntries = await db.raw(`
+    let whereConditions = ['patient_id = $1'];
+    let params = [patientId];
+    let paramIndex = 2;
+
+    if (startDate) {
+      whereConditions.push(`created_at >= $${paramIndex}`);
+      params.push(startDate);
+      paramIndex++;
+    }
+
+    if (endDate) {
+      whereConditions.push(`created_at <= $${paramIndex}`);
+      params.push(endDate);
+      paramIndex++;
+    }
+
+    const whereClause = whereConditions.join(' AND ');
+
+    const logs = await db.unsafe(`
       SELECT 
-        endpoint_accessed,
-        http_method,
-        accessed_by_role,
-        access_timestamp,
-        query_parameters
-      FROM patient_access_audit 
-      WHERE patient_id_hash = ?
-        AND access_timestamp BETWEEN ? AND ?
-      ORDER BY access_timestamp DESC
-    `, [patientIdHash, startDate, endDate]);
-    
-    return {
-      patient_id_hash: patientIdHash,
-      period: { start: startDate, end: endDate },
-      total_access_events: auditEntries.rows.length,
-      access_events: auditEntries.rows
-    };
-    
+        id,
+        user_id,
+        user_role,
+        action,
+        resource_type,
+        resource_id,
+        endpoint,
+        status_code,
+        emergency_access,
+        access_justification,
+        phi_fields_accessed,
+        created_at
+      FROM hipaa_audit_logs
+      WHERE ${whereClause}
+      ORDER BY created_at DESC
+      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+    `, [...params, limit, offset]);
+
+    return logs;
   } catch (error) {
-    throw new AppError('Failed to generate audit report', 500, 'AUDIT_REPORT_FAILED');
+    console.error(`Error fetching audit logs for patient ${patientId}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Get suspicious access patterns
+ * Identifies potential security concerns
+ * @returns {Array} - Array of suspicious activities
+ */
+export const getSuspiciousAccessPatterns = async () => {
+  const db = getDatabase();
+  
+  try {
+    // Look for multiple failed attempts
+    const suspiciousActivity = await db`
+      SELECT 
+        user_id,
+        user_role,
+        COUNT(*) as failed_attempts,
+        MAX(created_at) as last_attempt,
+        array_agg(DISTINCT endpoint) as attempted_endpoints
+      FROM hipaa_audit_logs
+      WHERE 
+        success = false 
+        AND created_at > NOW() - INTERVAL '1 hour'
+      GROUP BY user_id, user_role
+      HAVING COUNT(*) > 5
+      ORDER BY failed_attempts DESC
+      LIMIT 50
+    `;
+
+    // Look for emergency access patterns
+    const emergencyAccess = await db`
+      SELECT 
+        user_id,
+        user_role,
+        COUNT(*) as emergency_count,
+        array_agg(DISTINCT patient_id) as accessed_patients,
+        MAX(created_at) as last_emergency_access
+      FROM hipaa_audit_logs
+      WHERE 
+        emergency_access = true
+        AND created_at > NOW() - INTERVAL '24 hours'
+      GROUP BY user_id, user_role
+      ORDER BY emergency_count DESC
+      LIMIT 50
+    `;
+
+    // Look for unusual access volumes
+    const highVolumeAccess = await db`
+      SELECT 
+        user_id,
+        user_role,
+        COUNT(DISTINCT patient_id) as unique_patients_accessed,
+        COUNT(*) as total_accesses,
+        MAX(created_at) as last_access
+      FROM hipaa_audit_logs
+      WHERE 
+        patient_id IS NOT NULL
+        AND created_at > NOW() - INTERVAL '1 hour'
+      GROUP BY user_id, user_role
+      HAVING COUNT(DISTINCT patient_id) > 20
+      ORDER BY unique_patients_accessed DESC
+      LIMIT 50
+    `;
+
+    return {
+      multipleFailedAttempts: suspiciousActivity,
+      emergencyAccessPatterns: emergencyAccess,
+      highVolumeAccess: highVolumeAccess
+    };
+  } catch (error) {
+    console.error('Error detecting suspicious access patterns:', error);
+    throw error;
+  }
+};
+
+/**
+ * Export audit logs for compliance reporting
+ * @param {Object} filters - Export filters
+ * @returns {Array} - Array of audit logs
+ */
+export const exportAuditLogs = async (filters = {}) => {
+  const db = getDatabase();
+  const { startDate, endDate, userId, patientId, resourceType } = filters;
+  
+  try {
+    let whereConditions = [];
+    let params = [];
+    let paramIndex = 1;
+
+    if (startDate) {
+      whereConditions.push(`created_at >= $${paramIndex}`);
+      params.push(startDate);
+      paramIndex++;
+    }
+
+    if (endDate) {
+      whereConditions.push(`created_at <= $${paramIndex}`);
+      params.push(endDate);
+      paramIndex++;
+    }
+
+    if (userId) {
+      whereConditions.push(`user_id = $${paramIndex}`);
+      params.push(userId);
+      paramIndex++;
+    }
+
+    if (patientId) {
+      whereConditions.push(`patient_id = $${paramIndex}`);
+      params.push(patientId);
+      paramIndex++;
+    }
+
+    if (resourceType) {
+      whereConditions.push(`resource_type = $${paramIndex}`);
+      params.push(resourceType);
+      paramIndex++;
+    }
+
+    const whereClause = whereConditions.length > 0 
+      ? 'WHERE ' + whereConditions.join(' AND ')
+      : '';
+
+    const logs = await db.unsafe(`
+      SELECT *
+      FROM hipaa_audit_logs
+      ${whereClause}
+      ORDER BY created_at DESC
+      LIMIT 10000
+    `, params);
+
+    // Log the export itself
+    await db`
+      INSERT INTO hipaa_audit_logs (
+        user_id,
+        user_role,
+        action,
+        resource_type,
+        endpoint,
+        method,
+        status_code,
+        success,
+        created_at
+      ) VALUES (
+        ${filters.exportedBy || null},
+        'admin',
+        'EXPORT',
+        'audit_logs',
+        '/api/audit/export',
+        'POST',
+        200,
+        true,
+        NOW()
+      )
+    `;
+
+    return logs;
+  } catch (error) {
+    console.error('Error exporting audit logs:', error);
+    throw error;
   }
 };
 
 export default {
-  hipaaAuditLogger,
-  hipaaAuditLoggerWithResponse,
-  generateAuditReport,
-  hashPatientId
+  hipaaAuditLog,
+  requireAccessJustification,
+  logEmergencyAccess,
+  getPatientAuditLogs,
+  getSuspiciousAccessPatterns,
+  exportAuditLogs
 };

@@ -1,7 +1,11 @@
+import dotenv from 'dotenv';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
+
+// Load environment variables
+dotenv.config();
 
 // Import utilities
 import logger from './utils/logger.js';
@@ -74,5 +78,15 @@ app.use('/api/admin', requireAuth('admin'), adminRoutes);
 // Error handling (must be last!)
 app.use(notFoundHandler);
 app.use(errorHandler);
+
+// Start server if not in test mode
+if (process.env.NODE_ENV !== 'test') {
+  const PORT = process.env.PORT || 5001;
+  app.listen(PORT, () => {
+    logger.info(`🚀 Server running on port ${PORT}`);
+    logger.info(`📍 Health check: http://localhost:${PORT}/health`);
+    logger.info(`🔧 Environment: ${process.env.NODE_ENV || 'development'}`);
+  });
+}
 
 export default app;

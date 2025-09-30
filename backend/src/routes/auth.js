@@ -16,16 +16,20 @@ import { AppError } from '../errors/AppError.js';
 
 const router = express.Router();
 
-// Validate JWT secret on module load
-if (!process.env.JWT_SECRET) {
-  throw new Error('JWT_SECRET environment variable is required for authentication security');
+// Validate JWT secret on module load (with dev mode relaxation)
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('JWT_SECRET environment variable is required for authentication security');
+  } else {
+    console.warn('WARNING: JWT_SECRET not set. Authentication may not work properly.');
+  }
 }
 
-if (process.env.JWT_SECRET.length < 32) {
+if (JWT_SECRET && JWT_SECRET.length < 32 && process.env.NODE_ENV === 'production') {
   throw new Error('JWT_SECRET must be at least 32 characters for security compliance');
 }
-
-const JWT_SECRET = process.env.JWT_SECRET;
 
 const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);

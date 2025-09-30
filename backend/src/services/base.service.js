@@ -4,8 +4,8 @@
  * Provides common functionality and patterns for business logic
  */
 
-const { NotFoundError, ValidationError, DatabaseError } = require('../utils/customErrors');
-const logger = require('../utils/logger');
+import { NotFoundError, ValidationError, DatabaseError } from '../utils/customErrors.js';
+import logger from '../utils/logger.js';
 
 /**
  * Base service class
@@ -376,4 +376,4 @@ class BaseService {
   }
 }
 
-module.exports = BaseService;
+export default BaseService;

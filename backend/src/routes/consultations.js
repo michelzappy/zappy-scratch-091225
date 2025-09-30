@@ -627,4 +627,56 @@ router.get('/:id/messages',
   })
 );
 
+// Submit refill check-in
+router.post('/refill-checkins',
+  requireAuth,
+  [
+    body('prescription_id').isUUID().withMessage('Valid prescription ID required'),
+    body('responses').isObject().withMessage('Responses object required'),
+    body('side_effects').optional().isArray(),
+    body('has_red_flags').optional().isBoolean(),
+    body('red_flags').optional().isArray()
+  ],
+  handleValidationErrors,
+  asyncHandler(async (req, res) => {
+    const db = getDatabase();
+    
+    // Store check-in as a consultation message with metadata
+    const checkinData = {
+      consultationId: req.body.prescription_id,
+      senderId: req.user.id,
+      senderType: 'patient',
+      content: 'Medication refill check-in submitted',
+      metadata: JSON.stringify({
+        type: 'refill_checkin',
+        responses: req.body.responses,
+        side_effects: req.body.side_effects || [],
+        has_red_flags: req.body.has_red_flags || false,
+        red_flags: req.body.red_flags || [],
+        weight_log: req.body.weight_log,
+        photos_urls: req.body.photos_urls,
+        submitted_at: new Date().toISOString()
+      }),
+      createdAt: new Date()
+    };
+
+    const [checkin] = await db
+      .insert(consultationMessages)
+      .values(checkinData)
+      .returning();
+
+    // Determine if requires immediate consultation
+    const requiresConsultation = req.body.has_red_flags && req.body.red_flags.length > 0;
+
+    res.status(201).json({
+      success: true,
+      data: {
+        checkin,
+        requires_consultation: requiresConsultation
+      },
+      message: 'Check-in submitted successfully'
+    });
+  })
+);
+
 export default router;

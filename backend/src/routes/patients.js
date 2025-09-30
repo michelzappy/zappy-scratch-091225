@@ -1,8 +1,10 @@
-const router = require('express').Router();
-const { requirePermission } = require('../middleware/accessControl');
-const { asyncErrorWrapper } = require('../middleware/errorHandler');
-const { NotFoundError, ValidationError } = require('../utils/customErrors');
-const PatientService = require('../services/PatientService');
+import express from 'express';
+import { requirePermission } from '../middleware/accessControl.js';
+import { asyncErrorWrapper } from '../middleware/errorHandler.js';
+import { NotFoundError, ValidationError } from '../utils/customErrors.js';
+import PatientService from '../services/PatientService.js';
+
+const router = express.Router();
 
 // Initialize service
 const patientService = new PatientService();
@@ -90,4 +92,4 @@ router.delete('/:id',
   })
 );
 
-module.exports = router;
+export default router;

@@ -216,7 +216,92 @@ app.get('/api/dashboard', (req, res) => {
         completedToday: 5
       },
       recentActivity: [],
-      upcomingAppointments: []
+      upcomingAppointments: [],
+      patients: [
+        {
+          id: '1',
+          name: 'John Doe',
+          email: 'john.doe@example.com',
+          phone: '(555) 123-4567',
+          date_of_birth: '1980-01-15',
+          status: 'active',
+          last_visit: '2024-03-15',
+          next_appointment: '2024-04-01',
+          conditions: ['Hypertension', 'Diabetes Type 2']
+        },
+        {
+          id: '2',
+          name: 'Jane Smith',
+          email: 'jane.smith@example.com',
+          phone: '(555) 987-6543',
+          date_of_birth: '1975-06-22',
+          status: 'active',
+          last_visit: '2024-03-10',
+          next_appointment: '2024-03-25',
+          conditions: ['Asthma', 'Allergies']
+        },
+        {
+          id: '3',
+          name: 'Robert Johnson',
+          email: 'robert.j@example.com',
+          phone: '(555) 456-7890',
+          date_of_birth: '1990-11-30',
+          status: 'active',
+          last_visit: '2024-02-28',
+          conditions: ['Back Pain']
+        }
+      ]
+    }
+  });
+});
+
+// Mock admin dashboard endpoint (same as regular dashboard for now)
+app.get('/api/admin/dashboard', (req, res) => {
+  res.json({
+    success: true,
+    data: {
+      stats: {
+        totalPatients: 3,
+        todayAppointments: 2,
+        pendingConsultations: 1,
+        completedToday: 5
+      },
+      recentActivity: [],
+      upcomingAppointments: [],
+      patients: [
+        {
+          id: '1',
+          name: 'John Doe',
+          email: 'john.doe@example.com',
+          phone: '(555) 123-4567',
+          date_of_birth: '1980-01-15',
+          status: 'active',
+          last_visit: '2024-03-15',
+          next_appointment: '2024-04-01',
+          conditions: ['Hypertension', 'Diabetes Type 2']
+        },
+        {
+          id: '2',
+          name: 'Jane Smith',
+          email: 'jane.smith@example.com',
+          phone: '(555) 987-6543',
+          date_of_birth: '1975-06-22',
+          status: 'active',
+          last_visit: '2024-03-10',
+          next_appointment: '2024-03-25',
+          conditions: ['Asthma', 'Allergies']
+        },
+        {
+          id: '3',
+          name: 'Robert Johnson',
+          email: 'robert.j@example.com',
+          phone: '(555) 456-7890',
+          date_of_birth: '1990-11-30',
+          status: 'active',
+          last_visit: '2024-02-28',
+          conditions: ['Back Pain']
+        }
+      ]
     }
   });
 });

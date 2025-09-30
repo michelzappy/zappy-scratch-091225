@@ -1,5 +1,5 @@
-const BaseService = require('./base.service');
-const { ValidationError } = require('../utils/customErrors');
+import BaseService from './base.service.js';
+import { ValidationError } from '../utils/customErrors.js';
 
 /**
  * Patient service for business logic
@@ -147,4 +147,4 @@ class PatientService extends BaseService {
   }
 }
 
-module.exports = PatientService;
+export default PatientService;
