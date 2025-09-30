@@ -16,7 +16,7 @@ import { setupRedis } from './config/redis.js';
 
 // Import middleware
 import { globalErrorHandler } from './middleware/errorHandler.js';
-import { hipaaAuditLogger } from './middleware/hipaaAudit.js';
+import { hipaaAuditLogger, noopHipaaAuditLogger, isHipaaAuditEnabled } from './middleware/hipaaAudit.js';
 import { generalLimiter } from './middleware/rateLimiting.js';
 import { startSessionCleanup } from './middleware/hipaaSession.js';
 
@@ -98,7 +98,11 @@ app.use('/webhooks', webhookRoutes);
 app.use(generalLimiter);
 
 // HIPAA audit logging (must be before routes)
-app.use(hipaaAuditLogger);
+if (isHipaaAuditEnabled) {
+  app.use(hipaaAuditLogger);
+} else {
+  app.use(noopHipaaAuditLogger);
+}
 
 // Health check endpoint
 app.get('/health', (req, res) => {
