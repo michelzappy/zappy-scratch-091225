@@ -87,7 +87,7 @@ export default function OrdersPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-cream-100">
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
         {/* Header */}
         <div>
@@ -100,17 +100,17 @@ export default function OrdersPage() {
           <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-lg bg-rose-50 flex items-center justify-center">
-                <svg className="w-6 h-6 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-12 h-12 rounded-lg bg-coral-50 flex items-center justify-center">
+                <svg className="w-6 h-6 text-coral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                   </svg>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-rose-600">Package In Transit</p>
+                  <p className="text-sm font-medium text-coral-600">Package In Transit</p>
                   <p className="text-lg font-semibold text-slate-900">Arrives {activeShipment.expectedDate}</p>
                 </div>
               </div>
-              <span className="px-3 py-1 bg-rose-100 text-rose-700 text-sm font-medium rounded-full">
+              <span className="px-3 py-1 bg-coral-100 text-coral-700 text-sm font-medium rounded-full">
                 {activeShipment.carrier}
               </span>
             </div>
@@ -119,7 +119,7 @@ export default function OrdersPage() {
             <div className="mb-4">
               <div className="w-full bg-slate-100 rounded-full h-2">
                 <div 
-                  className="bg-rose-500 h-2 rounded-full transition-all duration-300"
+                  className="bg-coral-500 h-2 rounded-full transition-all duration-300"
                   style={{ width: `${activeShipment.progress}%` }}
                 />
               </div>
@@ -131,7 +131,7 @@ export default function OrdersPage() {
             
             <button 
               onClick={() => window.open(`https://www.ups.com/track?tracknum=${activeShipment.tracking}`, '_blank')}
-              className="w-full px-4 py-3 bg-slate-900 text-white font-medium rounded-lg hover:bg-slate-800 transition-colors text-center"
+              className="w-full px-4 py-3 bg-coral-500 text-white font-medium rounded-lg hover:bg-coral-600 transition-colors text-center"
             >
               Track Package: {activeShipment.tracking}
             </button>
@@ -200,7 +200,7 @@ export default function OrdersPage() {
                         <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                           order.status === 'delivered' 
                             ? 'bg-emerald-100 text-emerald-700'
-                            : 'bg-blue-100 text-blue-700'
+                            : 'bg-blue-100 text-coral-600'
                         }`}>
                           {order.status === 'delivered' ? 'Delivered' : 'Shipped'}
                         </span>
@@ -272,7 +272,7 @@ export default function OrdersPage() {
                               e.stopPropagation();
                               window.open(`https://www.ups.com/track?tracknum=${order.tracking}`, '_blank');
                             }}
-                            className="font-mono font-medium text-rose-600 underline hover:text-rose-700 transition-colors"
+                            className="font-mono font-medium text-coral-600 underline hover:text-coral-700 transition-colors"
                           >
                             {order.tracking}
                           </button>

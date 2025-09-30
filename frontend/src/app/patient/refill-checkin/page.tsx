@@ -158,7 +158,7 @@ export default function RefillCheckIn() {
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div 
-              className="bg-rose-500 h-2 rounded-full transition-all duration-300"
+              className="bg-coral-500 h-2 rounded-full transition-all duration-300"
               style={{ width: `${(step / (config?.steps || 4)) * 100}%` }}
             />
           </div>
@@ -182,7 +182,7 @@ export default function RefillCheckIn() {
                       onClick={() => handleResponse('taking_as_prescribed', option)}
                       className={`w-full text-left p-3 rounded-lg border ${
                         responses.taking_as_prescribed === option
-                          ? 'border-rose-500 bg-rose-50'
+                          ? 'border-coral-500 bg-coral-50'
                           : 'border-gray-300 hover:border-gray-400'
                       }`}
                     >
@@ -197,7 +197,7 @@ export default function RefillCheckIn() {
                   Any changes to your health since your last check-in?
                 </label>
                 <textarea
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coral-500 focus:border-coral-500"
                   rows={3}
                   placeholder="Please describe any changes..."
                   value={responses.health_changes || ''}
@@ -216,7 +216,7 @@ export default function RefillCheckIn() {
                       onClick={() => handleResponse('new_medications', option)}
                       className={`w-full text-left p-3 rounded-lg border ${
                         responses.new_medications === option
-                          ? 'border-rose-500 bg-rose-50'
+                          ? 'border-coral-500 bg-coral-50'
                           : 'border-gray-300 hover:border-gray-400'
                       }`}
                     >
@@ -227,7 +227,7 @@ export default function RefillCheckIn() {
                 {responses.new_medications === 'Yes' && (
                   <input
                     type="text"
-                    className="w-full mt-2 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500"
+                    className="w-full mt-2 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coral-500"
                     placeholder="Please list the new medications..."
                     value={responses.new_medications_list || ''}
                     onChange={(e) => handleResponse('new_medications_list', e.target.value)}
@@ -362,7 +362,7 @@ export default function RefillCheckIn() {
                   />
                   <span className="text-sm text-gray-500">Very effective</span>
                 </div>
-                <p className="text-center text-2xl font-bold text-rose-600 mt-2">
+                <p className="text-center text-2xl font-bold text-coral-600 mt-2">
                   {responses.effectiveness || 5}/10
                 </p>
               </div>
@@ -375,7 +375,7 @@ export default function RefillCheckIn() {
                   </label>
                   <input
                     type="number"
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coral-500"
                     placeholder="Enter your current weight"
                     value={responses.current_weight || ''}
                     onChange={(e) => handleResponse('current_weight', e.target.value)}
@@ -399,7 +399,7 @@ export default function RefillCheckIn() {
                       onClick={() => handleResponse('continue_treatment', option)}
                       className={`w-full text-left p-3 rounded-lg border ${
                         responses.continue_treatment === option
-                          ? 'border-rose-500 bg-rose-50'
+                          ? 'border-coral-500 bg-coral-50'
                           : 'border-gray-300 hover:border-gray-400'
                       }`}
                     >
@@ -470,7 +470,7 @@ export default function RefillCheckIn() {
                   Any questions or concerns for your provider?
                 </label>
                 <textarea
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coral-500"
                   rows={3}
                   placeholder="Optional: Enter any questions or concerns..."
                   value={responses.provider_questions || ''}
@@ -478,8 +478,8 @@ export default function RefillCheckIn() {
                 />
               </div>
 
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm text-blue-900">
+              <div className="p-4 bg-coral-50 border border-coral-200 rounded-lg">
+                <p className="text-sm text-coral-800">
                   By submitting this check-in, you confirm that all information provided is accurate 
                   and complete. Your provider will review your responses within 24 hours.
                 </p>
@@ -505,9 +505,9 @@ export default function RefillCheckIn() {
         </div>
 
         {/* Educational Footer */}
-        <div className="mt-8 p-4 bg-blue-50 rounded-lg">
-          <h3 className="font-medium text-blue-900 mb-2">Why are check-ins required?</h3>
-          <p className="text-sm text-blue-700">
+        <div className="mt-8 p-4 bg-coral-50 rounded-lg">
+          <h3 className="font-medium text-coral-800 mb-2">Why are check-ins required?</h3>
+          <p className="text-sm text-coral-600">
             Regular check-ins help ensure your medication is working safely and effectively. 
             They allow your provider to monitor your progress, adjust treatment if needed, 
             and ensure you're getting the best possible care.

@@ -97,14 +97,14 @@ export default function PatientLogin() {
       <div className="max-w-md w-full">
         {/* Logo & Header */}
         <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center text-rose-600 hover:text-rose-700 text-sm mb-6">
+          <Link href="/" className="inline-flex items-center text-coral-600 hover:text-coral-700 text-sm mb-6">
             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
             Back to Home
           </Link>
           
-          <h1 className="text-4xl font-bold text-rose-600 mb-4">
+          <h1 className="text-4xl font-bold text-coral-600 mb-4">
             Zappy
           </h1>
           
@@ -144,7 +144,7 @@ export default function PatientLogin() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="appearance-none relative block w-full px-4 py-3 border border-gray-300 rounded-lg placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 transition-colors"
+                className="appearance-none relative block w-full px-4 py-3 border border-gray-300 rounded-lg placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500 transition-colors"
                 placeholder="you@example.com"
               />
             </div>
@@ -163,7 +163,7 @@ export default function PatientLogin() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="appearance-none relative block w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 transition-colors"
+                  className="appearance-none relative block w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500 transition-colors"
                   placeholder="Enter your password"
                 />
                 <button
@@ -192,7 +192,7 @@ export default function PatientLogin() {
                   id="remember-me"
                   name="remember-me"
                   type="checkbox"
-                  className="h-4 w-4 text-rose-600 focus:ring-rose-500 border-gray-300 rounded"
+                  className="h-4 w-4 text-coral-600 focus:ring-coral-500 border-gray-300 rounded"
                 />
                 <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
                   Remember me
@@ -202,7 +202,7 @@ export default function PatientLogin() {
               <button
                 type="button"
                 onClick={handleForgotPassword}
-                className="text-sm font-medium text-rose-600 hover:text-rose-700"
+                className="text-sm font-medium text-coral-600 hover:text-coral-700"
               >
                 Forgot password?
               </button>
@@ -212,7 +212,7 @@ export default function PatientLogin() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-coral-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {loading ? (
                 <div className="flex items-center">
@@ -259,14 +259,14 @@ export default function PatientLogin() {
           <div className="text-center space-y-4">
             <Link
               href="/patient/new-consultation"
-              className="w-full inline-flex justify-center py-3 px-4 border border-rose-600 rounded-lg shadow-sm text-sm font-medium text-rose-600 bg-white hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 transition-colors"
+              className="w-full inline-flex justify-center py-3 px-4 border border-coral-600 rounded-lg shadow-sm text-sm font-medium text-coral-600 bg-white hover:bg-coral-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-coral-500 transition-colors"
             >
               Start Free Consultation (No Account Required)
             </Link>
             
             <p className="text-sm text-gray-600">
               or{' '}
-              <Link href="/patient/register" className="font-medium text-rose-600 hover:text-rose-700">
+              <Link href="/patient/register" className="font-medium text-coral-600 hover:text-coral-700">
                 create an account
               </Link>
               {' '}for faster checkouts
@@ -294,11 +294,11 @@ export default function PatientLogin() {
 
         {/* Footer Links */}
         <div className="mt-6 text-center text-sm text-gray-600">
-          <Link href="/provider/login" className="hover:text-rose-600">
+          <Link href="/provider/login" className="hover:text-coral-600">
             Provider Login
           </Link>
           <span className="mx-2">•</span>
-          <Link href="/admin/login" className="hover:text-rose-600">
+          <Link href="/admin/login" className="hover:text-coral-600">
             Admin Login
           </Link>
         </div>

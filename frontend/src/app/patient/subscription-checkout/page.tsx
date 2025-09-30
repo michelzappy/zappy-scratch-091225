@@ -158,8 +158,8 @@ export default function SubscriptionCheckoutPage() {
           </div>
 
           {/* Terms */}
-          <div className="bg-blue-50 rounded-lg p-4">
-            <p className="text-sm text-blue-900">
+          <div className="bg-coral-50 rounded-lg p-4">
+            <p className="text-sm text-coral-800">
               <span className="font-medium">Subscription Terms:</span> Your subscription will automatically renew each month. 
               You can cancel anytime from your subscription page. Changes take effect at the next billing cycle.
             </p>

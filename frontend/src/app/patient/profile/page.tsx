@@ -98,8 +98,8 @@ export default function ProfilePage() {
       {showCodeSent && (
         <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-top-2 fade-in duration-300">
           <div className="bg-white shadow-lg rounded-xl p-4 flex items-start gap-3 max-w-sm border border-slate-200">
-                  <div className="flex-shrink-0 w-10 h-10 bg-rose-100 rounded-full flex items-center justify-center">
-              <svg className="w-5 h-5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="flex-shrink-0 w-10 h-10 bg-coral-100 rounded-full flex items-center justify-center">
+              <svg className="w-5 h-5 text-coral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
             </div>
@@ -181,8 +181,8 @@ export default function ProfilePage() {
               onClick={() => setActiveTab(tab.id as any)}
               className={`flex-1 min-w-[100px] px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors ${
                 activeTab === tab.id
-                  ? 'bg-rose-50 text-rose-700 border-b-2 border-rose-500'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                  ? 'bg-coral-50 text-coral-700 border-b-2 border-coral-500'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-cream-100'
               }`}
             >
               <span className="lg:hidden text-lg">{tab.icon}</span>
@@ -224,7 +224,7 @@ export default function ProfilePage() {
                       };
                       input.click();
                     }}
-                    className="text-sm text-rose-600 hover:text-rose-700 mt-1"
+                    className="text-sm text-coral-600 hover:text-coral-700 mt-1"
                   >
                     Change Photo
                   </button>
@@ -243,7 +243,7 @@ export default function ProfilePage() {
                       type="text"
                       value={profileData.firstName}
                       onChange={(e) => updateProfileField('firstName', e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white transition-colors"
+                      className="w-full px-3 py-2 bg-cream-100 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-coral-500 focus:bg-white transition-colors"
                     />
                   </div>
                   <div>
@@ -254,7 +254,7 @@ export default function ProfilePage() {
                       type="text"
                       value={profileData.lastName}
                       onChange={(e) => updateProfileField('lastName', e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-medical-500 focus:bg-white transition-colors"
+                      className="w-full px-3 py-2 bg-cream-100 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-medical-500 focus:bg-white transition-colors"
                     />
                   </div>
                   <div>
@@ -265,7 +265,7 @@ export default function ProfilePage() {
                       type="email"
                       value={profileData.email}
                       onChange={(e) => updateProfileField('email', e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-medical-500 focus:bg-white transition-colors"
+                      className="w-full px-3 py-2 bg-cream-100 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-medical-500 focus:bg-white transition-colors"
                     />
                   </div>
                   <div>
@@ -276,7 +276,7 @@ export default function ProfilePage() {
                       type="tel"
                       value={profileData.phone}
                       onChange={(e) => updateProfileField('phone', e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-medical-500 focus:bg-white transition-colors"
+                      className="w-full px-3 py-2 bg-cream-100 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-medical-500 focus:bg-white transition-colors"
                     />
                   </div>
                 </div>
@@ -291,7 +291,7 @@ export default function ProfilePage() {
                     value={profileData.streetAddress}
                     onChange={(e) => updateProfileField('streetAddress', e.target.value)}
                     placeholder="Street Address"
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white transition-colors"
+                    className="w-full px-3 py-2 bg-cream-100 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-coral-500 focus:bg-white transition-colors"
                   />
                   <div className="grid grid-cols-2 gap-3">
                     <input
@@ -299,14 +299,14 @@ export default function ProfilePage() {
                       value={profileData.city}
                       onChange={(e) => updateProfileField('city', e.target.value)}
                       placeholder="City"
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white transition-colors"
+                      className="w-full px-3 py-2 bg-cream-100 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-coral-500 focus:bg-white transition-colors"
                     />
                     <input
                       type="text"
                       value={profileData.zipCode}
                       onChange={(e) => updateProfileField('zipCode', e.target.value)}
                       placeholder="ZIP"
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-medical-500 focus:bg-white transition-colors"
+                      className="w-full px-3 py-2 bg-cream-100 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-medical-500 focus:bg-white transition-colors"
                     />
                   </div>
                 </div>
@@ -323,17 +323,17 @@ export default function ProfilePage() {
                   <input
                     type="password"
                     placeholder="Current Password"
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white transition-colors"
+                    className="w-full px-3 py-2 bg-cream-100 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-coral-500 focus:bg-white transition-colors"
                   />
                   <input
                     type="password"
                     placeholder="New Password"
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-medical-500 focus:bg-white transition-colors"
+                    className="w-full px-3 py-2 bg-cream-100 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-medical-500 focus:bg-white transition-colors"
                   />
                   <input
                     type="password"
                     placeholder="Confirm New Password"
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-medical-500 focus:bg-white transition-colors"
+                    className="w-full px-3 py-2 bg-cream-100 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-medical-500 focus:bg-white transition-colors"
                   />
                 </div>
               </div>
@@ -341,7 +341,7 @@ export default function ProfilePage() {
               <div>
                 <h3 className="text-sm font-semibold text-slate-900 mb-4">Two-Factor Authentication</h3>
                 {!show2FASetup ? (
-                  <div className="bg-slate-50 rounded-xl p-4 flex items-center justify-between">
+                  <div className="bg-cream-100 rounded-xl p-4 flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-slate-900">SMS Authentication</p>
                       <p className="text-xs text-slate-600 mt-1">
@@ -372,7 +372,7 @@ export default function ProfilePage() {
                     </button>
                   </div>
                 ) : (
-                  <div className="bg-slate-50 rounded-xl p-4 space-y-4">
+                  <div className="bg-cream-100 rounded-xl p-4 space-y-4">
                     {!isVerifying ? (
                       <>
                         <p className="text-sm text-slate-700">Enter your phone number to receive verification codes</p>
@@ -381,7 +381,7 @@ export default function ProfilePage() {
                           placeholder="(555) 123-4567"
                           value={phoneNumber}
                           onChange={(e) => setPhoneNumber(e.target.value)}
-                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 transition-colors"
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-coral-500 transition-colors"
                         />
                         <div className="flex gap-2">
                           <button 
@@ -422,7 +422,7 @@ export default function ProfilePage() {
                           placeholder="123456"
                           value={verificationCode}
                           onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-mono tracking-wider focus:outline-none focus:ring-2 focus:ring-rose-500 transition-colors"
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-mono tracking-wider focus:outline-none focus:ring-2 focus:ring-coral-500 transition-colors"
                         />
                         <div className="flex gap-2">
                           <button 
@@ -485,7 +485,7 @@ export default function ProfilePage() {
                         [item.id]: e.target.checked
                       }))}
                     />
-                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-rose-500"></div>
+                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-coral-500"></div>
                   </label>
                 </div>
               ))}
@@ -500,12 +500,12 @@ export default function ProfilePage() {
                 <h3 className="text-sm font-semibold text-slate-900 mb-4">Payment Methods</h3>
                 <div className="space-y-3">
                   {paymentMethods.map((method) => (
-                    <div key={method.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
+                    <div key={method.id} className="flex items-center justify-between p-4 bg-cream-100 rounded-xl">
                       <div className="flex items-center gap-3">
                         <div className={`w-12 h-8 rounded flex items-center justify-center text-xs font-bold text-white ${
                           method.type === 'VISA' ? 'bg-slate-700' : 
                           method.type === 'MASTERCARD' ? 'bg-red-600' : 
-                          method.type === 'AMEX' ? 'bg-blue-600' : 'bg-gray-600'
+                          method.type === 'AMEX' ? 'bg-coral-500' : 'bg-gray-600'
                         }`}>
                           {method.type === 'MASTERCARD' ? 'MC' : method.type}
                         </div>
@@ -529,7 +529,7 @@ export default function ProfilePage() {
                       + Add Payment Method
                     </button>
                   ) : (
-                    <div className="bg-slate-50 rounded-xl p-4 space-y-4">
+                    <div className="bg-cream-100 rounded-xl p-4 space-y-4">
                       <h4 className="text-sm font-medium text-slate-900">Add New Payment Method</h4>
                       
                       <div>
@@ -545,7 +545,7 @@ export default function ProfilePage() {
                             const value = e.target.value.replace(/[^a-zA-Z\s]/g, '');
                             setNewCardDetails(prev => ({ ...prev, cardholderName: value }));
                           }}
-                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 transition-colors"
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-coral-500 transition-colors"
                         />
                       </div>
                       
@@ -707,7 +707,7 @@ export default function ProfilePage() {
                     { date: 'Nov 9', amount: '$299', desc: 'Monthly' },
                     { date: 'Oct 9', amount: '$328', desc: 'Monthly + Extra' },
                   ].map((charge, idx) => (
-                    <div key={idx} className="flex items-center justify-between py-2.5 px-3 hover:bg-slate-50 rounded-lg transition-colors">
+                    <div key={idx} className="flex items-center justify-between py-2.5 px-3 hover:bg-cream-100 rounded-lg transition-colors">
                       <div>
                         <p className="text-sm font-medium text-slate-900">{charge.date}</p>
                         <p className="text-xs text-slate-600">{charge.desc}</p>
@@ -716,7 +716,7 @@ export default function ProfilePage() {
                         <p className="text-sm font-semibold text-slate-900">{charge.amount}</p>
                         <button 
                           onClick={() => setShowReceipt(charge)}
-                          className="text-xs text-rose-600 hover:text-rose-700"
+                          className="text-xs text-coral-600 hover:text-coral-700"
                         >
                           Receipt
                         </button>
@@ -763,7 +763,7 @@ export default function ProfilePage() {
             <div className="p-6" id="receipt-content">
               {/* Company Info */}
               <div className="text-center mb-6">
-                <h3 className="text-2xl font-bold text-rose-600">Zappy Health</h3>
+                <h3 className="text-2xl font-bold text-coral-600">Zappy Health</h3>
                 <p className="text-sm text-slate-600 mt-1">Your Telehealth Partner</p>
               </div>
 
@@ -788,7 +788,7 @@ export default function ProfilePage() {
               </div>
 
               {/* Service Details */}
-              <div className="bg-slate-50 rounded-lg p-4 mb-6">
+              <div className="bg-cream-100 rounded-lg p-4 mb-6">
                 <h4 className="text-sm font-semibold text-slate-900 mb-3">Service Details</h4>
                 <div className="flex justify-between py-2">
                   <span className="text-sm text-slate-600">{showReceipt.desc} Subscription</span>

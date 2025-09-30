@@ -214,7 +214,7 @@ function CheckoutForm({ consultationId, prescriptions = [] }: CheckoutFormProps)
           onClick={() => setActiveStep('medication')}
           className={`flex-1 py-3 text-center text-sm font-medium transition-all ${
             activeStep === 'medication' 
-              ? 'bg-blue-600 text-white' 
+              ? 'bg-coral-500 text-white' 
               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           } rounded-l-lg`}
         >
@@ -226,7 +226,7 @@ function CheckoutForm({ consultationId, prescriptions = [] }: CheckoutFormProps)
           disabled={!billingDetails.firstName}
           className={`flex-1 py-3 text-center text-sm font-medium transition-all ${
             activeStep === 'billing' 
-              ? 'bg-blue-600 text-white' 
+              ? 'bg-coral-500 text-white' 
               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           } ${!billingDetails.firstName && 'opacity-50 cursor-not-allowed'}`}
         >
@@ -238,7 +238,7 @@ function CheckoutForm({ consultationId, prescriptions = [] }: CheckoutFormProps)
           disabled={!billingDetails.address}
           className={`flex-1 py-3 text-center text-sm font-medium transition-all ${
             activeStep === 'payment' 
-              ? 'bg-blue-600 text-white' 
+              ? 'bg-coral-500 text-white' 
               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           } rounded-r-lg ${!billingDetails.address && 'opacity-50 cursor-not-allowed'}`}
         >
@@ -258,7 +258,7 @@ function CheckoutForm({ consultationId, prescriptions = [] }: CheckoutFormProps)
                 key={key}
                 className={`block p-4 rounded-xl border-2 cursor-pointer transition-all ${
                   selectedMedication === key 
-                    ? 'border-blue-500 bg-blue-50' 
+                    ? 'border-coral-500 bg-coral-50' 
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
               >
@@ -294,7 +294,7 @@ function CheckoutForm({ consultationId, prescriptions = [] }: CheckoutFormProps)
                   key={idx}
                   className={`block p-4 rounded-lg border-2 cursor-pointer transition-all ${
                     selectedDosage === idx 
-                      ? 'border-blue-500 bg-blue-50' 
+                      ? 'border-coral-500 bg-coral-50' 
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
@@ -343,7 +343,7 @@ function CheckoutForm({ consultationId, prescriptions = [] }: CheckoutFormProps)
           <button
             type="button"
             onClick={() => setActiveStep('billing')}
-            className="w-full py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+            className="w-full py-3 bg-coral-500 text-white font-medium rounded-lg hover:bg-coral-600 transition-colors"
           >
             Continue to Shipping
           </button>
@@ -366,7 +366,7 @@ function CheckoutForm({ consultationId, prescriptions = [] }: CheckoutFormProps)
                 value={billingDetails.firstName}
                 onChange={(e) => setBillingDetails({ ...billingDetails, firstName: e.target.value })}
                 aria-label="First name for billing"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-coral-500"
               />
             </div>
 
@@ -379,7 +379,7 @@ function CheckoutForm({ consultationId, prescriptions = [] }: CheckoutFormProps)
                 required
                 value={billingDetails.lastName}
                 onChange={(e) => setBillingDetails({ ...billingDetails, lastName: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-coral-500"
               />
             </div>
 
@@ -392,7 +392,7 @@ function CheckoutForm({ consultationId, prescriptions = [] }: CheckoutFormProps)
                 required
                 value={billingDetails.email}
                 onChange={(e) => setBillingDetails({ ...billingDetails, email: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-coral-500"
               />
             </div>
 
@@ -405,7 +405,7 @@ function CheckoutForm({ consultationId, prescriptions = [] }: CheckoutFormProps)
                 required
                 value={billingDetails.phone}
                 onChange={(e) => setBillingDetails({ ...billingDetails, phone: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-coral-500"
               />
             </div>
 
@@ -418,7 +418,7 @@ function CheckoutForm({ consultationId, prescriptions = [] }: CheckoutFormProps)
                 required
                 value={billingDetails.address}
                 onChange={(e) => setBillingDetails({ ...billingDetails, address: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-coral-500"
               />
             </div>
 
@@ -430,7 +430,7 @@ function CheckoutForm({ consultationId, prescriptions = [] }: CheckoutFormProps)
                 type="text"
                 value={billingDetails.address2}
                 onChange={(e) => setBillingDetails({ ...billingDetails, address2: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-coral-500"
               />
             </div>
 
@@ -443,7 +443,7 @@ function CheckoutForm({ consultationId, prescriptions = [] }: CheckoutFormProps)
                 required
                 value={billingDetails.city}
                 onChange={(e) => setBillingDetails({ ...billingDetails, city: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-coral-500"
               />
             </div>
 
@@ -455,7 +455,7 @@ function CheckoutForm({ consultationId, prescriptions = [] }: CheckoutFormProps)
                 required
                 value={billingDetails.state}
                 onChange={(e) => setBillingDetails({ ...billingDetails, state: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-coral-500"
               >
                 <option value="">Select State</option>
                 <option value="CA">California</option>
@@ -476,7 +476,7 @@ function CheckoutForm({ consultationId, prescriptions = [] }: CheckoutFormProps)
                 pattern="[0-9]{5}"
                 value={billingDetails.zipCode}
                 onChange={(e) => setBillingDetails({ ...billingDetails, zipCode: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-coral-500"
               />
             </div>
           </div>
@@ -492,7 +492,7 @@ function CheckoutForm({ consultationId, prescriptions = [] }: CheckoutFormProps)
             <button
               type="button"
               onClick={() => setActiveStep('payment')}
-              className="flex-1 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+              className="flex-1 py-3 bg-coral-500 text-white font-medium rounded-lg hover:bg-coral-600 transition-colors"
             >
               Continue to Payment
             </button>
@@ -552,7 +552,7 @@ function CheckoutForm({ consultationId, prescriptions = [] }: CheckoutFormProps)
               <div className="pt-4 border-t">
                 <div className="flex justify-between text-lg font-bold">
                   <span>Total</span>
-                  <span className="text-blue-600">${total.toFixed(2)}</span>
+                  <span className="text-coral-500">${total.toFixed(2)}</span>
                 </div>
                 {isSubscription && (
                   <p className="text-xs text-gray-600 mt-1">
@@ -597,7 +597,7 @@ function CheckoutForm({ consultationId, prescriptions = [] }: CheckoutFormProps)
                 type="checkbox"
                 checked={sameAsShipping}
                 onChange={(e) => setSameAsShipping(e.target.checked)}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                className="rounded border-gray-300 text-coral-500 focus:ring-blue-500"
               />
               <span className="ml-2 text-sm">Billing address same as shipping</span>
             </label>
@@ -621,7 +621,7 @@ function CheckoutForm({ consultationId, prescriptions = [] }: CheckoutFormProps)
               <button
                 type="submit"
                 disabled={!stripe || processing}
-                className="flex-1 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="flex-1 py-3 bg-coral-500 text-white font-medium rounded-lg hover:bg-coral-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {processing ? (
                   <span className="flex items-center justify-center">
@@ -677,7 +677,7 @@ export default function CheckoutPage() {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <Link href="/" className="inline-flex items-center text-blue-600 hover:text-blue-700 text-sm mb-4">
+          <Link href="/" className="inline-flex items-center text-coral-500 hover:text-coral-600 text-sm mb-4">
             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
@@ -697,11 +697,11 @@ export default function CheckoutPage() {
         <div className="mt-12 text-center">
           <p className="text-sm text-gray-600">
             Need help? Call us at{' '}
-            <a href="tel:1-888-555-0123" className="font-medium text-blue-600 hover:text-blue-700">
+            <a href="tel:1-888-555-0123" className="font-medium text-coral-500 hover:text-coral-600">
               1-888-555-0123
             </a>
             {' '}or{' '}
-            <a href="#" className="font-medium text-blue-600 hover:text-blue-700">
+            <a href="#" className="font-medium text-coral-500 hover:text-coral-600">
               chat with support
             </a>
           </p>
