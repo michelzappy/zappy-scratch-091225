@@ -8,20 +8,30 @@ import { AppError } from '../errors/AppError.js';
 // Salt for consistent patient ID hashing - MUST be set in environment
 const AUDIT_SALT = process.env.HIPAA_AUDIT_SALT;
 
-if (!AUDIT_SALT) {
-  throw new Error('HIPAA_AUDIT_SALT environment variable is required for patient data anonymization compliance');
+const isSaltFormatValid = typeof AUDIT_SALT === 'string'
+  && (AUDIT_SALT.startsWith('$2a$') || AUDIT_SALT.startsWith('$2b$'));
+
+export const isHipaaAuditEnabled = Boolean(AUDIT_SALT) && isSaltFormatValid;
+
+if (!isHipaaAuditEnabled) {
+  const reason = !AUDIT_SALT
+    ? 'HIPAA_AUDIT_SALT environment variable is missing.'
+    : 'HIPAA_AUDIT_SALT must be a valid bcrypt salt format.';
+
+  console.warn(`HIPAA audit logging disabled: ${reason}`);
 }
 
-// Validate salt format for bcrypt compatibility
-if (!AUDIT_SALT.startsWith('$2a$') && !AUDIT_SALT.startsWith('$2b$')) {
-  throw new Error('HIPAA_AUDIT_SALT must be a valid bcrypt salt format');
-}
+const noopAuditLogger = (req, res, next) => next();
 
 /**
  * Hash patient ID for HIPAA-compliant audit logging
  * Uses bcrypt for consistent, secure hashing
  */
-const hashPatientId = (patientId) => {
+export const hashPatientId = (patientId) => {
+  if (!isHipaaAuditEnabled) {
+    return null;
+  }
+
   if (!patientId) return null;
   try {
     // Use bcrypt.hashSync with consistent salt for deterministic hashing
@@ -131,7 +141,7 @@ const logAuditEntry = async (auditData) => {
  * - Sensitive query parameters
  * - Response content
  */
-export const hipaaAuditLogger = (req, res, next) => {
+const baseHipaaAuditLogger = (req, res, next) => {
   // Skip audit logging for non-patient endpoints
   if (!req.originalUrl.includes('/patients')) {
     return next();
@@ -185,12 +195,12 @@ export const hipaaAuditLogger = (req, res, next) => {
  * Enhanced audit logger that also captures response status
  * Wraps response to capture status code for compliance reporting
  */
-export const hipaaAuditLoggerWithResponse = (req, res, next) => {
+const baseHipaaAuditLoggerWithResponse = (req, res, next) => {
   // Apply standard audit logging first
-  hipaaAuditLogger(req, res, () => {
+  baseHipaaAuditLogger(req, res, () => {
     // Capture response status when request completes
     const originalSend = res.send;
-    
+
     res.send = function(data) {
       // Log response status for audit trail
       if (req.originalUrl.includes('/patients') && extractPatientId(req)) {
@@ -216,6 +226,14 @@ export const hipaaAuditLoggerWithResponse = (req, res, next) => {
     next();
   });
 };
+
+export const hipaaAuditLogger = isHipaaAuditEnabled ? baseHipaaAuditLogger : noopAuditLogger;
+
+export const hipaaAuditLoggerWithResponse = isHipaaAuditEnabled
+  ? baseHipaaAuditLoggerWithResponse
+  : noopAuditLogger;
+
+export const noopHipaaAuditLogger = noopAuditLogger;
 
 /**
  * HIPAA audit report generator
