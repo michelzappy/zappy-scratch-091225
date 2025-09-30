@@ -79,7 +79,7 @@ export default function MobileBottomNav() {
               href={item.href}
               className={`relative flex flex-col items-center justify-center flex-1 h-full transition-colors ${
                 isActive 
-                  ? 'text-rose-600' 
+                  ? 'text-coral-500' 
                   : 'text-slate-500 hover:text-slate-700'
               }`}
             >
@@ -95,14 +95,14 @@ export default function MobileBottomNav() {
               </div>
               
               <span className={`text-xs mt-1 font-medium ${
-                isActive ? 'text-rose-600' : 'text-slate-600'
+                isActive ? 'text-coral-500' : 'text-slate-600'
               }`}>
                 {item.label}
               </span>
 
               {/* Active indicator bar */}
               {isActive && (
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-rose-600 rounded-full" />
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-coral-500 rounded-full" />
               )}
             </Link>
           );

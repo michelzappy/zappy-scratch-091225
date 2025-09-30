@@ -115,7 +115,7 @@ export default function PatientMedicalRecords() {
               className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
                 activeTab === tab.id
                   ? 'bg-medical-50 text-medical-700 border-b-2 border-medical-500'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-cream-100'
               }`}
             >
               <span className="lg:hidden text-lg">{tab.icon}</span>
@@ -145,7 +145,7 @@ export default function PatientMedicalRecords() {
                 <h3 className="font-semibold text-slate-900 text-sm mb-3">Current Medications</h3>
                 <div className="space-y-2">
                   {medicalOverview.medications.map((med, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                    <div key={idx} className="flex items-center justify-between p-3 bg-cream-100 rounded-lg">
                       <div>
                         <p className="font-medium text-sm text-slate-900">{med.name}</p>
                         <p className="text-xs text-slate-600">{med.dose} • {med.frequency}</p>
@@ -172,7 +172,7 @@ export default function PatientMedicalRecords() {
 
               {/* Appointments */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="p-3 bg-slate-50 rounded-lg">
+                <div className="p-3 bg-cream-100 rounded-lg">
                   <p className="text-xs text-slate-600">Last Visit</p>
                   <p className="font-medium text-sm text-slate-900 mt-1">{medicalOverview.lastVisit}</p>
                 </div>
@@ -199,7 +199,7 @@ export default function PatientMedicalRecords() {
                 <div key={section.id} className="border border-slate-200 rounded-xl overflow-hidden">
                   <button
                     onClick={() => setExpandedSection(expandedSection === section.id ? null : section.id)}
-                    className="w-full px-4 py-3 bg-white hover:bg-slate-50 transition-colors flex items-center justify-between"
+                    className="w-full px-4 py-3 bg-white hover:bg-cream-100 transition-colors flex items-center justify-between"
                   >
                     <div className="flex items-center gap-3">
                       <span className="text-lg">{section.emoji}</span>
@@ -218,7 +218,7 @@ export default function PatientMedicalRecords() {
                   </button>
                   
                   {expandedSection === section.id && (
-                    <div className="px-4 py-3 bg-slate-50 border-t border-slate-200">
+                    <div className="px-4 py-3 bg-cream-100 border-t border-slate-200">
                       <p className="text-sm text-slate-600">
                         {section.id === 'basic' && 'Height: 175cm • Weight: 70kg • Blood Type: O+'}
                         {section.id === 'conditions' && 'Hypertension (2020) • Type 2 Diabetes (2021)'}

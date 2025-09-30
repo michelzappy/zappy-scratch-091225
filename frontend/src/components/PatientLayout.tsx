@@ -24,14 +24,14 @@ const NavItem: React.FC<NavItemProps> = ({ item, isActive }) => {
         href={item.href}
         className={`flex items-center p-3 my-1 rounded-lg transition-colors duration-200 ${
           isActive
-            ? 'bg-rose-50 text-rose-700 font-medium'
-            : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+            ? 'bg-coral-100 text-coral-600 font-medium'
+            : 'text-slate-600 hover:bg-coral-50 hover:text-slate-900'
         }`}
       >
         <span className="w-5 h-5">{item.icon}</span>
         <span className="ml-3 text-sm">{item.name}</span>
         {item.badge && (
-          <span className="ml-auto bg-rose-500 text-white text-xs rounded-full px-2 py-0.5 font-medium">
+          <span className="ml-auto bg-coral-500 text-white text-xs rounded-full px-2 py-0.5 font-medium">
             {item.badge}
           </span>
         )}
@@ -135,7 +135,7 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
     <div className="flex flex-col w-64 bg-white h-full border-r border-slate-200">
       {/* Simple Logo */}
       <div className="h-16 flex items-center justify-center border-b border-slate-200">
-        <span className="text-xl font-bold text-rose-600">Zappy</span>
+        <span className="text-xl font-bold text-coral-500">Zappy</span>
       </div>
 
       {/* Navigation Menu */}
@@ -169,7 +169,7 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
       <div className="p-4 border-t border-slate-200">
         <button
           onClick={handleLogout}
-          className="flex items-center w-full p-3 rounded-lg text-slate-600 hover:bg-rose-50 hover:text-rose-600 transition-colors"
+          className="flex items-center w-full p-3 rounded-lg text-slate-600 hover:bg-coral-50 hover:text-coral-600 transition-colors"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />

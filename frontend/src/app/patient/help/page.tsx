@@ -109,14 +109,14 @@ export default function HelpPage() {
             className={`p-3 rounded-xl border-2 text-center hover:shadow-lg transition-all hover:scale-[1.02] ${
               option.color === 'medical' ? 'border-medical-200 bg-white' :
               option.color === 'emerald' ? 'border-emerald-200 bg-white' :
-              'border-blue-200 bg-white'
+              'border-coral-200 bg-white'
             }`}
           >
             <div className="text-2xl mb-1">{option.icon}</div>
             <p className={`text-xs font-semibold ${
               option.color === 'medical' ? 'text-medical-700' :
               option.color === 'emerald' ? 'text-emerald-700' :
-              'text-blue-700'
+              'text-coral-600'
             }`}>{option.title}</p>
             <p className="text-xs text-slate-500">{option.availability}</p>
           </button>
@@ -149,7 +149,7 @@ export default function HelpPage() {
         <div className="divide-y divide-slate-100">
           {filteredFaqs.map((category) => (
             <div key={category.title}>
-              <div className="px-4 py-3 bg-slate-50">
+              <div className="px-4 py-3 bg-cream-100">
                 <div className="flex items-center gap-2">
                   <span className="text-lg">{category.icon}</span>
                   <h3 className="font-medium text-sm text-slate-900">{category.title}</h3>
@@ -160,7 +160,7 @@ export default function HelpPage() {
                   <div key={item.id}>
                     <button
                       onClick={() => setExpandedFaq(expandedFaq === item.id ? null : item.id)}
-                      className="w-full px-4 py-3 text-left hover:bg-slate-50 transition-colors"
+                      className="w-full px-4 py-3 text-left hover:bg-cream-100 transition-colors"
                     >
                       <div className="flex items-start justify-between">
                         <p className="text-sm font-medium text-slate-700 pr-2">{item.q}</p>
@@ -177,7 +177,7 @@ export default function HelpPage() {
                       </div>
                     </button>
                     {expandedFaq === item.id && (
-                      <div className="px-4 pb-3 bg-slate-50">
+                      <div className="px-4 pb-3 bg-cream-100">
                         <p className="text-sm text-slate-600">{item.a}</p>
                       </div>
                     )}
@@ -210,7 +210,7 @@ export default function HelpPage() {
         <h2 className="text-base font-semibold text-slate-900 mb-3">Additional Resources</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <button className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-xl hover:shadow-sm transition-shadow">
-            <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+            <div className="w-10 h-10 bg-blue-100 text-coral-500 rounded-lg flex items-center justify-center flex-shrink-0">
               📖
             </div>
             <div className="text-left">

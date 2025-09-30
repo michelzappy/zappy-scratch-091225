@@ -325,7 +325,7 @@ export default function ConsultationDetails() {
               consultation.status === 'completed' 
                 ? 'bg-green-100 text-green-800'
                 : consultation.status === 'in_progress'
-                ? 'bg-blue-100 text-blue-800'
+                ? 'bg-blue-100 text-coral-700'
                 : 'bg-gray-100 text-gray-800'
             }`}>
               {consultation.status.replace('_', ' ').charAt(0).toUpperCase() + consultation.status.slice(1)}

@@ -147,9 +147,10 @@ export default function PatientSubscription() {
   ];
 
   return (
-    <div className="space-y-4 pb-20 lg:pb-8">
-      {/* Header */}
-      <div>
+    <div className="min-h-screen bg-cream-100">
+      <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+        {/* Header */}
+        <div>
         <h1 className="text-xl lg:text-2xl font-bold text-slate-900">Subscription & Billing</h1>
         <p className="text-sm text-slate-600 mt-1">Manage your care plan and payments</p>
       </div>
@@ -233,14 +234,14 @@ export default function PatientSubscription() {
               key={plan.id}
               className={`relative bg-white rounded-xl border-2 p-4 transition-all ${
                 plan.id === currentPlan 
-                  ? 'border-rose-500 shadow-md' 
+                  ? 'border-coral-500 shadow-md' 
                   : 'border-slate-200 hover:border-slate-300 hover:shadow'
               }`}
             >
               {/* Badges */}
               <div className="absolute -top-3 left-4 right-4 flex justify-between">
                 {plan.badge && (
-                  <span className="px-2 py-0.5 bg-rose-600 text-white text-xs font-semibold rounded-full">
+                  <span className="px-2 py-0.5 bg-coral-600 text-white text-xs font-semibold rounded-full">
                     {plan.badge}
                   </span>
                 )}
@@ -287,7 +288,7 @@ export default function PatientSubscription() {
                   className={`mt-4 w-full py-2 px-4 rounded-lg text-sm font-medium transition ${
                     plan.price > 29
                       ? 'bg-slate-900 text-white hover:bg-slate-800'
-                      : 'border border-slate-300 text-slate-700 hover:bg-slate-50'
+                      : 'border border-slate-300 text-slate-700 hover:bg-cream-100'
                   }`}
                 >
                   {plan.price > 29 ? 'Upgrade' : plan.price === 0 ? 'Switch to Free' : 'Select'}
@@ -305,12 +306,12 @@ export default function PatientSubscription() {
         </div>
         <div className="p-4 space-y-3">
           {paymentMethods.map((method) => (
-            <div key={method.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+            <div key={method.id} className="flex items-center justify-between p-3 bg-cream-100 rounded-lg">
               <div className="flex items-center gap-3">
                 <div className={`w-12 h-8 rounded flex items-center justify-center text-xs font-bold text-white ${
                   method.type === 'VISA' ? 'bg-slate-700' : 
                   method.type === 'MC' ? 'bg-red-600' : 
-                  method.type === 'AMEX' ? 'bg-blue-600' : 'bg-gray-600'
+                  method.type === 'AMEX' ? 'bg-coral-500' : 'bg-gray-600'
                 }`}>
                   {method.type}
                 </div>
@@ -378,7 +379,7 @@ export default function PatientSubscription() {
                   // TODO: Implement invoice download API call
                 }}
                 aria-label={`Download invoice for ${item.description} - $${item.amount}`}
-                className="mt-2 text-xs text-rose-600 hover:text-rose-700"
+                className="mt-2 text-xs text-coral-600 hover:text-coral-700"
               >
                 Download Invoice →
               </button>
@@ -417,7 +418,7 @@ export default function PatientSubscription() {
                         // TODO: Implement invoice download API call
                       }}
                       aria-label={`Download invoice for ${item.description} - $${item.amount}`}
-                      className="text-rose-600 hover:text-rose-700 text-sm"
+                      className="text-coral-600 hover:text-coral-700 text-sm"
                     >
                       Download
                     </button>
@@ -520,7 +521,7 @@ export default function PatientSubscription() {
             <div className="flex gap-3">
               <button
                 onClick={() => setShowDowngradeModal(false)}
-                className="flex-1 px-4 py-3 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 font-medium text-sm transition"
+                className="flex-1 px-4 py-3 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-cream-100 font-medium text-sm transition"
               >
                 Cancel
               </button>
@@ -623,7 +624,7 @@ export default function PatientSubscription() {
                   placeholder="1234 5678 9012 3456"
                   value={cardNumber}
                   onChange={handleCardNumberChange}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500"
                   required
                   maxLength={19}
                   inputMode="numeric"
@@ -687,7 +688,7 @@ export default function PatientSubscription() {
                 <label className="flex items-center gap-2 text-sm">
                   <input
                     type="checkbox"
-                    className="rounded text-rose-600 focus:ring-rose-500"
+                    className="rounded text-coral-600 focus:ring-coral-500"
                     checked={isDefault}
                     onChange={(e) => setIsDefault(e.target.checked)}
                   />
@@ -696,8 +697,8 @@ export default function PatientSubscription() {
               </div>
 
               {/* Security Note */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6">
-                <div className="flex items-center gap-2 text-sm text-blue-800">
+              <div className="bg-coral-50 border border-coral-200 rounded-lg p-3 mb-6">
+                <div className="flex items-center gap-2 text-sm text-coral-700">
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
@@ -717,7 +718,7 @@ export default function PatientSubscription() {
                     setCardName('');
                     setIsDefault(true);
                   }}
-                  className="flex-1 px-4 py-2.5 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 font-medium text-sm transition"
+                  className="flex-1 px-4 py-2.5 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-cream-100 font-medium text-sm transition"
                 >
                   Cancel
                 </button>
@@ -732,6 +733,7 @@ export default function PatientSubscription() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

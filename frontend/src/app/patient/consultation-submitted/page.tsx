@@ -107,46 +107,46 @@ export default function ConsultationSubmitted() {
             )}
           
             {/* What happens next - Two Column Layout for Desktop */}
-            <div className="bg-blue-50 rounded-lg p-4 mb-6">
-              <h3 className="font-semibold text-blue-900 mb-3 text-base">What Happens Next?</h3>
+            <div className="bg-coral-50 rounded-lg p-4 mb-6">
+              <h3 className="font-semibold text-coral-800 mb-3 text-base">What Happens Next?</h3>
               <div className="grid md:grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <div className="flex items-start">
                     <div className="flex-shrink-0 w-6 h-6 bg-blue-200 rounded-full flex items-center justify-center mr-2 mt-0.5">
-                      <span className="text-blue-700 font-semibold text-xs">1</span>
+                      <span className="text-coral-600 font-semibold text-xs">1</span>
                     </div>
                     <div>
-                      <p className="font-medium text-blue-900 text-sm">Provider Review</p>
-                      <p className="text-xs text-blue-700">A licensed healthcare provider will review your consultation request</p>
+                      <p className="font-medium text-coral-800 text-sm">Provider Review</p>
+                      <p className="text-xs text-coral-600">A licensed healthcare provider will review your consultation request</p>
                     </div>
                   </div>
                   <div className="flex items-start">
                     <div className="flex-shrink-0 w-6 h-6 bg-blue-200 rounded-full flex items-center justify-center mr-2 mt-0.5">
-                      <span className="text-blue-700 font-semibold text-xs">2</span>
+                      <span className="text-coral-600 font-semibold text-xs">2</span>
                     </div>
                     <div>
-                      <p className="font-medium text-blue-900 text-sm">Notification</p>
-                      <p className="text-xs text-blue-700">You'll receive an email and in-app notification when your provider responds</p>
+                      <p className="font-medium text-coral-800 text-sm">Notification</p>
+                      <p className="text-xs text-coral-600">You'll receive an email and in-app notification when your provider responds</p>
                     </div>
                   </div>
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-start">
                     <div className="flex-shrink-0 w-6 h-6 bg-blue-200 rounded-full flex items-center justify-center mr-2 mt-0.5">
-                      <span className="text-blue-700 font-semibold text-xs">3</span>
+                      <span className="text-coral-600 font-semibold text-xs">3</span>
                     </div>
                     <div>
-                      <p className="font-medium text-blue-900 text-sm">Secure Messaging</p>
-                      <p className="text-xs text-blue-700">Communicate with your provider through encrypted messaging</p>
+                      <p className="font-medium text-coral-800 text-sm">Secure Messaging</p>
+                      <p className="text-xs text-coral-600">Communicate with your provider through encrypted messaging</p>
                     </div>
                   </div>
                   <div className="flex items-start">
                     <div className="flex-shrink-0 w-6 h-6 bg-blue-200 rounded-full flex items-center justify-center mr-2 mt-0.5">
-                      <span className="text-blue-700 font-semibold text-xs">4</span>
+                      <span className="text-coral-600 font-semibold text-xs">4</span>
                     </div>
                     <div>
-                      <p className="font-medium text-blue-900 text-sm">Treatment Plan</p>
-                      <p className="text-xs text-blue-700">Receive prescriptions sent directly to your preferred pharmacy</p>
+                      <p className="font-medium text-coral-800 text-sm">Treatment Plan</p>
+                      <p className="text-xs text-coral-600">Receive prescriptions sent directly to your preferred pharmacy</p>
                     </div>
                   </div>
                 </div>
