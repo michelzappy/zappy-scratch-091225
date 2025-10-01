@@ -1,16 +1,9 @@
 import Stripe from 'stripe';
-import { createClient } from '@supabase/supabase-js';
 import { getDatabase } from '../config/database.js';
 import emailService from './email.service.js';
 
 // Initialize Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_dummy');
-
-// Initialize Supabase
-const supabase = createClient(
-  process.env.SUPABASE_URL || 'https://your-project.supabase.co',
-  process.env.SUPABASE_SERVICE_KEY || 'your-service-key'
-);
 
 // Subscription plans configuration
 const SUBSCRIPTION_PLANS = {
@@ -165,18 +158,27 @@ class SubscriptionService {
         benefits: plan.features,
       });
 
-      // Log to Supabase
-      await supabase.from('subscription_events').insert({
-        patient_id: patientId,
-        event_type: 'subscription_created',
-        plan_id: planId,
-        stripe_subscription_id: subscription.id,
-        metadata: {
-          plan: plan.name,
-          price: plan.price,
-        },
-        created_at: new Date().toISOString(),
-      });
+      // Log subscription event to database
+      try {
+        await db.query(`
+          INSERT INTO subscription_events (
+            subscription_id, event_type, event_data, created_at
+          ) VALUES ($1, $2, $3, NOW())
+        `, [
+          subscriptionResult.rows[0].id,
+          'subscription_created',
+          JSON.stringify({
+            patient_id: patientId,
+            plan_id: planId,
+            stripe_subscription_id: subscription.id,
+            plan: plan.name,
+            price: plan.price,
+          }),
+        ]);
+      } catch (logError) {
+        console.error('Failed to log subscription event:', logError);
+        // Don't fail the operation if logging fails
+      }
 
       return {
         subscription: subscriptionResult.rows[0],
@@ -247,17 +249,26 @@ class SubscriptionService {
         );
       }
 
-      // Log event
-      await supabase.from('subscription_events').insert({
-        patient_id: subscription.patient_id,
-        event_type: immediate ? 'subscription_canceled' : 'subscription_scheduled_cancel',
-        stripe_subscription_id: subscription.stripe_subscription_id,
-        metadata: {
-          reason,
-          immediate,
-        },
-        created_at: new Date().toISOString(),
-      });
+      // Log cancellation event to database
+      try {
+        await db.query(`
+          INSERT INTO subscription_events (
+            subscription_id, event_type, event_data, created_at
+          ) VALUES ($1, $2, $3, NOW())
+        `, [
+          subscriptionId,
+          immediate ? 'subscription_canceled' : 'subscription_scheduled_cancel',
+          JSON.stringify({
+            patient_id: subscription.patient_id,
+            stripe_subscription_id: subscription.stripe_subscription_id,
+            reason,
+            immediate,
+          }),
+        ]);
+      } catch (logError) {
+        console.error('Failed to log subscription event:', logError);
+        // Don't fail the operation if logging fails
+      }
 
       return { success: true, subscription: canceledSubscription };
     } catch (error) {
@@ -309,8 +320,8 @@ class SubscriptionService {
 
       // Update database
       await db.query(`
-        UPDATE patient_subscriptions 
-        SET 
+        UPDATE patient_subscriptions
+        SET
           plan_id = $1,
           metadata = $2,
           updated_at = NOW()
@@ -325,17 +336,26 @@ class SubscriptionService {
         subscriptionId,
       ]);
 
-      // Log event
-      await supabase.from('subscription_events').insert({
-        patient_id: subscription.patient_id,
-        event_type: 'subscription_updated',
-        stripe_subscription_id: subscription.stripe_subscription_id,
-        metadata: {
-          old_plan: subscription.plan_id,
-          new_plan: newPlanId,
-        },
-        created_at: new Date().toISOString(),
-      });
+      // Log update event to database
+      try {
+        await db.query(`
+          INSERT INTO subscription_events (
+            subscription_id, event_type, event_data, created_at
+          ) VALUES ($1, $2, $3, NOW())
+        `, [
+          subscriptionId,
+          'subscription_updated',
+          JSON.stringify({
+            patient_id: subscription.patient_id,
+            stripe_subscription_id: subscription.stripe_subscription_id,
+            old_plan: subscription.plan_id,
+            new_plan: newPlanId,
+          }),
+        ]);
+      } catch (logError) {
+        console.error('Failed to log subscription event:', logError);
+        // Don't fail the operation if logging fails
+      }
 
       return { success: true, subscription: updatedSubscription };
     } catch (error) {
@@ -487,25 +507,59 @@ class SubscriptionService {
         break;
 
       case 'invoice.payment_succeeded':
-        // Log successful payment
-        await supabase.from('subscription_payments').insert({
-          stripe_invoice_id: event.data.object.id,
-          stripe_subscription_id: event.data.object.subscription,
-          amount: event.data.object.amount_paid / 100,
-          status: 'succeeded',
-          paid_at: new Date().toISOString(),
-        });
+        // Log successful payment to database
+        try {
+          // Get subscription_id from stripe_subscription_id
+          const subIdResult = await db.query(
+            'SELECT id FROM patient_subscriptions WHERE stripe_subscription_id = $1',
+            [event.data.object.subscription]
+          );
+          
+          if (subIdResult.rows.length > 0) {
+            await db.query(`
+              INSERT INTO subscription_payments (
+                subscription_id, amount, currency, status, stripe_payment_intent_id, created_at
+              ) VALUES ($1, $2, $3, $4, $5, NOW())
+            `, [
+              subIdResult.rows[0].id,
+              event.data.object.amount_paid / 100,
+              event.data.object.currency || 'usd',
+              'succeeded',
+              event.data.object.payment_intent || event.data.object.id,
+            ]);
+          }
+        } catch (logError) {
+          console.error('Failed to log payment:', logError);
+          // Don't fail the webhook if logging fails
+        }
         break;
 
       case 'invoice.payment_failed':
-        // Handle failed payment
-        await supabase.from('subscription_payments').insert({
-          stripe_invoice_id: event.data.object.id,
-          stripe_subscription_id: event.data.object.subscription,
-          amount: event.data.object.amount_due / 100,
-          status: 'failed',
-          error_message: event.data.object.last_payment_error?.message,
-        });
+        // Handle failed payment and log to database
+        try {
+          // Get subscription_id from stripe_subscription_id
+          const subIdResult = await db.query(
+            'SELECT id FROM patient_subscriptions WHERE stripe_subscription_id = $1',
+            [event.data.object.subscription]
+          );
+          
+          if (subIdResult.rows.length > 0) {
+            await db.query(`
+              INSERT INTO subscription_payments (
+                subscription_id, amount, currency, status, stripe_payment_intent_id, created_at
+              ) VALUES ($1, $2, $3, $4, $5, NOW())
+            `, [
+              subIdResult.rows[0].id,
+              event.data.object.amount_due / 100,
+              event.data.object.currency || 'usd',
+              'failed',
+              event.data.object.payment_intent || event.data.object.id,
+            ]);
+          }
+        } catch (logError) {
+          console.error('Failed to log payment:', logError);
+          // Don't fail the webhook if logging fails
+        }
 
         // Send notification email
         // TODO: Send email to patient about failed payment

@@ -103,21 +103,21 @@ app.get('/health', (req, res) => {
   });
 });
 
-// API routes
-app.use('/api/auth', authRoutes);
-app.use('/api/consultations', consultationRoutes);
-app.use('/api/messages', messageRoutes);
-app.use('/api/patients', patientRoutes);
-app.use('/api/providers', providerRoutes);
-app.use('/api/provider/consultations', providerConsultationRoutes);
-app.use('/api/orders', orderRoutes);
-app.use('/api/prescriptions', prescriptionRoutes);
-app.use('/api/medications', medicationRoutes);
-app.use('/api/files', fileRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/admin/patients', adminPatientsRoutes);
-app.use('/api/treatment-plans', treatmentPlanRoutes);
-app.use('/api/ai-consultation', aiConsultationRoutes);
+// API routes with v1 versioning
+app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/consultations', consultationRoutes);
+app.use('/api/v1/messages', messageRoutes);
+app.use('/api/v1/patients', patientRoutes);
+app.use('/api/v1/providers', providerRoutes);
+app.use('/api/v1/provider/consultations', providerConsultationRoutes);
+app.use('/api/v1/orders', orderRoutes);
+app.use('/api/v1/prescriptions', prescriptionRoutes);
+app.use('/api/v1/medications', medicationRoutes);
+app.use('/api/v1/files', fileRoutes);
+app.use('/api/v1/admin', adminRoutes);
+app.use('/api/v1/admin/patients', adminPatientsRoutes);
+app.use('/api/v1/treatment-plans', treatmentPlanRoutes);
+app.use('/api/v1/ai-consultation', aiConsultationRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {
@@ -161,7 +161,7 @@ async function startServer() {
     server.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`🔗 API Base URL: http://localhost:${PORT}/api`);
+      console.log(`🔗 API Base URL: http://localhost:${PORT}/api/v1`);
       console.log('⚠️  Note: Running without database/Redis - some features may not work');
     });
 

@@ -2,7 +2,6 @@ import express from 'express';
 import { body, validationResult } from 'express-validator';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
-import { supabase, generateUserId } from '../config/auth.js';
 import { getDatabase } from '../config/database.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 import { 
