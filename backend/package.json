@@ -17,7 +17,6 @@
   },
   "dependencies": {
     "@sendgrid/mail": "^8.1.5",
-    "@supabase/supabase-js": "^2.38.4",
     "aws-sdk": "^2.1491.0",
     "bcryptjs": "^2.4.3",
     "compression": "^1.7.4",

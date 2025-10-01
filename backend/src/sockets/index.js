@@ -1,4 +1,4 @@
-import { supabase } from '../config/auth.js';
+import jwt from 'jsonwebtoken';
 import { getDatabase } from '../config/database.js';
 import { consultations } from '../models/index.js';
 import { eq } from 'drizzle-orm';
@@ -7,31 +7,29 @@ export function setupSocketHandlers(io) {
   // Authentication middleware for sockets
   io.use(async (socket, next) => {
     try {
-      const token = socket.handshake.auth.token;
+      // Get token from auth or query parameters
+      const token = socket.handshake.auth.token || socket.handshake.query.token;
       
       if (!token) {
-        return next(new Error('Authentication error: No token provided'));
+        return next(new Error('Authentication token required'));
       }
 
-      // If Supabase is configured, verify token
-      if (supabase) {
-        const { data: { user }, error } = await supabase.auth.getUser(token);
-        
-        if (error || !user) {
-          return next(new Error('Authentication error: Invalid token'));
-        }
-        
-        socket.userId = user.id;
-        socket.userRole = user.user_metadata?.role || 'patient';
-      } else {
-        // Development mode without Supabase
-        socket.userId = 'dev-user-id';
-        socket.userRole = 'patient';
-      }
+      // Verify JWT token
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'development-secret');
+      
+      // Extract user data from JWT payload
+      socket.userId = decoded.id;
+      socket.userRole = decoded.role || 'patient';
       
       next();
     } catch (error) {
       console.error('Socket authentication error:', error);
+      if (error.name === 'JsonWebTokenError') {
+        return next(new Error('Invalid token'));
+      }
+      if (error.name === 'TokenExpiredError') {
+        return next(new Error('Token expired'));
+      }
       next(new Error('Authentication failed'));
     }
   });

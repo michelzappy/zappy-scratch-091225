@@ -1,5 +1,4 @@
 import jwt from 'jsonwebtoken';
-import { supabase } from '../config/auth.js';
 import { AppError } from '../errors/AppError.js';
 
 // Role hierarchy for healthcare platform
@@ -29,29 +28,7 @@ export const requireAuth = async (req, res, next) => {
 
     const token = authHeader.substring(7);
     
-    // Try Supabase authentication first
-    if (supabase) {
-      try {
-        const { data: { user }, error } = await supabase.auth.getUser(token);
-        
-        if (!error && user) {
-          req.user = {
-            id: user.id,
-            email: user.email,
-            role: user.user_metadata?.role || ROLES.PATIENT,
-            metadata: user.user_metadata,
-            verified: user.email_confirmed_at !== null,
-            created_at: user.created_at
-          };
-          req.authMethod = 'supabase';
-          return next();
-        }
-      } catch (supabaseError) {
-        console.warn('Supabase auth failed, trying JWT:', supabaseError.message);
-      }
-    }
-
-    // Fallback to JWT verification (for development or custom auth)
+    // JWT verification
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'development-secret-key-change-in-production');
       
@@ -167,13 +144,23 @@ export const optionalAuth = async (req, res, next) => {
     const token = req.headers.authorization?.replace('Bearer ', '');
     
     if (token) {
-      const { data: { user } } = await supabase.auth.getUser(token);
-      if (user) {
-        req.user = {
-          id: user.id,
-          email: user.email,
-          role: user.user_metadata?.role || 'patient'
-        };
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'development-secret-key-change-in-production');
+        
+        if (decoded.id && decoded.email) {
+          req.user = {
+            id: decoded.id,
+            email: decoded.email,
+            role: decoded.role || ROLES.PATIENT,
+            metadata: decoded.metadata || {},
+            verified: decoded.verified || false,
+            created_at: decoded.created_at || new Date().toISOString()
+          };
+          req.authMethod = 'jwt';
+        }
+      } catch (jwtError) {
+        // Invalid token, continue without auth
+        console.debug('Optional auth JWT verification failed:', jwtError.message);
       }
     }
     
@@ -228,21 +215,25 @@ export const verifyRefreshToken = (token) => {
   }
 };
 
-// Verify webhook signatures (Stripe, Supabase, etc.)
-export const verifyWebhookSignature = (source = 'supabase') => {
+// Verify webhook signatures (Stripe, GitHub, Shopify, etc.)
+export const verifyWebhookSignature = (source = 'stripe') => {
   return (req, res, next) => {
     try {
       let secret;
       let signature;
       
       switch (source) {
-        case 'supabase':
-          signature = req.headers['webhook-signature'];
-          secret = process.env.SUPABASE_WEBHOOK_SECRET;
-          break;
         case 'stripe':
           signature = req.headers['stripe-signature'];
           secret = process.env.STRIPE_WEBHOOK_SECRET;
+          break;
+        case 'github':
+          signature = req.headers['x-hub-signature-256'];
+          secret = process.env.GITHUB_WEBHOOK_SECRET;
+          break;
+        case 'shopify':
+          signature = req.headers['x-shopify-hmac-sha256'];
+          secret = process.env.SHOPIFY_WEBHOOK_SECRET;
           break;
         default:
           throw new AppError('Unknown webhook source', 400, 'INVALID_WEBHOOK_SOURCE');
