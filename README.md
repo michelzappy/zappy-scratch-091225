@@ -2,14 +2,17 @@
 
 A comprehensive telehealth system for async consultations between patients and healthcare providers.
 
+## ☁️ Database: Neon (Serverless PostgreSQL)
+
+This application now uses **Neon Database** - a serverless PostgreSQL platform with automatic scaling, built-in backups, and high availability. See [`NEON_MIGRATION_COMPLETE.md`](NEON_MIGRATION_COMPLETE.md) for migration details.
+
 ## 🚀 Quick Start
 
 ### Prerequisites
 
-- Node.js 18+ 
-- Docker & Docker Compose
-- PostgreSQL (optional if using Docker)
-- Redis (optional if using Docker)
+- Node.js 18+
+- Docker & Docker Compose (for Redis only)
+- Neon Database account (free tier available at https://neon.tech)
 
 ### Setup Instructions
 
@@ -26,34 +29,33 @@ cd ..
 
 ```bash
 # Copy environment template
-cp .env.example .env
+cp backend/.env.example backend/.env
 
-# Edit .env with your configuration
-# For local development, the defaults should work with Docker
+# Edit backend/.env and add your Neon database connection string
+# DATABASE_URL=postgresql://[user]:[password]@[host]/[database]?sslmode=require
 ```
 
-3. **Start Database and Redis with Docker**
+3. **Start Redis with Docker**
 
 ```bash
-# Start PostgreSQL and Redis
+# Start Redis only (PostgreSQL is now on Neon)
 docker-compose up -d
 
-# Verify containers are running
+# Verify Redis is running
 docker ps
-
-# Database will be available at localhost:5432
 # Redis will be available at localhost:6379
-# Adminer (database UI) at http://localhost:8080
 ```
 
-4. **Initialize Database**
+4. **Initialize Database Schema**
 
-The database will be automatically initialized with the schema when Docker starts.
-If you need to reset it:
+Apply the database schema to your Neon database:
 
 ```bash
-# Connect to database and run init script
-docker exec -i telehealth_postgres psql -U telehealth_user -d telehealth_db < database/init.sql
+# Test Neon connection first
+node backend/test-neon-connection.js
+
+# Apply schema to Neon
+node backend/apply-schema-to-neon.js
 ```
 
 5. **Start the Backend Server**
@@ -133,19 +135,28 @@ npm run dev
 cd backend
 npm test
 ```
-
 ### Database Management
 
-```bash
-# Access PostgreSQL CLI
-docker exec -it telehealth_postgres psql -U telehealth_user -d telehealth_db
+**Neon Console:** https://console.neon.tech
 
-# Access Adminer UI
-open http://localhost:8080
-# Server: postgres
-# Username: telehealth_user
-# Password: secure_password
-# Database: telehealth_db
+```bash
+# Test database connection
+node backend/test-neon-connection.js
+
+# Apply/reset schema
+node backend/apply-schema-to-neon.js
+
+# Access database via psql (if you have psql installed)
+# Use the connection string from your Neon dashboard
+psql "postgresql://[user]:[password]@[host]/[database]?sslmode=require"
+```
+
+**Neon Features:**
+- Web-based SQL Editor in Neon Console
+- Automatic backups and point-in-time recovery
+- Query performance insights
+- Connection pooling included
+- Automatic scaling
 ```
 
 ### Logs
@@ -209,13 +220,19 @@ The server supports real-time messaging via Socket.io:
 
 ## 📝 Environment Variables
 
-Create a `.env` file based on `.env.example`:
+Create a `backend/.env` file based on `backend/.env.example`:
 
 ```env
-# Required
-DATABASE_URL=postgresql://telehealth_user:secure_password@localhost:5432/telehealth_db
+# Required - Neon Database
+DATABASE_URL=postgresql://[user]:[password]@[host].neon.tech/[database]?sslmode=require
+
+# Required - Redis (for sessions and caching)
 REDIS_URL=redis://localhost:6379
-JWT_SECRET=your-secret-key-here
+
+# Required - Security
+JWT_SECRET=your-secret-key-change-in-production-32-chars-min
+SESSION_SECRET=your-session-secret-change-in-production
+HIPAA_AUDIT_SALT=$2a$10$[your-bcrypt-salt]
 
 # Optional (for production)
 SUPABASE_URL=your-supabase-url
@@ -223,6 +240,13 @@ SUPABASE_ANON_KEY=your-supabase-key
 AWS_ACCESS_KEY_ID=your-aws-key
 AWS_SECRET_ACCESS_KEY=your-aws-secret
 ```
+
+**Getting Your Neon Connection String:**
+1. Go to https://console.neon.tech
+2. Select your project
+3. Click "Connection Details"
+4. Copy the connection string
+5. Paste into `backend/.env` as `DATABASE_URL`
 
 ## 🐛 Troubleshooting
 
@@ -239,24 +263,31 @@ kill -9 <PID>
 ### Docker Issues
 
 ```bash
-# Reset Docker containers
+# Reset Redis container
 docker-compose down
-docker-compose up -d --build
+docker-compose up -d
 
-# View logs
-docker-compose logs -f
+# View Redis logs
+docker-compose logs -f redis
 ```
 
 ### Database Connection Issues
 
 ```bash
-# Test database connection
-docker exec telehealth_postgres pg_isready
+# Test Neon database connection
+node backend/test-neon-connection.js
 
-# Reset database
-docker-compose down -v
-docker-compose up -d
+# Common issues:
+# 1. Check DATABASE_URL format includes ?sslmode=require
+# 2. Verify Neon project is active in console
+# 3. Check network/firewall settings
+# 4. Regenerate password in Neon Console if needed
 ```
+
+### Migration from Local PostgreSQL
+
+If you previously used local PostgreSQL, see the complete migration guide:
+[`NEON_MIGRATION_COMPLETE.md`](NEON_MIGRATION_COMPLETE.md)
 
 ## 📄 License
 

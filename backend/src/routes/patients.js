@@ -1,5 +1,5 @@
 import express from 'express';
-import { requirePermission } from '../middleware/accessControl.js';
+import { requirePermission, requireAuth } from '../middleware/accessControl.js';
 import { asyncErrorWrapper } from '../middleware/errorHandler.js';
 import { NotFoundError, ValidationError } from '../utils/customErrors.js';
 import PatientService from '../services/PatientService.js';
@@ -8,6 +8,63 @@ const router = express.Router();
 
 // Initialize service
 const patientService = new PatientService();
+
+/**
+ * @route GET /api/patients/me
+ * @desc Get current patient's own data
+ * @access Private (patient)
+ */
+router.get('/me',
+  requireAuth(),
+  asyncErrorWrapper(async (req, res) => {
+    // Patient can only access their own data
+    const patient = await patientService.findById(req.user.id);
+    res.success(patient, 'Patient data retrieved successfully');
+  })
+);
+
+/**
+ * @route GET /api/patients/me/programs
+ * @desc Get current patient's treatment programs
+ * @access Private (patient)
+ */
+router.get('/me/programs',
+  requireAuth(),
+  asyncErrorWrapper(async (req, res) => {
+    // TODO: Implement treatment programs logic
+    res.success([], 'Patient programs retrieved successfully');
+  })
+);
+
+/**
+ * @route GET /api/patients/me/orders
+ * @desc Get current patient's orders
+ * @access Private (patient)
+ */
+router.get('/me/orders',
+  requireAuth(),
+  asyncErrorWrapper(async (req, res) => {
+    // TODO: Implement orders logic
+    res.success([], 'Patient orders retrieved successfully');
+  })
+);
+
+/**
+ * @route GET /api/patients/me/stats
+ * @desc Get current patient's statistics
+ * @access Private (patient)
+ */
+router.get('/me/stats',
+  requireAuth(),
+  asyncErrorWrapper(async (req, res) => {
+    // TODO: Implement statistics logic
+    res.success({
+      consultations: 0,
+      prescriptions: 0,
+      messages: 0
+    }, 'Patient stats retrieved successfully');
+  })
+);
 
 /**
  * @route GET /api/patients

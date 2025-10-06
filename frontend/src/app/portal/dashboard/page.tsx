@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Card from '@/components/Card';
 import LineChart from '@/components/LineChart';
-import { authService, UserRole as AuthUserRole } from '@/lib/auth';
+import { useUser } from '@stackframe/stack';
 
 type UserRole = 'provider' | 'admin' | 'provider-admin' | 'super-admin';
 
@@ -28,6 +28,7 @@ interface PendingConsultation {
 
 export default function UnifiedDashboardPage() {
   const router = useRouter();
+  const stackUser = useUser();
   const [userRole, setUserRole] = useState<UserRole>('provider');
   const [userName, setUserName] = useState('');
   const [loading, setLoading] = useState(true);
@@ -38,35 +39,36 @@ export default function UnifiedDashboardPage() {
   const [pendingConsultations, setPendingConsultations] = useState<PendingConsultation[]>([]);
 
   useEffect(() => {
-    // Check if user is authenticated using auth service
-    if (!authService.isAuthenticated()) {
+    // Check if user is authenticated using Stack Auth
+    if (!stackUser) {
       router.push('/portal/login');
       return;
     }
 
-    // Get user data from auth service
-    const user = authService.getUser();
+    // Get role from Stack Auth user metadata
+    const userRoleFromMeta = stackUser.clientMetadata?.role as string || 'provider';
     
-    if (user) {
-      // Map role properly (handle variations)
-      let mappedRole: UserRole = 'provider';
-      if (user.role === AuthUserRole.ADMIN ||
-          user.role === AuthUserRole.PROVIDER_ADMIN ||
-          user.role === AuthUserRole.SUPER_ADMIN) {
-        if (user.role === AuthUserRole.ADMIN) mappedRole = 'admin';
-        else if (user.role === AuthUserRole.PROVIDER_ADMIN) mappedRole = 'provider-admin';
-        else if (user.role === AuthUserRole.SUPER_ADMIN) mappedRole = 'super-admin';
-        loadAdminData();
-      } else if (user.role === AuthUserRole.PROVIDER) {
-        mappedRole = 'provider';
-      }
-      
-      setUserRole(mappedRole);
-      setUserName(`${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'User');
+    // Map role properly
+    const roleMapping: { [key: string]: UserRole } = {
+      'provider': 'provider',
+      'admin': 'admin',
+      'provider-admin': 'provider-admin',
+      'super-admin': 'super-admin'
+    };
+    
+    const mappedRole = roleMapping[userRoleFromMeta] || 'provider';
+    setUserRole(mappedRole);
+    
+    // Set user name
+    setUserName(stackUser.displayName || stackUser.primaryEmail || 'User');
+    
+    // Load admin data if user has admin role
+    if (mappedRole === 'admin' || mappedRole === 'provider-admin' || mappedRole === 'super-admin') {
+      loadAdminData();
     }
 
     setLoading(false);
-  }, [router]);
+  }, [stackUser, router]);
 
   const loadAdminData = () => {
     // Mock patient issues

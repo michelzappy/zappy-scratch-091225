@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
+import { useUser } from '@stackframe/stack';
 import MobileBottomNav from './MobileBottomNav';
 
 interface MenuItem {
@@ -43,26 +44,25 @@ const NavItem: React.FC<NavItemProps> = ({ item, isActive }) => {
 export default function PatientLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [user, setUser] = useState<any>(null);
+  const stackUser = useUser();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Check if we're on pages that don't need the layout
   const isLoginPage = pathname === '/patient/login';
+  const isRegisterPage = pathname === '/patient/register';
   const isHealthQuizPage = pathname === '/patient/health-quiz';
   const isNewConsultationPage = pathname === '/patient/new-consultation';
-  const noLayoutPages = isLoginPage || isHealthQuizPage || isNewConsultationPage;
+  const noLayoutPages = isLoginPage || isRegisterPage || isHealthQuizPage || isNewConsultationPage;
 
   useEffect(() => {
     // Don't check auth on pages that don't need layout
     if (noLayoutPages) return;
     
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      setUser(JSON.parse(userData));
-    } else {
+    // Redirect to login if not authenticated with Stack Auth
+    if (!stackUser) {
       router.push('/patient/login');
     }
-  }, [router, isLoginPage]);
+  }, [stackUser, router, noLayoutPages]);
 
   const primaryMenuItems: MenuItem[] = [
     {
@@ -116,9 +116,11 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
     },
   ];
 
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    router.push('/');
+  const handleLogout = async () => {
+    if (stackUser) {
+      await stackUser.signOut();
+      router.push('/');
+    }
   };
 
   // If we're on pages that don't need layout, just render the children
@@ -127,8 +129,12 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
   }
 
   // If not logged in and not on login page, show loading
-  if (!user) {
-    return <div>Loading...</div>;
+  if (!stackUser) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+      </div>
+    );
   }
 
   const sidebarContent = (

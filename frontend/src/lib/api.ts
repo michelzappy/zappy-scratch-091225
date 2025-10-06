@@ -1,5 +1,4 @@
 import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
-import { authService } from './auth';
 
 // Extend the Axios request config to include _retry flag
 interface ExtendedAxiosRequestConfig extends InternalAxiosRequestConfig {
@@ -16,24 +15,9 @@ class ApiClient {
       headers: {
         'Content-Type': 'application/json',
       },
+      // Enable cookies to be sent with requests (required for Stack Auth)
+      withCredentials: true,
     });
-
-    // Request interceptor to add auth token
-    this.client.interceptors.request.use(
-      async (config) => {
-        // Get access token from our auth service
-        const accessToken = authService.getAccessToken();
-        
-        if (accessToken) {
-          config.headers.Authorization = `Bearer ${accessToken}`;
-        }
-
-        return config;
-      },
-      (error) => {
-        return Promise.reject(error);
-      }
-    );
 
     // Response interceptor for error handling
     this.client.interceptors.response.use(
@@ -50,23 +34,20 @@ class ApiClient {
             return Promise.reject(error);
           }
           
-          // Try to refresh token
-          const refreshed = await authService.refreshToken();
-          
-          if (refreshed) {
-            // Retry the original request with new token
-            originalRequest.headers.Authorization = `Bearer ${refreshed.accessToken}`;
-            return this.client.request(originalRequest);
-          }
-          
-          // If refresh failed, clear auth locally to prevent logout API loop
-          // Don't call authService.logout() as it makes API calls that trigger this interceptor
+          // With Stack Auth, if we get a 401, redirect to login
+          // Stack Auth handles session management via cookies automatically
           if (typeof window !== 'undefined') {
-            localStorage.removeItem('telehealth_access_token');
-            localStorage.removeItem('telehealth_refresh_token');
-            localStorage.removeItem('telehealth_user');
-            // Redirect to home page
-            window.location.href = '/';
+            // Redirect to appropriate login page based on current path
+            const currentPath = window.location.pathname;
+            if (currentPath.startsWith('/portal')) {
+              window.location.href = '/portal/login';
+            } else if (currentPath.startsWith('/patient')) {
+              window.location.href = '/patient/login';
+            } else if (currentPath.startsWith('/admin')) {
+              window.location.href = '/admin/login';
+            } else {
+              window.location.href = '/';
+            }
           }
         }
         

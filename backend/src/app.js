@@ -16,6 +16,7 @@ import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { auditLogger } from './middleware/auditLogger.js';
 import { encryptRequest, decryptResponse, initializeEncryption } from './middleware/dataEncryption.js';
 import { requireAuth, filterResponseData } from './middleware/accessControl.js';
+import { verifyStackAuth } from './config/stackAuth.js';
 
 // Import route handlers
 import authRoutes from './routes/auth.js';
@@ -53,6 +54,11 @@ app.use(responseWrapper); // Standardize responses
 app.use(auditLogger); // Audit PHI access
 app.use(encryptRequest); // Encrypt incoming PHI
 app.use(decryptResponse); // Decrypt outgoing PHI
+
+// Stack Auth middleware - must come before routes that need authentication
+// This will attach req.user to the request if authenticated
+app.use(verifyStackAuth);
+
 app.use(filterResponseData()); // Filter based on roles
 
 // Health check endpoint (no auth required)
@@ -66,7 +72,8 @@ app.get('/health', (req, res) => {
 
 // API Routes (add authentication as needed)
 app.use('/api/auth', authRoutes);
-app.use('/api/patients', requireAuth(['admin', 'provider', 'staff']), patientsRoutes);
+// Note: Patient routes handle their own auth per-endpoint to allow patients to access their own data
+app.use('/api/patients', patientsRoutes);
 app.use('/api/providers', providersRoutes);
 app.use('/api/prescriptions', requireAuth(['admin', 'provider']), prescriptionsRoutes);
 app.use('/api/consultations', requireAuth(), consultationsRoutes);

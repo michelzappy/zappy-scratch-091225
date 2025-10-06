@@ -42,7 +42,7 @@ export class PrivilegedDatabaseManager {
     const baseConfig = {
       idle_timeout: 30,
       connect_timeout: 10,
-      ssl: process.env.NODE_ENV === 'production' ? 'require' : false
+      ssl: 'require' // Enable SSL for Neon database
     };
 
     // Readonly pool - limited concurrent connections

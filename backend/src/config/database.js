@@ -1,14 +1,15 @@
+import dotenv from 'dotenv';
 import { Sequelize } from 'sequelize';
+import postgres from 'postgres';
 import logger from '../utils/logger.js';
+
+// Load environment variables
+dotenv.config();
 
 // Database connection configuration
 const config = {
   development: {
-    username: process.env.DATABASE_USER || 'postgres',
-    password: process.env.DATABASE_PASSWORD || 'password',
-    database: process.env.DATABASE_NAME || 'healthcare_dev',
-    host: process.env.DATABASE_HOST || 'localhost',
-    port: process.env.DATABASE_PORT || 5432,
+    use_env_variable: 'DATABASE_URL',
     dialect: 'postgres',
     logging: (msg) => logger.debug(msg),
     pool: {
@@ -16,6 +17,12 @@ const config = {
       min: 0,
       acquire: 30000,
       idle: 10000
+    },
+    dialectOptions: {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false
+      }
     }
   },
   test: {
@@ -70,8 +77,40 @@ sequelize.authenticate()
     logger.error('Unable to connect to the database:', err);
   });
 
-// Export getDatabase function for compatibility
+// Export getDatabase function for compatibility (returns Sequelize)
 const getDatabase = () => sequelize;
 
+// Create postgres.js connection for routes that use tagged template syntax
+let postgresConnection = null;
+
+function getPostgresConnection() {
+  if (!postgresConnection) {
+    const connectionString = process.env.DATABASE_URL;
+    
+    if (!connectionString) {
+      throw new Error('DATABASE_URL environment variable is required');
+    }
+
+    postgresConnection = postgres(connectionString, {
+      max: 10,
+      idle_timeout: 20,
+      connect_timeout: 30,
+      ssl: { rejectUnauthorized: false }
+    });
+    
+    logger.info('Postgres.js connection established');
+  }
+  
+  return postgresConnection;
+}
+
+async function closePostgresConnection() {
+  if (postgresConnection) {
+    await postgresConnection.end({ timeout: 5 });
+    postgresConnection = null;
+    logger.info('Postgres.js connection closed');
+  }
+}
+
 export default sequelize;
-export { getDatabase };
+export { getDatabase, getPostgresConnection, closePostgresConnection };

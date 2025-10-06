@@ -9,16 +9,16 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 // Import routes
-import authRoutes from './routes/auth.routes.js';
-import consultationRoutes from './routes/consultation.routes.js';
-import messageRoutes from './routes/message.routes.js';
-import providerRoutes from './routes/provider.routes.js';
-import patientRoutes from './routes/patient.routes.js';
+import authRoutes from './src/routes/auth.js';
+import consultationRoutes from './src/routes/consultations.js';
+import messageRoutes from './src/routes/messages.js';
+import providerRoutes from './src/routes/providers.js';
+import patientRoutes from './src/routes/patients.js';
 
 // Import middleware
-import { errorHandler } from './middleware/errorHandler.js';
-import { rateLimiter } from './middleware/rateLimiter.js';
-import { logger } from './utils/logger.js';
+import { errorHandler } from './src/middleware/errorHandler.js';
+import { generalLimiter } from './src/middleware/rateLimiting.js';
+import logger from './src/utils/logger.js';
 
 // Load environment variables
 dotenv.config();
@@ -52,7 +52,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Apply rate limiting to all routes
-app.use('/api', rateLimiter);
+app.use('/api', generalLimiter);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

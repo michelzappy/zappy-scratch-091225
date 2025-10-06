@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { supabase, generateUserId } from '../config/auth.js';
-import { getDatabase } from '../config/database.js';
+import { getPostgresConnection } from '../config/database.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 import {
   requireAuth,
@@ -60,7 +60,7 @@ router.post('/intake',
       chiefComplaint, symptoms, symptomDuration, severity
     } = req.body;
 
-    const db = getDatabase();
+    const db = getPostgresConnection();
     // Check if patient exists
     const patientResult = await db`
       SELECT id FROM patients WHERE email = ${email}
@@ -136,7 +136,7 @@ router.post('/register/patient',
       shippingAddress, shippingCity, shippingState, shippingZip
     } = req.body;
 
-    const db = getDatabase();
+    const db = getPostgresConnection();
     
     // Check if patient exists
     const existingPatient = await db`
@@ -197,7 +197,7 @@ router.post('/login/patient',
   handleValidationErrors,
   asyncHandler(async (req, res) => {
     const { email, password } = req.body;
-    const db = getDatabase();
+    const db = getPostgresConnection();
 
     // Check patient exists and get their data
     const result = await db`
@@ -267,7 +267,7 @@ router.post('/login/provider',
   handleValidationErrors,
   asyncHandler(async (req, res) => {
     const { email, password } = req.body;
-    const db = getDatabase();
+    const db = getPostgresConnection();
 
     // Get provider data
     const result = await db`
@@ -348,7 +348,7 @@ router.post('/login/admin',
   handleValidationErrors,
   asyncHandler(async (req, res) => {
     const { email, password, twoFactorCode } = req.body;
-    const db = getDatabase();
+    const db = getPostgresConnection();
 
     // Get admin data
     const result = await db`
@@ -436,7 +436,7 @@ router.post('/refresh',
 
     // Verify refresh token
     const decoded = verifyRefreshToken(refreshToken);
-    const db = getDatabase();
+    const db = getPostgresConnection();
 
     // Get user based on ID and determine role
     let user = null;
@@ -520,7 +520,7 @@ router.post('/forgot-password',
   handleValidationErrors,
   asyncHandler(async (req, res) => {
     const { email, userType } = req.body;
-    const db = getDatabase();
+    const db = getPostgresConnection();
 
     // Generate reset token
     const resetToken = crypto.randomBytes(32).toString('hex');
@@ -566,7 +566,7 @@ router.post('/reset-password',
   handleValidationErrors,
   asyncHandler(async (req, res) => {
     const { token, password, userType } = req.body;
-    const db = getDatabase();
+    const db = getPostgresConnection();
 
     // Find user with valid reset token
     let tableName = userType === 'admin' ? 'admin_users' : `${userType}s`;
@@ -605,7 +605,7 @@ router.post('/reset-password',
 router.get('/verify-email/:token',
   asyncHandler(async (req, res) => {
     const { token } = req.params;
-    const db = getDatabase();
+    const db = getPostgresConnection();
 
     // Find user with verification token
     const result = await db`
@@ -630,7 +630,7 @@ router.get('/verify-email/:token',
 router.get('/me',
   requireAuth,
   asyncHandler(async (req, res) => {
-    const db = getDatabase();
+    const db = getPostgresConnection();
     let userData = null;
 
     // Get full user data based on role
@@ -689,7 +689,7 @@ router.post('/login',
   handleValidationErrors,
   asyncHandler(async (req, res) => {
     const { email, password, userType = 'patient' } = req.body;
-    const db = getDatabase();
+    const db = getPostgresConnection();
 
     let user = null;
     let role = null;

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { authService, User } from '@/lib/auth';
+import { useUser } from '@stackframe/stack';
 
 type UserRole = 'provider' | 'admin' | 'provider-admin' | 'super-admin';
 
@@ -34,12 +34,14 @@ export default function UnifiedPortalLayout({ children }: { children: React.Reac
   }>>([]);
   const notificationRef = useRef<HTMLDivElement>(null);
 
+  const stackUser = useUser();
+
   useEffect(() => {
-    // Get user data from auth service
-    const user = authService.getUser();
-    
-    if (user) {
-      // Map auth service roles to layout roles
+    if (stackUser) {
+      // Get role from Stack Auth clientMetadata
+      const userRole = stackUser.clientMetadata?.role as string || 'provider';
+      
+      // Map Stack Auth roles to layout roles
       const roleMapping: { [key: string]: UserRole } = {
         'provider': 'provider',
         'admin': 'admin',
@@ -47,20 +49,19 @@ export default function UnifiedPortalLayout({ children }: { children: React.Reac
         'super-admin': 'super-admin'
       };
       
-      const mappedRole = roleMapping[user.role] || 'provider';
+      const mappedRole = roleMapping[userRole] || 'provider';
       setUserRole(mappedRole);
       
-      // Set user display information
-      const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
-      setUserName(fullName || user.email || 'User');
-      setUserTitle(''); // Could add title field to User interface later
+      // Set user display information from Stack Auth
+      setUserName(stackUser.displayName || stackUser.primaryEmail || 'User');
+      setUserTitle(''); // Could add title field later
     } else {
       // If no user is found, default to provider
       setUserRole('provider');
       setUserName('User');
       setUserTitle('');
     }
-  }, [pathname]); // Re-run when pathname changes to catch navigation from login
+  }, [stackUser, pathname]); // Re-run when user or pathname changes
 
   // Initialize sample notifications
   useEffect(() => {
@@ -298,11 +299,13 @@ export default function UnifiedPortalLayout({ children }: { children: React.Reac
   const adminNav = filteredNavigation.filter(item => 
     item.section === 'admin'
   );
-
   const handleLogout = async () => {
-    // Use auth service logout which handles all cleanup
-    await authService.logout();
-    // No need to manually redirect - auth service handles this
+    // Sign out via Stack Auth
+    if (stackUser) {
+      await stackUser.signOut();
+      // Redirect to home page after sign out
+      router.push('/');
+    }
   };
 
   // Get user initials for avatar
