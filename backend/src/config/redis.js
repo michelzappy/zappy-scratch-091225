@@ -26,9 +26,17 @@ export async function setupRedis() {
       }
     });
 
-    // Test connection
-    await redis.ping();
-
+    // Connect explicitly since we're using lazyConnect
+    await redis.connect();
+    
+    // Test connection with timeout
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Redis connection timeout')), 5000);
+    });
+    
+    await Promise.race([redis.ping(), timeoutPromise]);
+    
+    console.log('Redis connection test successful');
     return redis;
   } catch (error) {
     console.log('Redis not available - running without caching/sessions');

@@ -3,7 +3,6 @@ import { body, validationResult } from 'express-validator';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-import { supabase, generateUserId } from '../config/auth.js';
 import { getPostgresConnection } from '../config/database.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 import {

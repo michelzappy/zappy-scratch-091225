@@ -1,5 +1,4 @@
 import jwt from 'jsonwebtoken';
-import { supabase } from '../config/auth.js';
 import { AppError } from '../errors/AppError.js';
 import { enhancedAuth, emergencyAuthBypass } from './authResilience.js';
 import { hipaaSessionManager, sessionTimeoutWarning } from './hipaaSession.js';
@@ -81,28 +80,6 @@ export const requireAuth = async (req, res, next) => {
       }
     }
     
-    // Try Supabase authentication first
-    if (supabase) {
-      try {
-        const { data: { user }, error } = await supabase.auth.getUser(token);
-        
-        if (!error && user) {
-          req.user = {
-            id: user.id,
-            email: user.email,
-            role: user.user_metadata?.role || ROLES.PATIENT,
-            metadata: user.user_metadata,
-            verified: user.email_confirmed_at !== null,
-            created_at: user.created_at
-          };
-          req.authMethod = 'supabase';
-          return next();
-        }
-      } catch (supabaseError) {
-        console.warn('Supabase auth failed, trying JWT:', supabaseError.message);
-      }
-    }
-
     // Fallback to JWT verification (for development or custom auth)
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'development-secret-key-change-in-production');
@@ -126,7 +103,7 @@ export const requireAuth = async (req, res, next) => {
       if (jwtError.name === 'TokenExpiredError') {
         throw new AppError('Token expired', 401, 'TOKEN_EXPIRED');
       }
-      console.error('Both Supabase and JWT authentication failed');
+      console.error('JWT authentication failed');
       throw new AppError('Invalid authentication token', 401, 'INVALID_TOKEN');
     }
     

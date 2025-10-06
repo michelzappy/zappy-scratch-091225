@@ -1,147 +1,22 @@
-import { supabase, supabaseClient } from '../config/auth.js';
 import { AppError } from '../errors/AppError.js';
 import jwt from 'jsonwebtoken';
 
 // Authentication system health status
 let authSystemHealth = {
-  supabase: { status: 'unknown', lastCheck: null, consecutiveFailures: 0 },
   jwt: { status: 'healthy', lastCheck: Date.now(), consecutiveFailures: 0 },
-  overall: 'unknown'
+  overall: 'healthy'
 };
 
-// Authentication method preferences and circuit breaker
+// Authentication method preferences
 const AUTH_CONFIG = {
-  supabaseTimeout: parseInt(process.env.SUPABASE_AUTH_TIMEOUT || '5000'), // 5 seconds
-  maxConsecutiveFailures: parseInt(process.env.AUTH_MAX_FAILURES || '3'),
-  circuitBreakerTimeout: parseInt(process.env.AUTH_CIRCUIT_BREAKER_TIMEOUT || '60000'), // 1 minute
-  healthCheckInterval: parseInt(process.env.AUTH_HEALTH_CHECK_INTERVAL || '30000'), // 30 seconds
   enableFallback: process.env.DISABLE_AUTH_FALLBACK !== 'true'
-};
-
-/**
- * Check Supabase authentication service health
- */
-const checkSupabaseHealth = async () => {
-  if (!supabase) {
-    authSystemHealth.supabase.status = 'unavailable';
-    return false;
-  }
-
-  try {
-    // Test Supabase connectivity with a simple operation
-    const startTime = Date.now();
-    await Promise.race([
-      supabase.auth.getSession(),
-      new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout')), AUTH_CONFIG.supabaseTimeout)
-      )
-    ]);
-    
-    const responseTime = Date.now() - startTime;
-    
-    authSystemHealth.supabase = {
-      status: 'healthy',
-      lastCheck: Date.now(),
-      consecutiveFailures: 0,
-      responseTime
-    };
-    
-    return true;
-    
-  } catch (error) {
-    authSystemHealth.supabase.consecutiveFailures++;
-    authSystemHealth.supabase.lastCheck = Date.now();
-    
-    if (authSystemHealth.supabase.consecutiveFailures >= AUTH_CONFIG.maxConsecutiveFailures) {
-      authSystemHealth.supabase.status = 'circuit_breaker';
-    } else {
-      authSystemHealth.supabase.status = 'degraded';
-    }
-    
-    console.warn('Supabase health check failed:', error.message);
-    return false;
-  }
-};
-
-/**
- * Check if Supabase circuit breaker should be reset
- */
-const shouldResetCircuitBreaker = () => {
-  const supabaseHealth = authSystemHealth.supabase;
-  return supabaseHealth.status === 'circuit_breaker' && 
-         (Date.now() - supabaseHealth.lastCheck) > AUTH_CONFIG.circuitBreakerTimeout;
 };
 
 /**
  * Update overall authentication system health
  */
 const updateOverallHealth = () => {
-  const supabaseHealthy = authSystemHealth.supabase.status === 'healthy';
-  const jwtHealthy = authSystemHealth.jwt.status === 'healthy';
-  
-  if (supabaseHealthy && jwtHealthy) {
-    authSystemHealth.overall = 'healthy';
-  } else if (jwtHealthy) {
-    authSystemHealth.overall = 'degraded'; // JWT fallback available
-  } else {
-    authSystemHealth.overall = 'critical';
-  }
-};
-
-/**
- * Enhanced Supabase authentication with timeout and error handling
- */
-const authenticateWithSupabase = async (token) => {
-  // Check circuit breaker
-  if (authSystemHealth.supabase.status === 'circuit_breaker' && !shouldResetCircuitBreaker()) {
-    throw new Error('Supabase authentication circuit breaker is open');
-  }
-  
-  if (!supabase) {
-    throw new Error('Supabase client not available');
-  }
-  
-  try {
-    const startTime = Date.now();
-    
-    const { data: { user }, error } = await Promise.race([
-      supabase.auth.getUser(token),
-      new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Supabase authentication timeout')), AUTH_CONFIG.supabaseTimeout)
-      )
-    ]);
-    
-    if (error) throw error;
-    if (!user) throw new Error('No user data returned');
-    
-    // Update health status on success
-    authSystemHealth.supabase.consecutiveFailures = 0;
-    authSystemHealth.supabase.status = 'healthy';
-    authSystemHealth.supabase.responseTime = Date.now() - startTime;
-    
-    return {
-      id: user.id,
-      email: user.email,
-      role: user.user_metadata?.role || 'patient',
-      metadata: user.user_metadata,
-      verified: user.email_confirmed_at !== null,
-      created_at: user.created_at
-    };
-    
-  } catch (error) {
-    // Update failure count and status
-    authSystemHealth.supabase.consecutiveFailures++;
-    authSystemHealth.supabase.lastCheck = Date.now();
-    
-    if (authSystemHealth.supabase.consecutiveFailures >= AUTH_CONFIG.maxConsecutiveFailures) {
-      authSystemHealth.supabase.status = 'circuit_breaker';
-      console.warn('Supabase authentication circuit breaker activated');
-    } else {
-      authSystemHealth.supabase.status = 'degraded';
-    }
-    
-    throw error;
-  }
+  authSystemHealth.overall = authSystemHealth.jwt.status === 'healthy' ? 'healthy' : 'critical';
 };
 
 /**
@@ -210,30 +85,13 @@ export const enhancedAuth = async (req, res, next) => {
     let user = null;
     let authMethod = null;
     
-    // Try Supabase authentication first (if healthy)
-    if (supabase && authSystemHealth.supabase.status !== 'circuit_breaker') {
-      try {
-        user = await authenticateWithSupabase(token);
-        authMethod = 'supabase';
-      } catch (supabaseError) {
-        console.warn('Supabase authentication failed, trying JWT fallback:', supabaseError.message);
-        
-        // Only try JWT fallback if enabled
-        if (!AUTH_CONFIG.enableFallback) {
-          throw supabaseError;
-        }
-      }
-    }
-    
-    // Fallback to JWT authentication
-    if (!user && AUTH_CONFIG.enableFallback) {
-      try {
-        user = await authenticateWithJWT(token);
-        authMethod = 'jwt';
-      } catch (jwtError) {
-        console.error('Both Supabase and JWT authentication failed');
-        throw jwtError;
-      }
+    // JWT authentication
+    try {
+      user = await authenticateWithJWT(token);
+      authMethod = 'jwt';
+    } catch (jwtError) {
+      console.error('JWT authentication failed');
+      throw jwtError;
     }
     
     if (!user) {
@@ -276,18 +134,11 @@ export const getAuthHealth = (req, res) => {
     ...authSystemHealth,
     timestamp: Date.now(),
     config: {
-      supabaseConfigured: !!supabase,
-      fallbackEnabled: AUTH_CONFIG.enableFallback,
-      timeouts: {
-        supabase: AUTH_CONFIG.supabaseTimeout,
-        circuitBreaker: AUTH_CONFIG.circuitBreakerTimeout
-      }
+      fallbackEnabled: AUTH_CONFIG.enableFallback
     }
   };
   
-  const httpStatus = authSystemHealth.overall === 'healthy' ? 200 :
-                    authSystemHealth.overall === 'degraded' ? 200 :
-                    503; // Service Unavailable for critical
+  const httpStatus = authSystemHealth.overall === 'healthy' ? 200 : 503;
   
   res.status(httpStatus).json(healthData);
 };
@@ -298,7 +149,7 @@ export const getAuthHealth = (req, res) => {
 export const startAuthHealthMonitoring = () => {
   const performHealthCheck = async () => {
     try {
-      await checkSupabaseHealth();
+      // JWT health is always checked during authentication
       updateOverallHealth();
       
       // Log health status changes
@@ -316,8 +167,8 @@ export const startAuthHealthMonitoring = () => {
   // Initial health check
   performHealthCheck();
   
-  // Schedule periodic checks
-  const interval = setInterval(performHealthCheck, AUTH_CONFIG.healthCheckInterval);
+  // Schedule periodic checks (less frequent since JWT doesn't need external checks)
+  const interval = setInterval(performHealthCheck, 300000); // 5 minutes
   
   return () => clearInterval(interval);
 };

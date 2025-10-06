@@ -5,7 +5,7 @@
 
 import express from 'express';
 import { getDatabase } from '../config/database.js';
-import redis from 'redis';
+import { getRedis } from '../config/redis.js';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import fs from 'fs/promises';
@@ -168,22 +168,21 @@ async function checkRedis() {
   };
 
   try {
-    if (!process.env.REDIS_URL) {
+    const client = getRedis();
+    
+    if (!process.env.REDIS_URL || !client) {
       check.checks.configuration = {
         healthy: true,
-        message: 'Redis not configured - optional service'
+        message: 'Redis not configured or not available - optional service for Stack Auth'
       };
       return check;
     }
-
-    const client = redis.createClient({ url: process.env.REDIS_URL });
-    await client.connect();
 
     // Test basic operations
     const testKey = `health:check:${Date.now()}`;
     const testValue = 'health-check-value';
     
-    await client.set(testKey, testValue, { EX: 10 });
+    await client.set(testKey, testValue, 'EX', 10);
     const retrievedValue = await client.get(testKey);
     await client.del(testKey);
     
@@ -204,8 +203,6 @@ async function checkRedis() {
       ping_time: Math.round(perfTime),
       threshold: '10ms'
     };
-
-    await client.disconnect();
     
   } catch (error) {
     check.healthy = false;

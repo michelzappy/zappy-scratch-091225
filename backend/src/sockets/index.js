@@ -1,4 +1,4 @@
-import { supabase } from '../config/auth.js';
+import jwt from 'jsonwebtoken';
 import { getDatabase } from '../config/database.js';
 import { consultations } from '../models/index.js';
 import { eq } from 'drizzle-orm';
@@ -8,27 +8,26 @@ export function setupSocketHandlers(io) {
   io.use(async (socket, next) => {
     try {
       const token = socket.handshake.auth.token;
-      
+
       if (!token) {
         return next(new Error('Authentication error: No token provided'));
       }
 
-      // If Supabase is configured, verify token
-      if (supabase) {
-        const { data: { user }, error } = await supabase.auth.getUser(token);
-        
-        if (error || !user) {
-          return next(new Error('Authentication error: Invalid token'));
+      // Verify JWT token
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'development-secret-key-change-in-production');
+
+        if (!decoded.id || !decoded.email) {
+          return next(new Error('Authentication error: Invalid token structure'));
         }
-        
-        socket.userId = user.id;
-        socket.userRole = user.user_metadata?.role || 'patient';
-      } else {
-        // Development mode without Supabase
-        socket.userId = 'dev-user-id';
-        socket.userRole = 'patient';
+
+        socket.userId = decoded.id;
+        socket.userRole = decoded.role || 'patient';
+      } catch (jwtError) {
+        console.error('JWT verification failed:', jwtError.message);
+        return next(new Error('Authentication error: Invalid token'));
       }
-      
+
       next();
     } catch (error) {
       console.error('Socket authentication error:', error);
